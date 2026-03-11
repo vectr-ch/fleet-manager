@@ -34,25 +34,25 @@ export function CommandGrid() {
       <div className="grid grid-cols-2 gap-1.5">
         <button
           onClick={() => send("pause")}
-          className="px-2.5 py-2 bg-bg border border-border2 rounded-[5px] font-mono text-[10px] text-text-dim text-left tracking-wide hover:border-muted hover:text-text hover:bg-border transition-colors flex items-center gap-1.5"
+          className="px-2.5 py-2 bg-background border border-input rounded-[5px] font-mono text-[10px] text-muted-foreground text-left tracking-wide hover:border-muted hover:text-foreground hover:bg-border transition-colors flex items-center gap-1.5"
         >
           ⏸ {t("pause")}
         </button>
         <button
           onClick={() => send("rtb")}
-          className="px-2.5 py-2 bg-bg border border-border2 rounded-[5px] font-mono text-[10px] text-text-dim text-left tracking-wide hover:border-muted hover:text-text hover:bg-border transition-colors flex items-center gap-1.5"
+          className="px-2.5 py-2 bg-background border border-input rounded-[5px] font-mono text-[10px] text-muted-foreground text-left tracking-wide hover:border-muted hover:text-foreground hover:bg-border transition-colors flex items-center gap-1.5"
         >
           ↩ {t("rtbAll")}
         </button>
         <button
           onClick={() => send("goto")}
-          className="px-2.5 py-2 bg-bg border border-border2 rounded-[5px] font-mono text-[10px] text-text-dim text-left tracking-wide hover:border-muted hover:text-text hover:bg-border transition-colors flex items-center gap-1.5"
+          className="px-2.5 py-2 bg-background border border-input rounded-[5px] font-mono text-[10px] text-muted-foreground text-left tracking-wide hover:border-muted hover:text-foreground hover:bg-border transition-colors flex items-center gap-1.5"
         >
           ⊕ {t("goTo")}
         </button>
         <button
           onClick={() => send("orbit")}
-          className="px-2.5 py-2 bg-bg border border-border2 rounded-[5px] font-mono text-[10px] text-text-dim text-left tracking-wide hover:border-muted hover:text-text hover:bg-border transition-colors flex items-center gap-1.5"
+          className="px-2.5 py-2 bg-background border border-input rounded-[5px] font-mono text-[10px] text-muted-foreground text-left tracking-wide hover:border-muted hover:text-foreground hover:bg-border transition-colors flex items-center gap-1.5"
         >
           ⊙ {t("orbit")}
         </button>
@@ -64,10 +64,10 @@ export function CommandGrid() {
           >
             ⬡ {t("abortMission")}
           </AlertDialogTrigger>
-          <AlertDialogContent className="bg-surface border-border2">
+          <AlertDialogContent className="bg-card border-input">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-text">{t("confirmAbortTitle")}</AlertDialogTitle>
-              <AlertDialogDescription className="text-text-dim">
+              <AlertDialogTitle className="text-foreground">{t("confirmAbortTitle")}</AlertDialogTitle>
+              <AlertDialogDescription className="text-muted-foreground">
                 {t("confirmAbort")}
               </AlertDialogDescription>
             </AlertDialogHeader>

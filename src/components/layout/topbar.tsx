@@ -20,14 +20,14 @@ export function Topbar() {
   const tc = useTranslations("common");
 
   return (
-    <header className="h-11 border-b border-border bg-surface flex items-center px-4 shrink-0">
+    <header className="h-11 border-b border-border bg-card flex items-center px-4 shrink-0">
       {/* Logo */}
-      <div className="font-mono text-[13px] font-semibold tracking-wider text-text uppercase pr-5 border-r border-border2 mr-5">
+      <div className="font-mono text-[13px] font-semibold tracking-wider text-foreground uppercase pr-5 border-r border-input mr-5">
         {tc("appName")} <span className="text-subtle font-light">/ {tc("appSuffix")}</span>
       </div>
 
       {/* Org selector */}
-      <button className="flex items-center gap-1.5 text-xs text-text-dim px-2.5 py-1 border border-border2 rounded-[5px] font-mono hover:border-muted hover:text-text transition-colors">
+      <button className="flex items-center gap-1.5 text-xs text-muted-foreground px-2.5 py-1 border border-input rounded-[5px] font-mono hover:border-muted hover:text-foreground transition-colors">
         <span className="w-1.5 h-1.5 rounded-full bg-fleet-blue" />
         Bravo Team
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -44,9 +44,9 @@ export function Topbar() {
               key={item.key}
               href={item.href}
               className={cn(
-                "text-xs text-text-dim px-2.5 py-1 rounded font-mono tracking-wide transition-colors",
-                isActive && "text-text bg-border2",
-                !isActive && "hover:text-text hover:bg-border"
+                "text-xs text-muted-foreground px-2.5 py-1 rounded font-mono tracking-wide transition-colors",
+                isActive && "text-foreground bg-secondary",
+                !isActive && "hover:text-foreground hover:bg-border"
               )}
             >
               {t(item.key)}
@@ -61,7 +61,7 @@ export function Topbar() {
           <span className="w-[5px] h-[5px] rounded-full bg-fleet-green animate-pulse" />
           BASE-01 {tc("online")}
         </div>
-        <div className="w-[26px] h-[26px] rounded-full bg-gradient-to-br from-[#1e3a5f] to-fleet-blue border border-border2 flex items-center justify-center text-[10px] font-semibold text-white cursor-pointer">
+        <div className="w-[26px] h-[26px] rounded-full bg-gradient-to-br from-[#1e3a5f] to-fleet-blue border border-input flex items-center justify-center text-[10px] font-semibold text-white cursor-pointer">
           DK
         </div>
       </div>

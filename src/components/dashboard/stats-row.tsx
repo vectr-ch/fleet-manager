@@ -72,17 +72,17 @@ export function StatsRow() {
   return (
     <div className="grid grid-cols-5 gap-px bg-border border-y border-border mt-4 shrink-0">
       {stats.map((stat) => (
-        <div key={stat.label} className="bg-surface px-4 py-3 flex flex-col gap-1">
+        <div key={stat.label} className="bg-card px-4 py-3 flex flex-col gap-1">
           <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">
             {stat.label}
           </div>
-          <div className={`font-mono text-[22px] font-semibold leading-none tracking-tight ${stat.valueColor ?? "text-text"}`}>
+          <div className={`font-mono text-[22px] font-semibold leading-none tracking-tight ${stat.valueColor ?? "text-foreground"}`}>
             {stat.value}
             {stat.unit && (
               <span className="text-sm text-subtle">{stat.unit}</span>
             )}
           </div>
-          <div className="text-[11px] text-text-dim flex items-center gap-1">
+          <div className="text-[11px] text-muted-foreground flex items-center gap-1">
             {stat.meta}
           </div>
         </div>

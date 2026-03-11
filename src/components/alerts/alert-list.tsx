@@ -38,7 +38,7 @@ export function AlertList() {
       {alerts.map((alert) => (
         <div
           key={alert.id}
-          className="flex gap-2.5 px-3.5 py-2.5 border-b border-border cursor-pointer hover:bg-bg transition-colors"
+          className="flex gap-2.5 px-3.5 py-2.5 border-b border-border cursor-pointer hover:bg-background transition-colors"
           onClick={() => dismiss.mutate({ id: alert.id })}
         >
           <div
@@ -50,8 +50,8 @@ export function AlertList() {
             {iconSymbols[alert.severity]}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-medium text-text">{alert.title}</div>
-            <div className="text-[11px] text-text-dim mt-px">{alert.detail}</div>
+            <div className="text-xs font-medium text-foreground">{alert.title}</div>
+            <div className="text-[11px] text-muted-foreground mt-px">{alert.detail}</div>
           </div>
           <div className="font-mono text-[10px] text-subtle shrink-0">
             {timeAgo(alert.timestamp)}

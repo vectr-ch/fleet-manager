@@ -17,7 +17,7 @@ const badgeVariants = {
   green: "bg-fleet-green-dim text-fleet-green border-fleet-green/15",
   red: "bg-fleet-red-dim text-fleet-red border-fleet-red/15",
   amber: "bg-fleet-amber-dim text-fleet-amber border-fleet-amber/15",
-  muted: "bg-border2 text-subtle",
+  muted: "bg-secondary text-subtle",
 } as const;
 
 export function Sidebar() {
@@ -143,7 +143,7 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-[200px] border-r border-border bg-surface flex flex-col shrink-0 py-3">
+    <aside className="w-[200px] border-r border-border bg-card flex flex-col shrink-0 py-3">
       {sections.map((section) => (
         <div key={section.label} className="px-2 mb-5">
           <div className="font-mono text-[10px] tracking-widest text-subtle uppercase px-2 mb-1">
@@ -157,13 +157,13 @@ export function Sidebar() {
                 key={item.label}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 px-2 py-1.5 rounded-[5px] cursor-pointer text-text-dim text-[12.5px] transition-colors relative",
-                  isActive && "bg-border2 text-text",
-                  !isActive && "hover:bg-border hover:text-text"
+                  "flex items-center gap-2 px-2 py-1.5 rounded-[5px] cursor-pointer text-muted-foreground text-[12.5px] transition-colors relative",
+                  isActive && "bg-secondary text-foreground",
+                  !isActive && "hover:bg-border hover:text-foreground"
                 )}
               >
                 {isActive && (
-                  <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-text rounded-r" />
+                  <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-foreground rounded-r" />
                 )}
                 <span className={cn("w-3.5 h-3.5 shrink-0 [&>svg]:w-full [&>svg]:h-full", isActive ? "opacity-100" : "opacity-60")}>
                   {item.icon}
@@ -187,14 +187,14 @@ export function Sidebar() {
 
       {/* Bottom */}
       <div className="mt-auto pt-2 px-2 border-t border-border">
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-[5px] text-text-dim text-[12.5px] cursor-pointer hover:bg-border hover:text-text">
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-[5px] text-muted-foreground text-[12.5px] cursor-pointer hover:bg-border hover:text-foreground">
           <span className="w-3.5 h-3.5 shrink-0 opacity-60 [&>svg]:w-full [&>svg]:h-full">
             <svg viewBox="0 0 14 14" fill="none">
               <path d="M7 1a6 6 0 100 12A6 6 0 007 1zm0 0v6m0 0l3-3M7 7l-3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
           {t("firmware")}
-          <span className="ml-auto font-mono text-[10px] px-1.5 py-px rounded-sm bg-border2 text-subtle">
+          <span className="ml-auto font-mono text-[10px] px-1.5 py-px rounded-sm bg-secondary text-subtle">
             v2.4
           </span>
         </div>

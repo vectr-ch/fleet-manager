@@ -16,7 +16,7 @@ export function FormationBar({ mission }: { mission: Mission }) {
           {mission.formationIntegrity}%
         </div>
       </div>
-      <div className="h-1 bg-border2 rounded-sm overflow-hidden">
+      <div className="h-1 bg-secondary rounded-sm overflow-hidden">
         <div
           className="h-full bg-gradient-to-r from-fleet-green to-green-300 rounded-sm"
           style={{ width: `${mission.formationIntegrity}%` }}

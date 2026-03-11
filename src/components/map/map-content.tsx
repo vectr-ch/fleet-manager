@@ -18,19 +18,19 @@ function ZoomControls() {
     <div className="absolute bottom-3 right-3 flex gap-1 z-[1000]">
       <button
         onClick={() => map.zoomIn()}
-        className="w-7 h-7 bg-[#0a0a0acc] border border-border2 rounded flex items-center justify-center text-subtle text-xs backdrop-blur-sm hover:text-text hover:border-muted"
+        className="w-7 h-7 bg-[#0a0a0acc] border border-input rounded flex items-center justify-center text-subtle text-xs backdrop-blur-sm hover:text-foreground hover:border-muted"
       >
         +
       </button>
       <button
         onClick={() => map.zoomOut()}
-        className="w-7 h-7 bg-[#0a0a0acc] border border-border2 rounded flex items-center justify-center text-subtle text-xs backdrop-blur-sm hover:text-text hover:border-muted"
+        className="w-7 h-7 bg-[#0a0a0acc] border border-input rounded flex items-center justify-center text-subtle text-xs backdrop-blur-sm hover:text-foreground hover:border-muted"
       >
         −
       </button>
       <button
         onClick={() => map.setView(CENTER, ZOOM)}
-        className="w-7 h-7 bg-[#0a0a0acc] border border-border2 rounded flex items-center justify-center text-subtle text-xs backdrop-blur-sm hover:text-text hover:border-muted"
+        className="w-7 h-7 bg-[#0a0a0acc] border border-input rounded flex items-center justify-center text-subtle text-xs backdrop-blur-sm hover:text-foreground hover:border-muted"
       >
         ⊙
       </button>

@@ -34,12 +34,12 @@ export function CommandLog() {
         {commands.slice(0, 10).map((cmd) => (
           <div
             key={cmd.id}
-            className="flex items-center gap-2 font-mono text-[10px] px-1.5 py-1 rounded-sm bg-bg border border-border"
+            className="flex items-center gap-2 font-mono text-[10px] px-1.5 py-1 rounded-sm bg-background border border-border"
           >
             <span className={cn("px-1.5 py-px rounded-sm text-[9px] font-semibold shrink-0", stateStyles[cmd.state])}>
               {stateLabels[cmd.state]}
             </span>
-            <span className="text-text-dim flex-1">{cmd.type.toUpperCase().replace("_", " ")}</span>
+            <span className="text-muted-foreground flex-1">{cmd.type.toUpperCase().replace("_", " ")}</span>
             <span className="text-subtle">{cmd.target}</span>
           </div>
         ))}

@@ -10,7 +10,7 @@ export default function OverviewPage() {
     <>
       <PageHeader />
       <StatsRow />
-      <div className="grid grid-cols-[1fr_320px] gap-px bg-border flex-1 overflow-hidden mt-px">
+      <div className="grid grid-cols-[1fr_320px] grid-rows-[1fr] gap-px bg-border flex-1 min-h-0 overflow-hidden mt-px">
         <MapPanel />
         <RightPanel />
       </div>

@@ -35,20 +35,20 @@ export function DroneListItem({ drone }: DroneListItemProps) {
       className={cn(
         "flex items-center px-3.5 py-2.5 border-b border-border gap-2.5 cursor-pointer transition-colors",
         isSelected && "bg-border",
-        !isSelected && "hover:bg-bg",
+        !isSelected && "hover:bg-background",
         isWarning && !isSelected && "bg-fleet-amber/[0.02] border-l-2 border-l-fleet-amber"
       )}
     >
       <div className={cn("w-[7px] h-[7px] rounded-full shrink-0", statusDotClass[drone.status])} />
 
       <div className="flex-1 min-w-0">
-        <div className="font-mono text-[11px] font-medium text-text">
+        <div className="font-mono text-[11px] font-medium text-foreground">
           {drone.id}
           {isWarning && (
             <span className="text-fleet-amber text-[10px] ml-1">⚠ {t("lowBattery")}</span>
           )}
         </div>
-        <div className="text-[11px] text-text-dim mt-px">
+        <div className="text-[11px] text-muted-foreground mt-px">
           {drone.role.charAt(0).toUpperCase() + drone.role.slice(1)} · Grid pos {drone.gridPos.row},{drone.gridPos.col}
         </div>
       </div>
@@ -60,7 +60,7 @@ export function DroneListItem({ drone }: DroneListItemProps) {
             {Math.round(drone.battery)}%
           </span>
         </div>
-        <div className="w-7 h-1 bg-border2 rounded-sm overflow-hidden">
+        <div className="w-7 h-1 bg-secondary rounded-sm overflow-hidden">
           <div
             className={cn("h-full rounded-sm", batteryBarClass(drone.battery))}
             style={{ width: `${drone.battery}%` }}
