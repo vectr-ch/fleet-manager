@@ -22,7 +22,7 @@ export function RightPanel() {
 
   return (
     <div className="bg-surface flex flex-col overflow-hidden border-l border-border">
-      <Tabs defaultValue="fleet" className="flex flex-col flex-1 overflow-hidden">
+      <Tabs defaultValue="fleet" className="flex flex-col flex-1 overflow-hidden gap-0">
         <TabsList variant="line" className="flex w-full border-b border-border shrink-0 bg-transparent rounded-none h-auto p-0">
           <TabsTrigger
             value="fleet"
