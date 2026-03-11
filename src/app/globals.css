@@ -47,6 +47,26 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@theme {
+  --color-bg: #080808;
+  --color-surface: #0f0f0f;
+  --color-border2: #252525;
+  --color-subtle: #666666;
+  --color-text: #e8e8e8;
+  --color-text-dim: #888888;
+  --color-fleet-green: #22c55e;
+  --color-fleet-green-dim: #16a34a22;
+  --color-fleet-amber: #f59e0b;
+  --color-fleet-amber-dim: #f59e0b18;
+  --color-fleet-red: #ef4444;
+  --color-fleet-red-dim: #ef444418;
+  --color-fleet-blue: #3b82f6;
+  --color-fleet-blue-dim: #3b82f615;
+
+  --font-mono: 'Geist Mono', monospace;
+  --font-sans: 'DM Sans', sans-serif;
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -126,4 +146,68 @@
   html {
     @apply font-sans;
   }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Leaflet dark tile filter */
+.leaflet-tile {
+  filter: brightness(0.55) saturate(0.4) hue-rotate(190deg) !important;
+}
+
+/* Leaflet popup theme */
+.leaflet-popup-content-wrapper {
+  background: #0f0f0f !important;
+  border: 1px solid #252525 !important;
+  border-radius: 5px !important;
+  color: #888 !important;
+  box-shadow: 0 4px 20px #00000088 !important;
+}
+.leaflet-popup-tip { background: #0f0f0f !important; }
+.leaflet-popup-close-button { color: #666 !important; }
+
+/* Zone label tooltip */
+.zone-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #3b82f6;
+}
+.zone-label::before { display: none !important; }
+
+/* Drone marker ring animation */
+@keyframes drone-ring {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #252525; border-radius: 2px; }
+
+/* Pulse animation for status dot */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Progress bar shimmer */
+@keyframes shimmer {
+  from { left: -100%; }
+  to { left: 100%; }
 }
