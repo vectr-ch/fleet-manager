@@ -1,0 +1,78 @@
+{
+  "common": {
+    "appName": "VECTR",
+    "appSuffix": "Fleet",
+    "online": "Online",
+    "offline": "Offline",
+    "nominal": "Nominal"
+  },
+  "topbar": {
+    "overview": "Overview",
+    "missions": "Missions",
+    "fleet": "Fleet",
+    "bases": "Bases",
+    "telemetry": "Telemetry",
+    "audit": "Audit"
+  },
+  "sidebar": {
+    "active": "Active",
+    "overview": "Overview",
+    "liveMission": "Live Mission",
+    "map": "Map",
+    "manage": "Manage",
+    "drones": "Drones",
+    "baseStations": "Base Stations",
+    "missionPlans": "Mission Plans",
+    "system": "System",
+    "alerts": "Alerts",
+    "auditLog": "Audit Log",
+    "settings": "Settings",
+    "firmware": "Firmware"
+  },
+  "dashboard": {
+    "fleetOverview": "Fleet Overview",
+    "newMission": "New Mission",
+    "preFlightCheck": "Pre-flight Check",
+    "dronesActive": "Drones Active",
+    "coverage": "Coverage",
+    "formation": "Formation",
+    "meshLinks": "Mesh Links",
+    "etaComplete": "ETA Complete"
+  },
+  "fleet": {
+    "title": "Fleet",
+    "formationIntegrity": "Formation Integrity",
+    "avgBat": "Avg Bat",
+    "meshRtt": "Mesh RTT",
+    "uplink": "Uplink",
+    "battery": "BAT",
+    "lowBattery": "LOW BAT",
+    "recentAlerts": "Recent Alerts"
+  },
+  "alerts": {
+    "title": "Alerts"
+  },
+  "commands": {
+    "title": "Commands",
+    "pause": "Pause",
+    "rtbAll": "RTB All",
+    "goTo": "Go-To",
+    "orbit": "Orbit",
+    "abortMission": "ABORT MISSION",
+    "commandLog": "Command Log",
+    "confirmAbort": "Are you sure you want to abort the mission? This cannot be undone.",
+    "confirmAbortTitle": "Abort Mission"
+  },
+  "swarmHealth": {
+    "swarm": "Swarm",
+    "baseLink": "Base Link",
+    "cloud": "Cloud",
+    "alerts": "Alerts"
+  },
+  "map": {
+    "missionArea": "MISSION AREA",
+    "wind": "WIND",
+    "alt": "ALT",
+    "gps": "GPS"
+  }
+}
