@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/", key: "overview" },
+  { href: "/overview", key: "overview" },
   { href: "/missions", key: "missions" },
   { href: "/fleet", key: "fleet" },
   { href: "/bases", key: "bases" },
@@ -38,8 +38,7 @@ export function Topbar() {
       {/* Nav */}
       <nav className="flex gap-0.5 ml-4">
         {navItems.map((item) => {
-          const isActive =
-            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          const isActive = pathname.startsWith(item.href);
           return (
             <Link
               key={item.key}
