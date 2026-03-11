@@ -13,14 +13,6 @@ interface SidebarItem {
   badge?: { value: string | number; variant: "green" | "red" | "amber" | "muted" };
 }
 
-function SidebarIcon({ d }: { d: string }) {
-  return (
-    <svg className="w-3.5 h-3.5 opacity-60 shrink-0" viewBox="0 0 14 14" fill="none">
-      <path d={d} stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 const badgeVariants = {
   green: "bg-fleet-green-dim text-fleet-green border-fleet-green/15",
   red: "bg-fleet-red-dim text-fleet-red border-fleet-red/15",
@@ -44,14 +36,37 @@ export function Sidebar() {
     {
       label: t("active"),
       items: [
-        { label: t("overview"), href: "/", icon: <SidebarIcon d="M4 7h6M7 4v6" /> },
+        {
+          label: t("overview"),
+          href: "/overview",
+          icon: (
+            <svg viewBox="0 0 14 14" fill="none">
+              <rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          ),
+        },
         {
           label: t("liveMission"),
           href: "/missions",
-          icon: <SidebarIcon d="M7 4.5v3l1.5 1.5" />,
+          icon: (
+            <svg viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M7 4.5v3l1.5 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          ),
           badge: { value: activeMissions, variant: "green" },
         },
-        { label: t("map"), href: "#", icon: <SidebarIcon d="M2 11L5 6l2.5 3L9 7l3 4H2z" /> },
+        {
+          label: t("map"),
+          href: "#",
+          icon: (
+            <svg viewBox="0 0 14 14" fill="none">
+              <path d="M2 11L5 6l2.5 3L9 7l3 4H2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+              <circle cx="10" cy="3.5" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+          ),
+        },
       ],
     },
     {
@@ -60,16 +75,34 @@ export function Sidebar() {
         {
           label: t("drones"),
           href: "/fleet",
-          icon: <SidebarIcon d="M7 1L9 5h4L10 8l1 4-4-2.5L3 12l1-4L1 5h4z" />,
+          icon: (
+            <svg viewBox="0 0 14 14" fill="none">
+              <path d="M7 1L9 5h4L10 8l1 4-4-2.5L3 12l1-4L1 5h4z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+            </svg>
+          ),
           badge: { value: droneCount, variant: "muted" },
         },
         {
           label: t("baseStations"),
           href: "/bases",
-          icon: <SidebarIcon d="M5 4V3a2 2 0 014 0v1" />,
+          icon: (
+            <svg viewBox="0 0 14 14" fill="none">
+              <rect x="2" y="4" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M5 4V3a2 2 0 014 0v1" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+          ),
           badge: { value: 2, variant: "green" },
         },
-        { label: t("missionPlans"), href: "#", icon: <SidebarIcon d="M4.5 6.5h5M4.5 8.5h3" /> },
+        {
+          label: t("missionPlans"),
+          href: "#",
+          icon: (
+            <svg viewBox="0 0 14 14" fill="none">
+              <rect x="1.5" y="3" width="11" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M4.5 6.5h5M4.5 8.5h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          ),
+        },
       ],
     },
     {
@@ -78,11 +111,33 @@ export function Sidebar() {
         {
           label: t("alerts"),
           href: "#",
-          icon: <SidebarIcon d="M7 1v2M7 11v2M1 7h2M11 7h2" />,
+          icon: (
+            <svg viewBox="0 0 14 14" fill="none">
+              <path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.93 2.93l1.41 1.41M9.66 9.66l1.41 1.41M2.93 11.07l1.41-1.41M9.66 4.34l1.41-1.41" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+          ),
           badge: alertCount > 0 ? { value: alertCount, variant: "amber" } : undefined,
         },
-        { label: t("auditLog"), href: "/audit", icon: <SidebarIcon d="M2 4h10M2 7h10M2 10h6" /> },
-        { label: t("settings"), href: "#", icon: <SidebarIcon d="M7 4.5v3M7 9.5v.5" /> },
+        {
+          label: t("auditLog"),
+          href: "/audit",
+          icon: (
+            <svg viewBox="0 0 14 14" fill="none">
+              <path d="M2 4h10M2 7h10M2 10h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          ),
+        },
+        {
+          label: t("settings"),
+          href: "#",
+          icon: (
+            <svg viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M7 4.5v3M7 9.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+          ),
+        },
       ],
     },
   ];
@@ -96,7 +151,7 @@ export function Sidebar() {
           </div>
           {section.items.map((item) => {
             const isActive =
-              item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              item.href === "/overview" ? pathname === "/overview" || pathname === "/" : pathname.startsWith(item.href) && item.href !== "#";
             return (
               <Link
                 key={item.label}
@@ -110,7 +165,9 @@ export function Sidebar() {
                 {isActive && (
                   <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-text rounded-r" />
                 )}
-                {item.icon}
+                <span className={cn("w-3.5 h-3.5 shrink-0 [&>svg]:w-full [&>svg]:h-full", isActive ? "opacity-100" : "opacity-60")}>
+                  {item.icon}
+                </span>
                 {item.label}
                 {item.badge && (
                   <span
@@ -131,7 +188,11 @@ export function Sidebar() {
       {/* Bottom */}
       <div className="mt-auto pt-2 px-2 border-t border-border">
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-[5px] text-text-dim text-[12.5px] cursor-pointer hover:bg-border hover:text-text">
-          <SidebarIcon d="M7 1a6 6 0 100 12A6 6 0 007 1z" />
+          <span className="w-3.5 h-3.5 shrink-0 opacity-60 [&>svg]:w-full [&>svg]:h-full">
+            <svg viewBox="0 0 14 14" fill="none">
+              <path d="M7 1a6 6 0 100 12A6 6 0 007 1zm0 0v6m0 0l3-3M7 7l-3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
           {t("firmware")}
           <span className="ml-auto font-mono text-[10px] px-1.5 py-px rounded-sm bg-border2 text-subtle">
             v2.4

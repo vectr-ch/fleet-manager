@@ -70,7 +70,7 @@ export function StatsRow() {
   ];
 
   return (
-    <div className="grid grid-cols-5 gap-px bg-border border-y border-border shrink-0">
+    <div className="grid grid-cols-5 gap-px bg-border border-y border-border mt-4 shrink-0">
       {stats.map((stat) => (
         <div key={stat.label} className="bg-surface px-4 py-3 flex flex-col gap-1">
           <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">

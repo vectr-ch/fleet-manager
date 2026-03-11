@@ -11,7 +11,7 @@ export function TelemetrySummary({ drones }: { drones: Drone[] }) {
     : 0;
 
   return (
-    <div className="grid grid-cols-3 gap-1.5 px-3.5 pb-2.5">
+    <div className="grid grid-cols-3 gap-1.5 px-3.5 pb-2.5 border-b border-border">
       <div className="bg-bg border border-border rounded px-2 py-1.5">
         <div className="font-mono text-[9px] text-subtle uppercase tracking-wider">{t("avgBat")}</div>
         <div className="font-mono text-sm font-semibold text-text mt-0.5">

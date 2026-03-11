@@ -7,7 +7,7 @@ export function FormationBar({ mission }: { mission: Mission }) {
   const t = useTranslations("fleet");
 
   return (
-    <div className="px-3.5 py-2.5 border-b border-border">
+    <div className="px-3.5 py-2.5">
       <div className="flex justify-between items-center mb-1.5">
         <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">
           {t("formationIntegrity")}
