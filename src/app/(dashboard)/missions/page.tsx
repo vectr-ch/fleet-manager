@@ -1,8 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
+import { SummaryCard, SummaryCardGrid } from "@/components/dashboard/summary-card";
 
+// TODO: Replace with tRPC endpoint
 const pastMissions = [
   { id: "MISSION-240", name: "Perimeter Scan", status: "complete", coverage: 100, duration: "42m", date: "2026-03-10" },
   { id: "MISSION-239", name: "Grid Survey North", status: "complete", coverage: 98, duration: "1h 12m", date: "2026-03-09" },
@@ -11,6 +14,7 @@ const pastMissions = [
   { id: "MISSION-236", name: "Thermal Survey", status: "complete", coverage: 95, duration: "1h 03m", date: "2026-03-06" },
 ];
 
+// TODO: Replace with tRPC endpoint
 const missionParams = {
   formation: "Grid",
   spacing: "12m",
@@ -36,22 +40,23 @@ const commandStateStyles: Record<string, string> = {
   failed:    "bg-fleet-red-dim text-fleet-red",
 };
 
-const commandStateLabels: Record<string, string> = {
-  completed: "DONE",
-  executing: "EXEC",
-  pending:   "PEND",
-  failed:    "FAIL",
-};
-
 const missionCommandTypes = new Set([
   "pause", "resume", "rtb", "abort", "activate_mission", "set_formation", "adjust_spacing",
 ]);
 
 export default function MissionsPage() {
+  const t = useTranslations("missionsPage");
   const { data: mission } = trpc.missions.active.useQuery(undefined, { refetchInterval: 2000 });
   const { data: commands } = trpc.commands.log.useQuery(undefined, { refetchInterval: 3000 });
 
   const missionCommands = commands?.filter((c) => missionCommandTypes.has(c.type)) ?? [];
+
+  const commandStateLabels: Record<string, string> = {
+    completed: t("cmdStateDone"),
+    executing: t("cmdStateExec"),
+    pending:   t("cmdStatePend"),
+    failed:    t("cmdStateFail"),
+  };
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-4 gap-4">
@@ -61,7 +66,7 @@ export default function MissionsPage() {
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-1">
-              Active Mission
+              {t("activeMission")}
             </div>
             {mission ? (
               <div className="flex items-center gap-3">
@@ -76,7 +81,7 @@ export default function MissionsPage() {
                 </span>
               </div>
             ) : (
-              <div className="font-mono text-sm text-muted-foreground">No active mission</div>
+              <div className="font-mono text-sm text-muted-foreground">{t("noActiveMission")}</div>
             )}
             {mission && (
               <div className="font-mono text-[11px] text-muted-foreground mt-1">
@@ -88,7 +93,7 @@ export default function MissionsPage() {
           {mission && (
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-fleet-green" style={{ animation: "pulse 2s infinite" }} />
-              <span className="font-mono text-[10px] text-fleet-green uppercase tracking-wider">Live</span>
+              <span className="font-mono text-[10px] text-fleet-green uppercase tracking-wider">{t("live")}</span>
             </div>
           )}
         </div>
@@ -98,7 +103,7 @@ export default function MissionsPage() {
             {/* Coverage progress bar */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Coverage</span>
+                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("coverage")}</span>
                 <span className="font-mono text-sm font-semibold text-foreground">{Math.round(mission.coverage)}%</span>
               </div>
               <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
@@ -110,25 +115,35 @@ export default function MissionsPage() {
             </div>
 
             {/* Mission stats grid */}
-            <div className="grid grid-cols-4 gap-px bg-border rounded-[5px] overflow-hidden border border-border">
-              {[
-                { label: "Formation", value: mission.formation.charAt(0).toUpperCase() + mission.formation.slice(1) },
-                { label: "Integrity", value: `${mission.formationIntegrity}%`, color: mission.formationIntegrity >= 90 ? "text-fleet-green" : mission.formationIntegrity >= 70 ? "text-fleet-amber" : "text-fleet-red" },
-                { label: "ETA", value: `${mission.eta}m` },
-                { label: "Waypoints", value: `${mission.bounds?.length ?? 0}` },
-              ].map((item) => (
-                <div key={item.label} className="bg-card px-3.5 py-2.5 flex flex-col gap-1">
-                  <div className="font-mono text-[9px] text-subtle uppercase tracking-wider">{item.label}</div>
-                  <div className={cn("font-mono text-sm font-semibold tracking-tight", item.color ?? "text-foreground")}>
-                    {item.value}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <SummaryCardGrid columns={4}>
+              <SummaryCard
+                label={t("formation")}
+                value={mission.formation.charAt(0).toUpperCase() + mission.formation.slice(1)}
+              />
+              <SummaryCard
+                label={t("integrity")}
+                value={`${mission.formationIntegrity}%`}
+                valueColor={
+                  mission.formationIntegrity >= 90
+                    ? "text-fleet-green"
+                    : mission.formationIntegrity >= 70
+                    ? "text-fleet-amber"
+                    : "text-fleet-red"
+                }
+              />
+              <SummaryCard
+                label={t("eta")}
+                value={`${mission.eta}m`}
+              />
+              <SummaryCard
+                label={t("waypoints")}
+                value={`${mission.bounds?.length ?? 0}`}
+              />
+            </SummaryCardGrid>
           </>
         ) : (
           <div className="h-16 flex items-center justify-center border border-border rounded-[5px] bg-secondary">
-            <span className="font-mono text-[11px] text-muted-foreground">Awaiting mission activation</span>
+            <span className="font-mono text-[11px] text-muted-foreground">{t("awaitingActivation")}</span>
           </div>
         )}
       </div>
@@ -139,14 +154,21 @@ export default function MissionsPage() {
         {/* Mission History Table */}
         <div className="bg-card border border-border rounded-[5px] flex flex-col overflow-hidden">
           <div className="px-4 py-3 border-b border-border shrink-0 flex items-center justify-between">
-            <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Mission History</span>
-            <span className="font-mono text-[10px] text-muted-foreground">{pastMissions.length} records</span>
+            <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("missionHistory")}</span>
+            <span className="font-mono text-[10px] text-muted-foreground">{t("historyRecords", { count: pastMissions.length })}</span>
           </div>
 
           <div className="overflow-y-auto flex-1">
             {/* Table header */}
             <div className="grid grid-cols-[160px_1fr_90px_80px_70px_90px] gap-0 px-4 py-2 border-b border-border bg-secondary">
-              {["Mission ID", "Name", "Status", "Duration", "Coverage", "Date"].map((h) => (
+              {[
+                t("colMissionId"),
+                t("colName"),
+                t("colStatus"),
+                t("colDuration"),
+                t("colCoverage"),
+                t("colDate"),
+              ].map((h) => (
                 <div key={h} className="font-mono text-[9px] tracking-wider text-subtle uppercase">{h}</div>
               ))}
             </div>
@@ -186,7 +208,7 @@ export default function MissionsPage() {
         {/* Mission Parameters Card */}
         <div className="bg-card border border-border rounded-[5px] flex flex-col overflow-hidden">
           <div className="px-4 py-3 border-b border-border shrink-0">
-            <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Mission Parameters</span>
+            <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("missionParameters")}</span>
           </div>
 
           <div className="flex flex-col gap-0 overflow-y-auto flex-1">
@@ -211,12 +233,12 @@ export default function MissionsPage() {
       {/* Recent Command Log */}
       <div className="bg-card border border-border rounded-[5px] shrink-0">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Mission Command Log</span>
-          <span className="font-mono text-[10px] text-muted-foreground">{missionCommands.length} commands</span>
+          <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("missionCommandLog")}</span>
+          <span className="font-mono text-[10px] text-muted-foreground">{t("commandCount", { count: missionCommands.length })}</span>
         </div>
 
         {missionCommands.length === 0 ? (
-          <div className="px-4 py-4 font-mono text-[11px] text-muted-foreground">No mission commands logged</div>
+          <div className="px-4 py-4 font-mono text-[11px] text-muted-foreground">{t("noCommandsLogged")}</div>
         ) : (
           <div className="flex flex-col gap-0 px-3.5 py-2.5">
             <div className="flex flex-col gap-1">

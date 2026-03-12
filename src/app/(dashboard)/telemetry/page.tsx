@@ -1,9 +1,20 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { trpc } from "@/lib/trpc/client";
-import type { Drone } from "@/lib/types";
+import {
+  statusDotClass,
+  statusTextClass,
+  statusBgClass,
+  getBatteryColor,
+} from "@/lib/drone-utils";
+import {
+  SummaryCard,
+  SummaryCardGrid,
+} from "@/components/dashboard/summary-card";
 
 // ── Mock static data ──────────────────────────────────────────────────────────
+// TODO: Replace with tRPC endpoint
 const systemMetrics = {
   cpu: 23,
   memory: 41,
@@ -12,6 +23,7 @@ const systemMetrics = {
   errors: 0,
 };
 
+// TODO: Replace with tRPC endpoint
 const environment = {
   temp: "18°C",
   humidity: "45%",
@@ -20,55 +32,19 @@ const environment = {
   pressure: "1013 hPa",
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function statusColor(status: Drone["status"]) {
-  switch (status) {
-    case "nominal":
-      return "text-fleet-green";
-    case "warning":
-      return "text-fleet-amber";
-    case "critical":
-      return "text-fleet-red";
-    case "rtb":
-      return "text-fleet-blue";
-    case "offline":
-      return "text-subtle";
-    default:
-      return "text-muted-foreground";
-  }
-}
-
-function statusBg(status: Drone["status"]) {
-  switch (status) {
-    case "nominal":
-      return "bg-fleet-green-dim border-fleet-green/10";
-    case "warning":
-      return "bg-fleet-amber-dim border-fleet-amber/10";
-    case "critical":
-      return "bg-fleet-red-dim border-fleet-red/10";
-    case "rtb":
-      return "bg-fleet-blue-dim border-fleet-blue/10";
-    default:
-      return "bg-transparent border-transparent";
-  }
-}
-
-function batteryBarColor(pct: number) {
-  if (pct > 50) return "bg-fleet-green";
-  if (pct > 20) return "bg-fleet-amber";
-  return "bg-fleet-red";
-}
+// ── Local UI components ───────────────────────────────────────────────────────
 
 function BatteryBar({ value }: { value: number }) {
+  const { bar, text } = getBatteryColor(value);
   return (
     <div className="flex items-center gap-1.5">
       <div className="relative h-1.5 w-16 rounded-full bg-secondary overflow-hidden">
         <div
-          className={`absolute left-0 top-0 h-full rounded-full transition-all duration-300 ${batteryBarColor(value)}`}
+          className={`absolute left-0 top-0 h-full rounded-full transition-all duration-300 ${bar}`}
           style={{ width: `${value}%` }}
         />
       </div>
-      <span className={`font-mono text-[10px] font-semibold ${batteryBarColor(value).replace("bg-", "text-")}`}>
+      <span className={`font-mono text-[10px] font-semibold ${text}`}>
         {value}%
       </span>
     </div>
@@ -97,6 +73,8 @@ function SectionCard({ title, children }: { title: string; children: React.React
 
 // ── Telemetry Page ────────────────────────────────────────────────────────────
 export default function TelemetryPage() {
+  const t = useTranslations("telemetryPage");
+
   const { data: drones = [] } = trpc.drones.list.useQuery(undefined, { refetchInterval: 1000 });
   const { data: meshLinks = [] } = trpc.meshLinks.useQuery(undefined, { refetchInterval: 5000 });
   const { data: baseStations = [] } = trpc.baseStations.useQuery(undefined, { refetchInterval: 5000 });
@@ -114,31 +92,42 @@ export default function TelemetryPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* ── System Status Bar ─────────────────────────────────────────────── */}
-      <div className="flex items-stretch border-b border-border bg-card shrink-0">
-        {[
-          { label: "Total Drones", value: drones.length, valueClass: "text-foreground" },
-          { label: "Active", value: activeCount, valueClass: "text-fleet-green" },
-          { label: "Critical", value: criticalCount, valueClass: criticalCount > 0 ? "text-fleet-red" : "text-foreground" },
-          { label: "Offline", value: offlineCount, valueClass: offlineCount > 0 ? "text-subtle" : "text-foreground" },
-          { label: "Mesh Nodes", value: meshNodeCount, valueClass: "text-fleet-blue" },
-          {
-            label: "Uplink",
-            value: uplinkOnline ? "ONLINE" : "OFFLINE",
-            valueClass: uplinkOnline ? "text-fleet-green" : "text-fleet-red",
-          },
-          { label: "System Clock", value: clockStr, valueClass: "text-subtle" },
-        ].map((item, i) => (
-          <div
-            key={i}
-            className="flex flex-col items-center justify-center px-4 py-2.5 border-r border-border last:border-r-0 flex-1"
-          >
-            <span className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-0.5">
-              {item.label}
-            </span>
-            <span className={`font-mono text-sm font-semibold ${item.valueClass}`}>{item.value}</span>
-          </div>
-        ))}
-      </div>
+      <SummaryCardGrid>
+        <SummaryCard
+          label={t("totalDrones")}
+          value={drones.length}
+        />
+        <SummaryCard
+          label={t("active")}
+          value={activeCount}
+          valueColor="text-fleet-green"
+        />
+        <SummaryCard
+          label={t("critical")}
+          value={criticalCount}
+          valueColor={criticalCount > 0 ? "text-fleet-red" : undefined}
+        />
+        <SummaryCard
+          label={t("offline")}
+          value={offlineCount}
+          valueColor={offlineCount > 0 ? "text-subtle" : undefined}
+        />
+        <SummaryCard
+          label={t("meshNodes")}
+          value={meshNodeCount}
+          valueColor="text-fleet-blue"
+        />
+        <SummaryCard
+          label={t("uplink")}
+          value={uplinkOnline ? t("uplinkOnline") : t("uplinkOffline")}
+          valueColor={uplinkOnline ? "text-fleet-green" : "text-fleet-red"}
+        />
+        <SummaryCard
+          label={t("systemClock")}
+          value={clockStr}
+          valueColor="text-subtle"
+        />
+      </SummaryCardGrid>
 
       {/* ── Main Content ──────────────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -150,14 +139,14 @@ export default function TelemetryPage() {
               <thead className="sticky top-0 z-10 bg-card border-b border-border">
                 <tr>
                   {[
-                    "Drone ID",
-                    "Status",
-                    "Battery",
-                    "Latitude",
-                    "Longitude",
-                    "Heading",
-                    "Grid Row",
-                    "Grid Col",
+                    t("colDroneId"),
+                    t("colStatus"),
+                    t("colBattery"),
+                    t("colLatitude"),
+                    t("colLongitude"),
+                    t("colHeading"),
+                    t("colGridRow"),
+                    t("colGridCol"),
                   ].map((col) => (
                     <th
                       key={col}
@@ -172,14 +161,14 @@ export default function TelemetryPage() {
                 {drones.length === 0 && (
                   <tr>
                     <td colSpan={8} className="px-3 py-8 text-center font-mono text-[10px] text-subtle">
-                      AWAITING TELEMETRY FEED...
+                      {t("awaitingTelemetry")}
                     </td>
                   </tr>
                 )}
                 {drones.map((drone) => (
                   <tr
                     key={drone.id}
-                    className={`border-b border-border/50 hover:bg-secondary/20 transition-colors ${statusBg(drone.status)}`}
+                    className={`border-b border-border/50 hover:bg-secondary/20 transition-colors ${statusBgClass[drone.status]}`}
                   >
                     <td className="px-3 py-2">
                       <span className="font-mono text-xs font-semibold text-foreground">{drone.id}</span>
@@ -187,10 +176,10 @@ export default function TelemetryPage() {
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className={`inline-block w-1.5 h-1.5 rounded-full ${statusColor(drone.status).replace("text-", "bg-")}`}
+                          className={`inline-block w-1.5 h-1.5 rounded-full ${statusDotClass[drone.status]}`}
                           style={{ animation: drone.status === "nominal" ? "pulse 2s infinite" : undefined }}
                         />
-                        <span className={`font-mono text-[10px] tracking-wider uppercase font-semibold ${statusColor(drone.status)}`}>
+                        <span className={`font-mono text-[10px] tracking-wider uppercase font-semibold ${statusTextClass[drone.status]}`}>
                           {drone.status}
                         </span>
                       </div>
@@ -232,10 +221,10 @@ export default function TelemetryPage() {
               style={{ animation: "pulse 1s infinite" }}
             />
             <span className="font-mono text-[10px] tracking-widest text-fleet-green uppercase">
-              Telemetry Stream Active
+              {t("telemetryStreamActive")}
             </span>
             <span className="font-mono text-[10px] text-subtle ml-2">
-              — {drones.length} nodes · 1s refresh
+              {t("streamMeta", { count: drones.length })}
             </span>
           </div>
         </div>
@@ -244,25 +233,25 @@ export default function TelemetryPage() {
         <div className="w-[300px] shrink-0 flex flex-col gap-px bg-border overflow-auto">
           {/* System Metrics */}
           <div className="bg-background flex-1">
-            <SectionCard title="System Metrics">
-              <MetricRow label="CPU Usage" value={`${systemMetrics.cpu}%`} valueClass={systemMetrics.cpu > 80 ? "text-fleet-red" : systemMetrics.cpu > 60 ? "text-fleet-amber" : "text-fleet-green"} />
-              <MetricRow label="Memory" value={`${systemMetrics.memory}%`} valueClass={systemMetrics.memory > 80 ? "text-fleet-red" : systemMetrics.memory > 60 ? "text-fleet-amber" : "text-foreground"} />
-              <MetricRow label="Bandwidth" value={systemMetrics.bandwidth} />
-              <MetricRow label="Packets Rx" value={systemMetrics.packets} />
-              <MetricRow label="Errors" value={systemMetrics.errors} valueClass={systemMetrics.errors > 0 ? "text-fleet-red" : "text-fleet-green"} />
+            <SectionCard title={t("systemMetrics")}>
+              <MetricRow label={t("cpuUsage")} value={`${systemMetrics.cpu}%`} valueClass={systemMetrics.cpu > 80 ? "text-fleet-red" : systemMetrics.cpu > 60 ? "text-fleet-amber" : "text-fleet-green"} />
+              <MetricRow label={t("memory")} value={`${systemMetrics.memory}%`} valueClass={systemMetrics.memory > 80 ? "text-fleet-red" : systemMetrics.memory > 60 ? "text-fleet-amber" : "text-foreground"} />
+              <MetricRow label={t("bandwidth")} value={systemMetrics.bandwidth} />
+              <MetricRow label={t("packetsRx")} value={systemMetrics.packets} />
+              <MetricRow label={t("errors")} value={systemMetrics.errors} valueClass={systemMetrics.errors > 0 ? "text-fleet-red" : "text-fleet-green"} />
             </SectionCard>
           </div>
 
           {/* Mesh Network Health */}
           <div className="bg-background flex-1">
-            <SectionCard title="Mesh Network Health">
-              <MetricRow label="Link Count" value={meshLinks.length} valueClass="text-fleet-blue" />
-              <MetricRow label="Avg Latency" value="12 ms" valueClass="text-foreground" />
-              <MetricRow label="Packet Loss" value="0.02%" valueClass="text-fleet-green" />
-              <MetricRow label="Base Stations" value={baseStations.length} />
+            <SectionCard title={t("meshNetworkHealth")}>
+              <MetricRow label={t("linkCount")} value={meshLinks.length} valueClass="text-fleet-blue" />
+              <MetricRow label={t("avgLatency")} value="12 ms" valueClass="text-foreground" />
+              <MetricRow label={t("packetLoss")} value="0.02%" valueClass="text-fleet-green" />
+              <MetricRow label={t("baseStations")} value={baseStations.length} />
               <MetricRow
-                label="Uplink Status"
-                value={uplinkOnline ? "ONLINE" : "OFFLINE"}
+                label={t("uplinkStatus")}
+                value={uplinkOnline ? t("uplinkOnline") : t("uplinkOffline")}
                 valueClass={uplinkOnline ? "text-fleet-green" : "text-fleet-red"}
               />
             </SectionCard>
@@ -270,12 +259,12 @@ export default function TelemetryPage() {
 
           {/* Environment */}
           <div className="bg-background flex-1">
-            <SectionCard title="Environment">
-              <MetricRow label="Temperature" value={environment.temp} />
-              <MetricRow label="Humidity" value={environment.humidity} />
-              <MetricRow label="Wind" value={environment.wind} />
-              <MetricRow label="Visibility" value={environment.visibility} />
-              <MetricRow label="Pressure" value={environment.pressure} />
+            <SectionCard title={t("environment")}>
+              <MetricRow label={t("temperature")} value={environment.temp} />
+              <MetricRow label={t("humidity")} value={environment.humidity} />
+              <MetricRow label={t("wind")} value={environment.wind} />
+              <MetricRow label={t("visibility")} value={environment.visibility} />
+              <MetricRow label={t("pressure")} value={environment.pressure} />
             </SectionCard>
           </div>
         </div>

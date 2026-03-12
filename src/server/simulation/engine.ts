@@ -1,4 +1,4 @@
-import type { Command } from "@/lib/types";
+import type { Command, CommandType } from "@/lib/types";
 import { worldState } from "./state";
 
 const RTB_THRESHOLD = 15;
@@ -73,7 +73,7 @@ export function tick(): void {
   const activeDrones = drones.filter(
     (d) => d.status === "nominal" || d.status === "warning"
   );
-  mission.formationIntegrity = Math.round(
+  mission.formationIntegrity = drones.length === 0 ? 0 : Math.round(
     (activeDrones.length / drones.length) * 100
   );
 
@@ -91,13 +91,13 @@ export function tick(): void {
 }
 
 export function dispatchCommand(
-  type: string,
+  type: CommandType,
   target: string
 ): void {
   const { mission, drones, commands, alerts } = worldState;
   const cmd: Command = {
     id: `CMD-${++cmdCounter}`,
-    type: type as Command["type"],
+    type,
     target,
     state: "executing" as const,
     timestamp: new Date(),

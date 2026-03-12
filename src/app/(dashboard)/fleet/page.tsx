@@ -1,90 +1,19 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import type { Drone } from "@/lib/types";
+import { statusDotClass, statusTextClass, getBatteryColor, headingToCompass } from "@/lib/drone-utils";
+import { SummaryCard, SummaryCardGrid } from "@/components/dashboard/summary-card";
 
-// ── Status helpers ────────────────────────────────────────────────────────────
-
-const statusDotClass: Record<Drone["status"], string> = {
-  nominal: "bg-fleet-green shadow-[0_0_4px_#22c55e88]",
-  warning: "bg-fleet-amber shadow-[0_0_4px_#f59e0b88]",
-  critical: "bg-fleet-red shadow-[0_0_4px_#ef444488]",
-  rtb: "bg-fleet-amber shadow-[0_0_4px_#f59e0b88]",
-  offline: "bg-muted",
-};
-
-const statusLabel: Record<Drone["status"], string> = {
-  nominal: "NOMINAL",
-  warning: "WARNING",
-  critical: "CRITICAL",
-  rtb: "RTB",
-  offline: "OFFLINE",
-};
-
-const statusTextClass: Record<Drone["status"], string> = {
-  nominal: "text-fleet-green",
-  warning: "text-fleet-amber",
-  critical: "text-fleet-red",
-  rtb: "text-fleet-amber",
-  offline: "text-muted-foreground",
-};
-
-const roleLabel: Record<Drone["role"], string> = {
-  coordinator: "COORD",
-  follower: "FOLLOWER",
-  relay: "RELAY",
-};
-
-function batteryBarClass(battery: number): string {
-  if (battery > 50) return "bg-fleet-green";
-  if (battery > 25) return "bg-fleet-amber";
-  return "bg-fleet-red";
-}
-
-function batteryTextClass(battery: number): string {
-  if (battery > 50) return "text-fleet-green";
-  if (battery > 25) return "text-fleet-amber";
-  return "text-fleet-red";
-}
+// ── Local helpers not yet in shared utils ─────────────────────────────────────
 
 function rowAccentClass(status: Drone["status"]): string {
   if (status === "critical") return "border-l-2 border-l-fleet-red bg-fleet-red/[0.02]";
   if (status === "warning" || status === "rtb") return "border-l-2 border-l-fleet-amber bg-fleet-amber/[0.02]";
   return "border-l-2 border-l-transparent";
-}
-
-// ── Heading compass helper ────────────────────────────────────────────────────
-
-function headingToCompass(deg: number): string {
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8] ?? "N";
-}
-
-// ── Summary Card ─────────────────────────────────────────────────────────────
-
-interface SummaryCardProps {
-  label: string;
-  value: string | number;
-  unit?: string;
-  meta?: React.ReactNode;
-  valueColor?: string;
-}
-
-function SummaryCard({ label, value, unit, meta, valueColor }: SummaryCardProps) {
-  return (
-    <div className="bg-card px-4 py-3 flex flex-col gap-1">
-      <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{label}</div>
-      <div className={cn("font-mono text-[22px] font-semibold leading-none tracking-tight", valueColor ?? "text-foreground")}>
-        {value}
-        {unit && <span className="text-sm text-subtle ml-0.5">{unit}</span>}
-      </div>
-      {meta && (
-        <div className="text-[11px] text-muted-foreground flex items-center gap-1">{meta}</div>
-      )}
-    </div>
-  );
 }
 
 // ── Search / Filter bar ───────────────────────────────────────────────────────
@@ -103,23 +32,25 @@ interface FilterBarProps {
   filtered: number;
 }
 
-const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "ALL" },
-  { value: "nominal", label: "NOMINAL" },
-  { value: "warning", label: "WARNING" },
-  { value: "critical", label: "CRITICAL" },
-  { value: "rtb", label: "RTB" },
-  { value: "offline", label: "OFFLINE" },
-];
-
-const ROLE_FILTERS: { value: RoleFilter; label: string }[] = [
-  { value: "all", label: "ALL ROLES" },
-  { value: "coordinator", label: "COORD" },
-  { value: "follower", label: "FOLLOWER" },
-  { value: "relay", label: "RELAY" },
-];
-
 function FilterBar({ search, onSearch, statusFilter, onStatusFilter, roleFilter, onRoleFilter, total, filtered }: FilterBarProps) {
+  const t = useTranslations("fleetPage");
+
+  const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+    { value: "all", label: t("filterAll") },
+    { value: "nominal", label: t("filterNominal") },
+    { value: "warning", label: t("filterWarning") },
+    { value: "critical", label: t("filterCritical") },
+    { value: "rtb", label: t("filterRtb") },
+    { value: "offline", label: t("filterOffline") },
+  ];
+
+  const ROLE_FILTERS: { value: RoleFilter; label: string }[] = [
+    { value: "all", label: t("filterAllRoles") },
+    { value: "coordinator", label: t("filterCoord") },
+    { value: "follower", label: t("filterFollower") },
+    { value: "relay", label: t("filterRelay") },
+  ];
+
   return (
     <div className="px-5 py-3 flex flex-wrap items-center gap-3 border-b border-border shrink-0">
       {/* Search input */}
@@ -138,7 +69,7 @@ function FilterBar({ search, onSearch, statusFilter, onStatusFilter, roleFilter,
           type="text"
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search drone ID…"
+          placeholder={t("searchPlaceholder")}
           className="bg-card border border-input rounded pl-7 pr-3 py-1.5 font-mono text-[11px] text-foreground placeholder:text-subtle focus:outline-none focus:border-muted w-44"
         />
       </div>
@@ -182,9 +113,9 @@ function FilterBar({ search, onSearch, statusFilter, onStatusFilter, roleFilter,
       {/* Count indicator */}
       <div className="ml-auto font-mono text-[10px] text-subtle">
         {filtered === total ? (
-          <span>{total} drones</span>
+          <span>{t("countAll", { total })}</span>
         ) : (
-          <span>{filtered} / {total} drones</span>
+          <span>{t("countFiltered", { filtered, total })}</span>
         )}
       </div>
     </div>
@@ -200,7 +131,23 @@ interface DroneRowProps {
 }
 
 function DroneRow({ drone, isSelected, onClick }: DroneRowProps) {
+  const t = useTranslations("fleetPage");
   const isAlert = drone.status === "warning" || drone.status === "critical" || drone.status === "rtb";
+  const battery = getBatteryColor(drone.battery);
+
+  const statusLabel: Record<Drone["status"], string> = {
+    nominal: t("statusNominal"),
+    warning: t("statusWarning"),
+    critical: t("statusCritical"),
+    rtb: t("statusRtb"),
+    offline: t("statusOffline"),
+  };
+
+  const roleLabel: Record<Drone["role"], string> = {
+    coordinator: t("roleCoord"),
+    follower: t("roleFollower"),
+    relay: t("roleRelay"),
+  };
 
   return (
     <tr
@@ -238,11 +185,11 @@ function DroneRow({ drone, isSelected, onClick }: DroneRowProps) {
         <div className="flex items-center gap-2">
           <div className="w-12 h-1.5 bg-secondary rounded-sm overflow-hidden shrink-0">
             <div
-              className={cn("h-full rounded-sm transition-all", batteryBarClass(drone.battery))}
+              className={cn("h-full rounded-sm transition-all", battery.bar)}
               style={{ width: `${drone.battery}%` }}
             />
           </div>
-          <span className={cn("font-mono text-[11px] font-semibold tabular-nums", batteryTextClass(drone.battery))}>
+          <span className={cn("font-mono text-[11px] font-semibold tabular-nums", battery.text)}>
             {Math.round(drone.battery)}%
           </span>
         </div>
@@ -288,6 +235,8 @@ function DroneRow({ drone, isSelected, onClick }: DroneRowProps) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function FleetPage() {
+  const t = useTranslations("fleetPage");
+
   const { data: drones } = trpc.drones.list.useQuery(undefined, { refetchInterval: 2000 });
   const { data: mission } = trpc.missions.active.useQuery(undefined, { refetchInterval: 2000 });
   const { data: alerts } = trpc.alerts.list.useQuery(undefined, { refetchInterval: 5000 });
@@ -332,15 +281,16 @@ export default function FleetPage() {
   }, [filtered]);
 
   const criticalAlerts = alerts?.filter((a) => a.severity === "critical").length ?? 0;
+  const avgBatteryColor = getBatteryColor(avgBattery);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* ── Page header ── */}
       <div className="px-5 pt-4 pb-3 flex items-start justify-between shrink-0">
         <div>
-          <div className="text-[15px] font-semibold text-foreground tracking-tight">Fleet Management</div>
+          <div className="text-[15px] font-semibold text-foreground tracking-tight">{t("title")}</div>
           <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-            {totalDrones} drones registered
+            {t("dronesRegistered", { count: totalDrones })}
             {mission && ` · ${mission.id} · ${mission.name} · ${Math.round(mission.coverage)}% coverage`}
           </div>
         </div>
@@ -349,71 +299,73 @@ export default function FleetPage() {
             <div className="flex items-center gap-1.5 bg-fleet-red/10 border border-fleet-red/30 rounded px-2.5 py-1.5">
               <div className="w-[6px] h-[6px] rounded-full bg-fleet-red shadow-[0_0_4px_#ef444488]" />
               <span className="font-mono text-[10px] tracking-wider text-fleet-red uppercase">
-                {criticalAlerts} critical alert{criticalAlerts !== 1 ? "s" : ""}
+                {criticalAlerts !== 1
+                  ? t("criticalAlerts", { count: criticalAlerts })
+                  : t("criticalAlert", { count: criticalAlerts })}
               </span>
             </div>
           )}
           <div className="flex items-center gap-1.5 bg-card border border-input rounded px-2.5 py-1.5">
             <div className="w-[6px] h-[6px] rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88]" />
-            <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Live · 2s</span>
+            <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("liveRefresh")}</span>
           </div>
         </div>
       </div>
 
       {/* ── Summary cards ── */}
-      <div className="grid grid-cols-4 gap-px bg-border border-y border-border shrink-0">
+      <SummaryCardGrid>
         <SummaryCard
-          label="Total Drones"
+          label={t("totalDrones")}
           value={totalDrones}
           meta={
             <>
-              <span className="text-muted-foreground">{drones?.filter((d) => d.status === "offline").length ?? 0} offline</span>
+              <span className="text-muted-foreground">{t("offlineMeta", { count: drones?.filter((d) => d.status === "offline").length ?? 0 })}</span>
             </>
           }
         />
         <SummaryCard
-          label="Active"
+          label={t("active")}
           value={activeDrones}
           valueColor="text-fleet-green"
           meta={
             <>
               <span className="text-fleet-green">●</span>
-              {` ${drones?.filter((d) => d.status === "nominal").length ?? 0} nominal`}
+              {` ${t("nominalMeta", { count: drones?.filter((d) => d.status === "nominal").length ?? 0 })}`}
             </>
           }
         />
         <SummaryCard
-          label="Warnings"
+          label={t("warnings")}
           value={warningDrones}
           valueColor={warningDrones > 0 ? "text-fleet-amber" : "text-foreground"}
           meta={
             warningDrones > 0 ? (
               <>
                 <span className="text-fleet-amber">⚠</span>
-                {` ${drones?.filter((d) => d.status === "critical").length ?? 0} critical`}
+                {` ${t("criticalMeta", { count: drones?.filter((d) => d.status === "critical").length ?? 0 })}`}
               </>
             ) : (
               <>
-                <span className="text-fleet-green">●</span> All clear
+                <span className="text-fleet-green">●</span> {t("allClear")}
               </>
             )
           }
         />
         <SummaryCard
-          label="Avg Battery"
+          label={t("avgBattery")}
           value={avgBattery}
           unit="%"
-          valueColor={avgBattery > 50 ? "text-fleet-green" : avgBattery > 25 ? "text-fleet-amber" : "text-fleet-red"}
+          valueColor={avgBatteryColor.text}
           meta={
             <>
               <span className={avgBattery > 50 ? "text-fleet-green" : "text-fleet-amber"}>
                 {avgBattery > 50 ? "●" : "⚠"}
               </span>
-              {` ${meshLinks?.length ?? 0} mesh links`}
+              {` ${t("meshLinksMeta", { count: meshLinks?.length ?? 0 })}`}
             </>
           }
         />
-      </div>
+      </SummaryCardGrid>
 
       {/* ── Filter bar ── */}
       <FilterBar
@@ -434,25 +386,25 @@ export default function FleetPage() {
             <tr className="border-b border-border">
               <th className="pl-5 pr-2 py-2 w-6" />
               <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Drone ID</span>
+                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colDroneId")}</span>
               </th>
               <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Role</span>
+                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colRole")}</span>
               </th>
               <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Status</span>
+                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colStatus")}</span>
               </th>
               <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Battery</span>
+                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colBattery")}</span>
               </th>
               <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Position</span>
+                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colPosition")}</span>
               </th>
               <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Grid Pos</span>
+                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colGridPos")}</span>
               </th>
               <th className="pr-5 pl-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">Heading</span>
+                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colHeading")}</span>
               </th>
             </tr>
           </thead>
@@ -460,7 +412,7 @@ export default function FleetPage() {
             {sorted.length === 0 && (
               <tr>
                 <td colSpan={8} className="text-center py-16 font-mono text-[12px] text-subtle">
-                  {drones === undefined ? "Loading drones…" : "No drones match the current filters"}
+                  {drones === undefined ? t("loadingDrones") : t("noMatch")}
                 </td>
               </tr>
             )}
@@ -480,6 +432,22 @@ export default function FleetPage() {
           const drone = drones?.find((d) => d.id === selectedDroneId);
           if (!drone) return null;
           const droneAlerts = alerts?.filter((a) => a.droneId === drone.id) ?? [];
+          const droneBattery = getBatteryColor(drone.battery);
+
+          const statusLabel: Record<Drone["status"], string> = {
+            nominal: t("statusNominal"),
+            warning: t("statusWarning"),
+            critical: t("statusCritical"),
+            rtb: t("statusRtb"),
+            offline: t("statusOffline"),
+          };
+
+          const roleLabel: Record<Drone["role"], string> = {
+            coordinator: t("roleCoord"),
+            follower: t("roleFollower"),
+            relay: t("roleRelay"),
+          };
+
           return (
             <div className="mx-5 my-4 bg-card border border-border rounded p-4">
               <div className="flex items-center justify-between mb-3">
@@ -494,16 +462,16 @@ export default function FleetPage() {
                   onClick={() => setSelectedDroneId(null)}
                   className="font-mono text-[10px] text-subtle hover:text-muted-foreground transition-colors"
                 >
-                  CLOSE ×
+                  {t("detailClose")}
                 </button>
               </div>
 
               <div className="grid grid-cols-4 gap-px bg-border border border-border rounded overflow-hidden">
                 {[
-                  { label: "Status", value: statusLabel[drone.status], color: statusTextClass[drone.status] },
-                  { label: "Battery", value: `${Math.round(drone.battery)}%`, color: batteryTextClass(drone.battery) },
-                  { label: "Heading", value: `${Math.round(drone.heading)}° ${headingToCompass(drone.heading)}`, color: "text-foreground" },
-                  { label: "Grid", value: `R${drone.gridPos.row}·C${drone.gridPos.col}`, color: "text-foreground" },
+                  { label: t("detailStatus"), value: statusLabel[drone.status], color: statusTextClass[drone.status] },
+                  { label: t("detailBattery"), value: `${Math.round(drone.battery)}%`, color: droneBattery.text },
+                  { label: t("detailHeading"), value: `${Math.round(drone.heading)}° ${headingToCompass(drone.heading)}`, color: "text-foreground" },
+                  { label: t("detailGrid"), value: `R${drone.gridPos.row}·C${drone.gridPos.col}`, color: "text-foreground" },
                 ].map((item) => (
                   <div key={item.label} className="bg-card px-3 py-2.5">
                     <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-1">{item.label}</div>
@@ -513,7 +481,7 @@ export default function FleetPage() {
               </div>
 
               <div className="mt-3 font-mono text-[11px] text-subtle">
-                <span className="uppercase tracking-wider">Position</span>
+                <span className="uppercase tracking-wider">{t("detailPosition")}</span>
                 <span className="text-muted-foreground ml-2 tabular-nums">
                   {drone.position.lat.toFixed(6)}, {drone.position.lng.toFixed(6)}
                 </span>
@@ -521,7 +489,7 @@ export default function FleetPage() {
 
               {droneAlerts.length > 0 && (
                 <div className="mt-3 space-y-1.5">
-                  <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-2">Active Alerts</div>
+                  <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-2">{t("detailActiveAlerts")}</div>
                   {droneAlerts.map((alert) => (
                     <div
                       key={alert.id}

@@ -1,7 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { trpc } from "@/lib/trpc/client";
+import { SummaryCard, SummaryCardGrid } from "@/components/dashboard/summary-card";
+import { formatCoord } from "@/lib/drone-utils";
 
+// TODO: Replace with tRPC endpoint — mock data for development
 const mockBases = [
   {
     id: "BASE-02",
@@ -27,12 +31,12 @@ const mockBases = [
   },
 ];
 
-function latencyQuality(ms: number): { label: string; color: string } {
-  if (ms === 0) return { label: "N/A", color: "text-subtle" };
-  if (ms <= 10) return { label: "Excellent", color: "text-fleet-green" };
-  if (ms <= 25) return { label: "Good", color: "text-fleet-green" };
-  if (ms <= 50) return { label: "Fair", color: "text-fleet-amber" };
-  return { label: "Poor", color: "text-fleet-red" };
+function latencyQuality(ms: number, t: ReturnType<typeof useTranslations<"basesPage">>): { label: string; color: string } {
+  if (ms === 0) return { label: t("latencyNa"), color: "text-subtle" };
+  if (ms <= 10) return { label: t("latencyExcellent"), color: "text-fleet-green" };
+  if (ms <= 25) return { label: t("latencyGood"), color: "text-fleet-green" };
+  if (ms <= 50) return { label: t("latencyFair"), color: "text-fleet-amber" };
+  return { label: t("latencyPoor"), color: "text-fleet-red" };
 }
 
 function signalBar(pct: number) {
@@ -52,6 +56,8 @@ function signalBar(pct: number) {
 }
 
 export default function BasesPage() {
+  const t = useTranslations("basesPage");
+
   const { data: baseStationsRaw } = trpc.baseStations.useQuery(undefined, { refetchInterval: 5000 });
   const { data: meshLinks } = trpc.meshLinks.useQuery(undefined, { refetchInterval: 5000 });
   const { data: drones } = trpc.drones.list.useQuery(undefined, { refetchInterval: 2000 });
@@ -83,80 +89,59 @@ export default function BasesPage() {
       : 0;
   const connectedDronesTotal = allBases.reduce((sum, b) => sum + b.connectedDrones, 0);
 
-  const summaryCards = [
-    {
-      label: "Total Bases",
-      value: String(totalBases),
-      meta: <><span className="text-fleet-blue">●</span> Registered</>,
-    },
-    {
-      label: "Online",
-      value: String(onlineBases),
-      valueColor: onlineBases === totalBases ? "text-fleet-green" : "text-fleet-amber",
-      meta: (
-        <>
-          <span className={onlineBases === totalBases ? "text-fleet-green" : "text-fleet-amber"}>●</span>{" "}
-          {totalBases - onlineBases} offline
-        </>
-      ),
-    },
-    {
-      label: "Avg Latency",
-      value: avgLatency > 0 ? String(avgLatency) : "--",
-      unit: avgLatency > 0 ? "ms" : undefined,
-      meta: (
-        <>
-          <span className="text-fleet-green">●</span> Uplink quality nominal
-        </>
-      ),
-    },
-    {
-      label: "Connected Drones",
-      value: String(connectedDronesTotal),
-      meta: (
-        <>
-          <span className="text-fleet-blue">●</span> Active assignments
-        </>
-      ),
-    },
-  ];
-
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
       {/* Page header */}
       <div className="px-5 pt-4 pb-3 shrink-0 flex items-center justify-between border-b border-border">
         <div>
-          <div className="text-[15px] font-semibold text-foreground tracking-tight">Base Stations</div>
+          <div className="text-[15px] font-semibold text-foreground tracking-tight">{t("title")}</div>
           <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-            {totalBases} registered · {onlineBases} online · mesh network active
+            {t("subtitle", { total: totalBases, online: onlineBases })}
           </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-fleet-green-dim border border-fleet-green/20">
             <span className="w-1.5 h-1.5 rounded-full bg-fleet-green animate-pulse inline-block" />
-            <span className="font-mono text-[10px] tracking-wider text-fleet-green uppercase">Network Active</span>
+            <span className="font-mono text-[10px] tracking-wider text-fleet-green uppercase">{t("networkActive")}</span>
           </div>
         </div>
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-4 gap-px bg-border border-b border-border shrink-0">
-        {summaryCards.map((card) => (
-          <div key={card.label} className="bg-card px-4 py-3 flex flex-col gap-1">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{card.label}</div>
-            <div className={`font-mono text-[22px] font-semibold leading-none tracking-tight ${card.valueColor ?? "text-foreground"}`}>
-              {card.value}
-              {card.unit && <span className="text-sm text-subtle ml-0.5">{card.unit}</span>}
-            </div>
-            <div className="text-[11px] text-muted-foreground flex items-center gap-1">{card.meta}</div>
-          </div>
-        ))}
-      </div>
+      <SummaryCardGrid>
+        <SummaryCard
+          label={t("totalBases")}
+          value={String(totalBases)}
+          meta={<><span className="text-fleet-blue">●</span> {t("registeredMeta")}</>}
+        />
+        <SummaryCard
+          label={t("online")}
+          value={String(onlineBases)}
+          valueColor={onlineBases === totalBases ? "text-fleet-green" : "text-fleet-amber"}
+          meta={
+            <>
+              <span className={onlineBases === totalBases ? "text-fleet-green" : "text-fleet-amber"}>●</span>{" "}
+              {t("offlineMeta", { count: totalBases - onlineBases })}
+            </>
+          }
+        />
+        <SummaryCard
+          label={t("avgLatency")}
+          value={avgLatency > 0 ? String(avgLatency) : "--"}
+          unit={avgLatency > 0 ? "ms" : undefined}
+          meta={<><span className="text-fleet-green">●</span> {t("uplinkNominalMeta")}</>}
+        />
+        <SummaryCard
+          label={t("connectedDrones")}
+          value={String(connectedDronesTotal)}
+          meta={<><span className="text-fleet-blue">●</span> {t("activeAssignmentsMeta")}</>}
+        />
+      </SummaryCardGrid>
 
       {/* Base station cards grid */}
       <div className="flex-1 p-5 grid grid-cols-3 gap-3 content-start">
         {allBases.map((base) => {
-          const latency = latencyQuality(base.uplinkLatency);
+          const latency = latencyQuality(base.uplinkLatency, t);
           const isOnline = base.status === "online";
 
           return (
@@ -181,15 +166,15 @@ export default function BasesPage() {
                       : "bg-secondary text-subtle border border-border"
                   }`}
                 >
-                  {base.status}
+                  {isOnline ? t("statusOnline") : t("statusOffline")}
                 </div>
               </div>
 
               {/* Position */}
               <div className="flex flex-col gap-1">
-                <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">Position</div>
+                <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("position")}</div>
                 <div className="font-mono text-xs text-foreground">
-                  {base.position.lat.toFixed(4)}°N · {Math.abs(base.position.lng).toFixed(4)}°W
+                  {formatCoord(base.position.lat)}°N · {formatCoord(Math.abs(base.position.lng))}°W
                 </div>
               </div>
 
@@ -197,7 +182,7 @@ export default function BasesPage() {
               <div className="grid grid-cols-2 gap-3">
                 {/* Uplink latency */}
                 <div className="bg-background rounded-[5px] p-2.5 flex flex-col gap-1.5">
-                  <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">Uplink Latency</div>
+                  <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("uplinkLatency")}</div>
                   <div className="font-mono text-sm font-semibold text-foreground">
                     {isOnline ? `${base.uplinkLatency}ms` : "--"}
                   </div>
@@ -206,30 +191,28 @@ export default function BasesPage() {
 
                 {/* Connected drones */}
                 <div className="bg-background rounded-[5px] p-2.5 flex flex-col gap-1.5">
-                  <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">Drones</div>
+                  <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("drones")}</div>
                   <div className="font-mono text-sm font-semibold text-foreground">{base.connectedDrones}</div>
-                  <div className="font-mono text-[10px] text-muted-foreground">
-                    {base.connectedDrones === 1 ? "assigned" : "assigned"}
-                  </div>
+                  <div className="font-mono text-[10px] text-muted-foreground">{t("assigned")}</div>
                 </div>
               </div>
 
               {/* Hardware info */}
               <div className="border-t border-border pt-3 flex flex-col gap-2">
-                <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-1">Hardware</div>
+                <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-1">{t("hardware")}</div>
 
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-subtle">Firmware</span>
+                  <span className="font-mono text-[10px] text-subtle">{t("firmware")}</span>
                   <span className="font-mono text-[10px] text-foreground">{base.firmware}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-subtle">Antenna</span>
+                  <span className="font-mono text-[10px] text-subtle">{t("antenna")}</span>
                   <span className="font-mono text-[10px] text-foreground">{base.antenna}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-subtle">Signal</span>
+                  <span className="font-mono text-[10px] text-subtle">{t("signal")}</span>
                   <div className="flex items-center gap-2">
                     {signalBar(base.signal)}
                     <span className={`font-mono text-[10px] ${isOnline ? "text-foreground" : "text-subtle"}`}>
@@ -239,7 +222,7 @@ export default function BasesPage() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-subtle">Last Maintenance</span>
+                  <span className="font-mono text-[10px] text-subtle">{t("lastMaintenance")}</span>
                   <span className="font-mono text-[10px] text-foreground">{base.lastMaintenance}</span>
                 </div>
               </div>
@@ -252,50 +235,50 @@ export default function BasesPage() {
       <div className="mx-5 mb-5 bg-card border border-border rounded-[5px] p-4 shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-1">Network Topology</div>
-            <div className="text-[13px] font-semibold text-foreground">Mesh Connectivity</div>
+            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-1">{t("networkTopology")}</div>
+            <div className="text-[13px] font-semibold text-foreground">{t("meshConnectivity")}</div>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[5px] bg-fleet-blue-dim border border-fleet-blue/20">
             <span className="w-1.5 h-1.5 rounded-full bg-fleet-blue inline-block" />
             <span className="font-mono text-[10px] tracking-wider text-fleet-blue uppercase">
-              {(meshLinks?.length ?? 0) > 0 ? "Mesh Active" : "No Links"}
+              {(meshLinks?.length ?? 0) > 0 ? t("meshActive") : t("noLinks")}
             </span>
           </div>
         </div>
 
         <div className="grid grid-cols-4 gap-3">
           <div className="bg-background rounded-[5px] p-3 flex flex-col gap-1">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">Mesh Links</div>
+            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("meshLinks")}</div>
             <div className="font-mono text-lg font-semibold text-foreground">{meshLinks?.length ?? 0}</div>
             <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <span className="text-fleet-green">●</span> Active connections
+              <span className="text-fleet-green">●</span> {t("activeConnectionsMeta")}
             </div>
           </div>
 
           <div className="bg-background rounded-[5px] p-3 flex flex-col gap-1">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">Nodes Online</div>
+            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("nodesOnline")}</div>
             <div className="font-mono text-lg font-semibold text-fleet-green">{onlineBases}</div>
             <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <span className="text-fleet-green">●</span> of {totalBases} total
+              <span className="text-fleet-green">●</span> {t("ofTotalMeta", { total: totalBases })}
             </div>
           </div>
 
           <div className="bg-background rounded-[5px] p-3 flex flex-col gap-1">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">Topology</div>
-            <div className="font-mono text-lg font-semibold text-foreground">Star</div>
+            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("topology")}</div>
+            <div className="font-mono text-lg font-semibold text-foreground">{t("topologyValue")}</div>
             <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <span className="text-fleet-blue">●</span> Hub-spoke config
+              <span className="text-fleet-blue">●</span> {t("hubSpokeConfigMeta")}
             </div>
           </div>
 
           <div className="bg-background rounded-[5px] p-3 flex flex-col gap-1">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">Redundancy</div>
+            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("redundancy")}</div>
             <div className={`font-mono text-lg font-semibold ${onlineBases >= 2 ? "text-fleet-green" : "text-fleet-red"}`}>
-              {onlineBases >= 2 ? "Active" : "None"}
+              {onlineBases >= 2 ? t("redundancyActive") : t("redundancyNone")}
             </div>
             <div className="text-[11px] text-muted-foreground flex items-center gap-1">
               <span className={onlineBases >= 2 ? "text-fleet-green" : "text-fleet-red"}>●</span>
-              {onlineBases >= 2 ? "Failover ready" : "Single point"}
+              {onlineBases >= 2 ? t("failoverReadyMeta") : t("singlePointMeta")}
             </div>
           </div>
         </div>
@@ -303,7 +286,7 @@ export default function BasesPage() {
         {/* Link list */}
         {(meshLinks?.length ?? 0) > 0 && (
           <div className="mt-3 border-t border-border pt-3">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-2">Active Links</div>
+            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-2">{t("activeLinks")}</div>
             <div className="flex flex-wrap gap-2">
               {meshLinks?.map((link, i) => (
                 <div
