@@ -13,6 +13,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { GotoDialog } from "@/components/modals/goto-dialog";
+import { OrbitDialog } from "@/components/modals/orbit-dialog";
 
 export function CommandGrid() {
   const t = useTranslations("commands");
@@ -44,18 +46,12 @@ export function CommandGrid() {
         >
           ↩ {t("rtbAll")}
         </button>
-        <button
-          onClick={() => send("goto")}
-          className="px-2.5 py-2 bg-background border border-input rounded-[5px] font-mono text-[10px] text-muted-foreground text-left tracking-wide hover:border-muted hover:text-foreground hover:bg-border transition-colors flex items-center gap-1.5"
-        >
-          ⊕ {t("goTo")}
-        </button>
-        <button
-          onClick={() => send("orbit")}
-          className="px-2.5 py-2 bg-background border border-input rounded-[5px] font-mono text-[10px] text-muted-foreground text-left tracking-wide hover:border-muted hover:text-foreground hover:bg-border transition-colors flex items-center gap-1.5"
-        >
-          ⊙ {t("orbit")}
-        </button>
+
+        {/* Go-To with coordinate dialog */}
+        <GotoDialog onConfirm={() => send("goto")} />
+
+        {/* Orbit with parameter dialog */}
+        <OrbitDialog onConfirm={() => send("orbit")} />
 
         {/* Abort with confirmation */}
         <AlertDialog>

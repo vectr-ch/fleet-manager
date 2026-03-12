@@ -187,14 +187,14 @@ export function Sidebar() {
 
       {/* Bottom */}
       <div className="mt-auto pt-2 px-2 border-t border-border">
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-[5px] text-muted-foreground text-[12.5px] cursor-pointer hover:bg-border hover:text-foreground">
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-[5px] text-muted-foreground text-[12.5px]">
           <span className="w-3.5 h-3.5 shrink-0 opacity-60 [&>svg]:w-full [&>svg]:h-full">
             <svg viewBox="0 0 14 14" fill="none">
               <path d="M7 1a6 6 0 100 12A6 6 0 007 1zm0 0v6m0 0l3-3M7 7l-3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
           {t("firmware")}
-          <span className="ml-auto font-mono text-[10px] px-1.5 py-px rounded-sm bg-secondary text-subtle">
+          <span className="ml-auto font-mono text-[10px] px-1.5 py-px rounded-sm bg-fleet-green-dim text-fleet-green border border-fleet-green/15">
             v2.4
           </span>
         </div>

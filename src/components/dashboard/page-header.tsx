@@ -1,8 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
+import { NewMissionDialog } from "@/components/modals/new-mission-dialog";
+import { PreflightCheckDialog } from "@/components/modals/preflight-check-dialog";
 
 export function PageHeader() {
   const t = useTranslations("dashboard");
@@ -21,18 +22,8 @@ export function PageHeader() {
         )}
       </div>
       <div className="flex gap-2">
-        <Button variant="outline" size="sm" className="bg-card border-input text-muted-foreground hover:border-muted hover:text-foreground font-sans text-xs">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" className="mr-1">
-            <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-          </svg>
-          {t("newMission")}
-        </Button>
-        <Button size="sm" className="bg-foreground text-background border-foreground font-semibold hover:bg-foreground/80 font-sans text-xs">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" className="mr-1">
-            <path d="M3 5.5l2.5 2.5 3.5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {t("preFlightCheck")}
-        </Button>
+        <NewMissionDialog />
+        <PreflightCheckDialog />
       </div>
     </div>
   );
