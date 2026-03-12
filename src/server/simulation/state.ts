@@ -1,4 +1,4 @@
-import type { Drone, Mission, Alert, Command, BaseStation, MeshLink } from "@/lib/types";
+import type { Drone, Mission, Alert, Command, BaseStation, MeshLink, PastMission, MissionParameters, SystemMetrics, EnvironmentData, MeshNetworkHealth } from "@/lib/types";
 import {
   createSeedDrones,
   createSeedMission,
@@ -6,6 +6,11 @@ import {
   createSeedCommands,
   createSeedBaseStations,
   createSeedMeshLinks,
+  createSeedPastMissions,
+  createSeedMissionParameters,
+  createSeedSystemMetrics,
+  createSeedEnvironment,
+  createSeedMeshNetworkHealth,
 } from "./seed";
 
 export interface WorldState {
@@ -15,6 +20,11 @@ export interface WorldState {
   commands: Command[];
   baseStations: BaseStation[];
   meshLinks: MeshLink[];
+  pastMissions: PastMission[];
+  missionParameters: MissionParameters;
+  systemMetrics: SystemMetrics;
+  environment: EnvironmentData;
+  meshNetworkHealth: MeshNetworkHealth;
   tickCount: number;
 }
 
@@ -26,6 +36,11 @@ function createInitialState(): WorldState {
     commands: createSeedCommands(),
     baseStations: createSeedBaseStations(),
     meshLinks: createSeedMeshLinks(),
+    pastMissions: createSeedPastMissions(),
+    missionParameters: createSeedMissionParameters(),
+    systemMetrics: createSeedSystemMetrics(),
+    environment: createSeedEnvironment(),
+    meshNetworkHealth: createSeedMeshNetworkHealth(),
     tickCount: 0,
   };
 }

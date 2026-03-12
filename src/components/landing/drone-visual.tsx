@@ -1,6 +1,19 @@
 "use client";
 
-const PARTICLES = [
+type ParticlePosition = {
+  top?: string;
+  left?: string;
+  bottom?: string;
+  right?: string;
+};
+
+type Particle = ParticlePosition & {
+  color: string;
+  delay: string;
+  size: number;
+};
+
+const PARTICLES: Particle[] = [
   { top: "10%", left: "15%", color: "var(--lp-neon-green)", delay: "0s", size: 6 },
   { top: "20%", right: "10%", color: "var(--lp-neon-cyan)", delay: "0.5s", size: 4 },
   { bottom: "15%", left: "20%", color: "var(--lp-neon-purple)", delay: "1s", size: 5 },
@@ -12,20 +25,14 @@ const PARTICLES = [
 export function DroneVisual() {
   return (
     <div
-      style={{
-        position: "relative",
-        width: "100%",
-        maxWidth: 500,
-        aspectRatio: "1",
-        margin: "0 auto",
-      }}
+      className="relative w-full mx-auto"
+      style={{ maxWidth: 500, aspectRatio: "1" }}
     >
       {/* Ring 1 — green, slow */}
       <div
+        className="absolute rounded-full"
         style={{
-          position: "absolute",
           inset: "5%",
-          borderRadius: "50%",
           border: "1px solid rgba(0, 255, 136, 0.3)",
           boxShadow: "0 0 20px rgba(0, 255, 136, 0.1)",
           animation: "lp-rotate-ring 20s linear infinite",
@@ -33,10 +40,9 @@ export function DroneVisual() {
       />
       {/* Ring 2 — purple, medium reverse */}
       <div
+        className="absolute rounded-full"
         style={{
-          position: "absolute",
           inset: "15%",
-          borderRadius: "50%",
           border: "1px solid rgba(189, 0, 255, 0.4)",
           boxShadow: "0 0 20px rgba(189, 0, 255, 0.15)",
           animation: "lp-rotate-ring 15s linear infinite reverse",
@@ -44,10 +50,9 @@ export function DroneVisual() {
       />
       {/* Ring 3 — cyan, fast */}
       <div
+        className="absolute rounded-full"
         style={{
-          position: "absolute",
           inset: "25%",
-          borderRadius: "50%",
           border: "1px solid rgba(0, 240, 255, 0.5)",
           boxShadow: "0 0 20px rgba(0, 240, 255, 0.2)",
           animation: "lp-rotate-ring 10s linear infinite",
@@ -56,16 +61,13 @@ export function DroneVisual() {
 
       {/* Drone body — floats */}
       <div
+        className="absolute flex items-center justify-center"
         style={{
-          position: "absolute",
           inset: "30%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
           animation: "lp-float 4s ease-in-out infinite",
         }}
       >
-        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>
+        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
           {/* Hex body */}
           <polygon
             points="100,30 160,65 160,135 100,170 40,135 40,65"
@@ -122,32 +124,29 @@ export function DroneVisual() {
       {PARTICLES.map((p, i) => (
         <div
           key={i}
+          className="absolute rounded-full"
           style={{
-            position: "absolute",
             width: p.size,
             height: p.size,
-            borderRadius: "50%",
             background: p.color,
             boxShadow: `0 0 6px ${p.color}`,
             animation: `lp-particle-float 3s ease-in-out infinite`,
             animationDelay: p.delay,
-            ...(p.top !== undefined ? { top: p.top } : {}),
-            ...(("bottom" in p) ? { bottom: (p as any).bottom } : {}),
-            ...(p.left !== undefined ? { left: p.left } : {}),
-            ...(("right" in p) ? { right: (p as any).right } : {}),
+            top: p.top,
+            left: p.left,
+            bottom: p.bottom,
+            right: p.right,
           }}
         />
       ))}
 
       {/* Ambient glow behind drone */}
       <div
+        className="absolute rounded-full pointer-events-none"
         style={{
-          position: "absolute",
           inset: "20%",
-          borderRadius: "50%",
           background:
             "radial-gradient(circle, rgba(0,255,136,0.08) 0%, rgba(0,240,255,0.04) 50%, transparent 70%)",
-          pointerEvents: "none",
         }}
       />
     </div>

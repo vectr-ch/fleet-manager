@@ -12,25 +12,8 @@ import {
   SummaryCard,
   SummaryCardGrid,
 } from "@/components/dashboard/summary-card";
-
-// ── Mock static data ──────────────────────────────────────────────────────────
-// TODO: Replace with tRPC endpoint
-const systemMetrics = {
-  cpu: 23,
-  memory: 41,
-  bandwidth: "2.4 Mbps",
-  packets: "1.2M",
-  errors: 0,
-};
-
-// TODO: Replace with tRPC endpoint
-const environment = {
-  temp: "18°C",
-  humidity: "45%",
-  wind: "12 km/h NW",
-  visibility: "8.2 km",
-  pressure: "1013 hPa",
-};
+import { cn } from "@/lib/utils";
+import { REFETCH_INTERVAL } from "@/lib/constants";
 
 // ── Local UI components ───────────────────────────────────────────────────────
 
@@ -75,9 +58,12 @@ function SectionCard({ title, children }: { title: string; children: React.React
 export default function TelemetryPage() {
   const t = useTranslations("telemetryPage");
 
-  const { data: drones = [] } = trpc.drones.list.useQuery(undefined, { refetchInterval: 1000 });
-  const { data: meshLinks = [] } = trpc.meshLinks.useQuery(undefined, { refetchInterval: 5000 });
-  const { data: baseStations = [] } = trpc.baseStations.useQuery(undefined, { refetchInterval: 5000 });
+  const { data: drones = [] } = trpc.drones.list.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.REALTIME });
+  const { data: meshLinks = [] } = trpc.meshLinks.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
+  const { data: baseStations = [] } = trpc.baseStations.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
+  const { data: systemMetrics } = trpc.telemetry.systemMetrics.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.MEDIUM });
+  const { data: environment } = trpc.telemetry.environment.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
+  const { data: meshNetworkHealth } = trpc.meshNetworkHealth.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
 
   const activeCount = drones.filter((d) => d.status === "nominal" || d.status === "warning").length;
   const criticalCount = drones.filter((d) => d.status === "critical").length;
@@ -176,8 +162,7 @@ export default function TelemetryPage() {
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className={`inline-block w-1.5 h-1.5 rounded-full ${statusDotClass[drone.status]}`}
-                          style={{ animation: drone.status === "nominal" ? "pulse 2s infinite" : undefined }}
+                          className={cn("inline-block w-1.5 h-1.5 rounded-full", statusDotClass[drone.status], drone.status === "nominal" && "animate-status-pulse")}
                         />
                         <span className={`font-mono text-[10px] tracking-wider uppercase font-semibold ${statusTextClass[drone.status]}`}>
                           {drone.status}
@@ -217,8 +202,7 @@ export default function TelemetryPage() {
           {/* Data stream indicator */}
           <div className="shrink-0 flex items-center gap-2 px-4 py-2.5 border-t border-border bg-card">
             <span
-              className="inline-block w-2 h-2 rounded-full bg-fleet-green"
-              style={{ animation: "pulse 1s infinite" }}
+              className="inline-block w-2 h-2 rounded-full bg-fleet-green animate-status-pulse-fast"
             />
             <span className="font-mono text-[10px] tracking-widest text-fleet-green uppercase">
               {t("telemetryStreamActive")}
@@ -234,11 +218,11 @@ export default function TelemetryPage() {
           {/* System Metrics */}
           <div className="bg-background flex-1">
             <SectionCard title={t("systemMetrics")}>
-              <MetricRow label={t("cpuUsage")} value={`${systemMetrics.cpu}%`} valueClass={systemMetrics.cpu > 80 ? "text-fleet-red" : systemMetrics.cpu > 60 ? "text-fleet-amber" : "text-fleet-green"} />
-              <MetricRow label={t("memory")} value={`${systemMetrics.memory}%`} valueClass={systemMetrics.memory > 80 ? "text-fleet-red" : systemMetrics.memory > 60 ? "text-fleet-amber" : "text-foreground"} />
-              <MetricRow label={t("bandwidth")} value={systemMetrics.bandwidth} />
-              <MetricRow label={t("packetsRx")} value={systemMetrics.packets} />
-              <MetricRow label={t("errors")} value={systemMetrics.errors} valueClass={systemMetrics.errors > 0 ? "text-fleet-red" : "text-fleet-green"} />
+              <MetricRow label={t("cpuUsage")} value={systemMetrics ? `${systemMetrics.cpu}%` : "--"} valueClass={systemMetrics && systemMetrics.cpu > 80 ? "text-fleet-red" : systemMetrics && systemMetrics.cpu > 60 ? "text-fleet-amber" : "text-fleet-green"} />
+              <MetricRow label={t("memory")} value={systemMetrics ? `${systemMetrics.memory}%` : "--"} valueClass={systemMetrics && systemMetrics.memory > 80 ? "text-fleet-red" : systemMetrics && systemMetrics.memory > 60 ? "text-fleet-amber" : "text-foreground"} />
+              <MetricRow label={t("bandwidth")} value={systemMetrics?.bandwidth ?? "--"} />
+              <MetricRow label={t("packetsRx")} value={systemMetrics?.packets ?? "--"} />
+              <MetricRow label={t("errors")} value={systemMetrics?.errors ?? "--"} valueClass={(systemMetrics?.errors ?? 0) > 0 ? "text-fleet-red" : "text-fleet-green"} />
             </SectionCard>
           </div>
 
@@ -246,8 +230,8 @@ export default function TelemetryPage() {
           <div className="bg-background flex-1">
             <SectionCard title={t("meshNetworkHealth")}>
               <MetricRow label={t("linkCount")} value={meshLinks.length} valueClass="text-fleet-blue" />
-              <MetricRow label={t("avgLatency")} value="12 ms" valueClass="text-foreground" />
-              <MetricRow label={t("packetLoss")} value="0.02%" valueClass="text-fleet-green" />
+              <MetricRow label={t("avgLatency")} value={meshNetworkHealth?.avgLatency ?? "--"} valueClass="text-foreground" />
+              <MetricRow label={t("packetLoss")} value={meshNetworkHealth?.packetLoss ?? "--"} valueClass="text-fleet-green" />
               <MetricRow label={t("baseStations")} value={baseStations.length} />
               <MetricRow
                 label={t("uplinkStatus")}
@@ -260,11 +244,11 @@ export default function TelemetryPage() {
           {/* Environment */}
           <div className="bg-background flex-1">
             <SectionCard title={t("environment")}>
-              <MetricRow label={t("temperature")} value={environment.temp} />
-              <MetricRow label={t("humidity")} value={environment.humidity} />
-              <MetricRow label={t("wind")} value={environment.wind} />
-              <MetricRow label={t("visibility")} value={environment.visibility} />
-              <MetricRow label={t("pressure")} value={environment.pressure} />
+              <MetricRow label={t("temperature")} value={environment?.temp ?? "--"} />
+              <MetricRow label={t("humidity")} value={environment?.humidity ?? "--"} />
+              <MetricRow label={t("wind")} value={environment?.wind ?? "--"} />
+              <MetricRow label={t("visibility")} value={environment?.visibility ?? "--"} />
+              <MetricRow label={t("pressure")} value={environment?.pressure ?? "--"} />
             </SectionCard>
           </div>
         </div>

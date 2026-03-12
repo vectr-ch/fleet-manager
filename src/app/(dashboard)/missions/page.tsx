@@ -4,27 +4,7 @@ import { useTranslations } from "next-intl";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { SummaryCard, SummaryCardGrid } from "@/components/dashboard/summary-card";
-
-// TODO: Replace with tRPC endpoint
-const pastMissions = [
-  { id: "MISSION-240", name: "Perimeter Scan", status: "complete", coverage: 100, duration: "42m", date: "2026-03-10" },
-  { id: "MISSION-239", name: "Grid Survey North", status: "complete", coverage: 98, duration: "1h 12m", date: "2026-03-09" },
-  { id: "MISSION-238", name: "Emergency Search", status: "aborted", coverage: 34, duration: "18m", date: "2026-03-08" },
-  { id: "MISSION-237", name: "Boundary Mapping", status: "complete", coverage: 100, duration: "55m", date: "2026-03-07" },
-  { id: "MISSION-236", name: "Thermal Survey", status: "complete", coverage: 95, duration: "1h 03m", date: "2026-03-06" },
-];
-
-// TODO: Replace with tRPC endpoint
-const missionParams = {
-  formation: "Grid",
-  spacing: "12m",
-  scanPattern: "Boustrophedon",
-  altitude: "45m AGL",
-  overlapH: "80%",
-  overlapV: "60%",
-  gimbalAngle: "-90°",
-  speed: "8 m/s",
-};
+import { REFETCH_INTERVAL } from "@/lib/constants";
 
 const missionStatusStyles: Record<string, string> = {
   active:    "bg-fleet-green-dim text-fleet-green",
@@ -46,8 +26,10 @@ const missionCommandTypes = new Set([
 
 export default function MissionsPage() {
   const t = useTranslations("missionsPage");
-  const { data: mission } = trpc.missions.active.useQuery(undefined, { refetchInterval: 2000 });
-  const { data: commands } = trpc.commands.log.useQuery(undefined, { refetchInterval: 3000 });
+  const { data: mission } = trpc.missions.active.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.FAST });
+  const { data: commands } = trpc.commands.log.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.MEDIUM });
+  const { data: pastMissions = [] } = trpc.missions.history.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
+  const { data: missionParams } = trpc.missions.parameters.useQuery();
 
   const missionCommands = commands?.filter((c) => missionCommandTypes.has(c.type)) ?? [];
 
@@ -92,7 +74,7 @@ export default function MissionsPage() {
 
           {mission && (
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-fleet-green" style={{ animation: "pulse 2s infinite" }} />
+              <div className="w-1.5 h-1.5 rounded-full bg-fleet-green animate-status-pulse" />
               <span className="font-mono text-[10px] text-fleet-green uppercase tracking-wider">{t("live")}</span>
             </div>
           )}
@@ -212,7 +194,7 @@ export default function MissionsPage() {
           </div>
 
           <div className="flex flex-col gap-0 overflow-y-auto flex-1">
-            {Object.entries(missionParams).map(([key, value], i, arr) => (
+            {Object.entries(missionParams ?? {}).map(([key, value], i, arr) => (
               <div
                 key={key}
                 className={cn(

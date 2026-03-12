@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 const STATS = [
-  { end: 47, suffix: "", label: "Countries Deployed", color: "var(--lp-neon-green)" },
-  { end: 2.4, suffix: "M", label: "Flight Hours Logged", color: "var(--lp-neon-cyan)", decimals: 1 },
-  { end: 850, suffix: "+", label: "Enterprise Clients", color: "var(--lp-neon-purple)" },
+  { end: 47, suffix: "", label: "Countries Deployed", color: "var(--lp-neon-green)", textClass: "text-lp-neon-green" },
+  { end: 2.4, suffix: "M", label: "Flight Hours Logged", color: "var(--lp-neon-cyan)", textClass: "text-lp-neon-cyan", decimals: 1 },
+  { end: 850, suffix: "+", label: "Enterprise Clients", color: "var(--lp-neon-purple)", textClass: "text-lp-neon-purple" },
 ];
 
 function useCounter(end: number, duration = 2000, started: boolean, decimals = 0) {
@@ -29,6 +29,7 @@ function AnimatedStat({
   suffix,
   label,
   color,
+  textClass,
   started,
   decimals = 0,
 }: {
@@ -36,35 +37,24 @@ function AnimatedStat({
   suffix: string;
   label: string;
   color: string;
+  textClass: string;
   started: boolean;
   decimals?: number;
 }) {
   const value = useCounter(end, 2000, started, decimals);
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="text-center">
       <div
+        className={`font-display leading-none mb-3 font-black ${textClass}`}
         style={{
-          fontFamily: "var(--lp-font-display)",
           fontSize: "clamp(40px, 6vw, 72px)",
-          fontWeight: 900,
-          color,
-          lineHeight: 1,
-          marginBottom: 12,
           textShadow: `0 0 30px ${color}`,
         }}
       >
         {decimals ? value.toFixed(decimals) : Math.round(value)}
         {suffix}
       </div>
-      <div
-        style={{
-          fontFamily: "var(--lp-font-display)",
-          fontSize: 11,
-          letterSpacing: "0.2em",
-          color: "var(--lp-text-secondary)",
-          textTransform: "uppercase",
-        }}
-      >
+      <div className="font-display text-xs tracking-[0.2em] text-lp-text-secondary uppercase">
         {label}
       </div>
     </div>
@@ -100,24 +90,12 @@ export function NetworkSection() {
     <section
       id="network"
       ref={sectionRef}
-      style={{
-        padding: "120px 40px",
-        position: "relative",
-        overflow: "hidden",
-        background: "var(--lp-bg-primary)",
-      }}
+      className="bg-lp-bg-primary px-10 py-32 relative overflow-hidden"
     >
       {/* Animated background lines */}
       <svg
         aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          opacity: 0.12,
-          pointerEvents: "none",
-        }}
+        className="absolute inset-0 w-full h-full opacity-10 pointer-events-none"
         preserveAspectRatio="xMidYMid slice"
         viewBox="0 0 1400 600"
       >
@@ -136,97 +114,52 @@ export function NetworkSection() {
       {NODES.map((node, i) => (
         <div
           key={i}
+          className="absolute w-2 h-2 rounded-full pointer-events-none"
           style={{
-            position: "absolute",
             top: node.top,
             left: node.left,
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
             background: node.color,
             animation: "lp-node-pulse 3s ease infinite",
             animationDelay: node.delay,
-            pointerEvents: "none",
           }}
         />
       ))}
 
       {/* Content */}
-      <div
-        style={{
-          maxWidth: 1000,
-          margin: "0 auto",
-          position: "relative",
-          zIndex: 1,
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "var(--lp-font-display)",
-            fontSize: 11,
-            letterSpacing: "0.3em",
-            color: "var(--lp-neon-green)",
-            marginBottom: 16,
-          }}
-        >
+      <div className="max-w-5xl mx-auto relative z-10 text-center">
+        <div className="font-display text-xs tracking-[0.3em] text-lp-neon-green mb-4">
           // GLOBAL NETWORK
         </div>
         <h2
-          style={{
-            fontFamily: "var(--lp-font-display)",
-            fontSize: "clamp(28px, 4vw, 52px)",
-            fontWeight: 900,
-            textTransform: "uppercase",
-            marginBottom: 20,
-          }}
+          className="font-display font-black uppercase mb-5"
+          style={{ fontSize: "clamp(28px, 4vw, 52px)" }}
         >
           Deployed{" "}
           <span className="lp-gradient-text">Worldwide</span>
         </h2>
-        <p
-          style={{
-            color: "var(--lp-text-secondary)",
-            fontSize: 16,
-            lineHeight: 1.7,
-            maxWidth: 600,
-            margin: "0 auto 80px",
-          }}
-        >
+        <p className="text-lp-text-secondary text-base leading-relaxed max-w-[600px] mx-auto mb-20">
           From arctic surveillance to urban security — VECTR operates across every
           terrain, climate, and jurisdiction on the planet.
         </p>
 
         {/* Stats */}
         <div
-          className="network-stats"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 40,
-            position: "relative",
-          }}
+          className="network-stats grid grid-cols-3 gap-10 relative"
         >
           {/* Dividers */}
           <div
             aria-hidden
+            className="absolute top-0 bottom-0 w-px"
             style={{
-              position: "absolute",
-              top: 0,
-              bottom: 0,
               left: "33.33%",
-              width: 1,
               background: "linear-gradient(to bottom, transparent, rgba(0,255,136,0.2), transparent)",
             }}
           />
           <div
             aria-hidden
+            className="absolute top-0 bottom-0 w-px"
             style={{
-              position: "absolute",
-              top: 0,
-              bottom: 0,
               left: "66.66%",
-              width: 1,
               background: "linear-gradient(to bottom, transparent, rgba(0,255,136,0.2), transparent)",
             }}
           />

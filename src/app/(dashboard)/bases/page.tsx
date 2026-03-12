@@ -4,32 +4,7 @@ import { useTranslations } from "next-intl";
 import { trpc } from "@/lib/trpc/client";
 import { SummaryCard, SummaryCardGrid } from "@/components/dashboard/summary-card";
 import { formatCoord } from "@/lib/drone-utils";
-
-// TODO: Replace with tRPC endpoint — mock data for development
-const mockBases = [
-  {
-    id: "BASE-02",
-    position: { lat: 32.255, lng: -110.910 },
-    status: "online" as const,
-    uplinkLatency: 8,
-    firmware: "v2.4.1",
-    antenna: "Omni-directional",
-    signal: 94,
-    lastMaintenance: "2026-03-01",
-    connectedDrones: 3,
-  },
-  {
-    id: "BASE-03",
-    position: { lat: 32.270, lng: -110.945 },
-    status: "offline" as const,
-    uplinkLatency: 0,
-    firmware: "v2.3.8",
-    antenna: "Directional",
-    signal: 0,
-    lastMaintenance: "2026-02-15",
-    connectedDrones: 0,
-  },
-];
+import { REFETCH_INTERVAL } from "@/lib/constants";
 
 function latencyQuality(ms: number, t: ReturnType<typeof useTranslations<"basesPage">>): { label: string; color: string } {
   if (ms === 0) return { label: t("latencyNa"), color: "text-subtle" };
@@ -58,24 +33,8 @@ function signalBar(pct: number) {
 export default function BasesPage() {
   const t = useTranslations("basesPage");
 
-  const { data: baseStationsRaw } = trpc.baseStations.useQuery(undefined, { refetchInterval: 5000 });
-  const { data: meshLinks } = trpc.meshLinks.useQuery(undefined, { refetchInterval: 5000 });
-  const { data: drones } = trpc.drones.list.useQuery(undefined, { refetchInterval: 2000 });
-
-  // Merge API base(s) with mock extras
-  const apiBases = (baseStationsRaw ?? []).map((b) => ({
-    id: b.id,
-    position: b.position,
-    status: b.status,
-    uplinkLatency: b.uplinkLatency,
-    firmware: "v2.4.2",
-    antenna: "Omni-directional",
-    signal: b.status === "online" ? 88 : 0,
-    lastMaintenance: "2026-03-08",
-    connectedDrones: drones?.filter((d) => d.status !== "offline").length ?? 0,
-  }));
-
-  const allBases = [...apiBases, ...mockBases];
+  const { data: allBases = [] } = trpc.baseStations.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
+  const { data: meshLinks } = trpc.meshLinks.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
 
   const totalBases = allBases.length;
   const onlineBases = allBases.filter((b) => b.status === "online").length;

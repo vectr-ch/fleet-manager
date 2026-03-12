@@ -60,6 +60,24 @@
 
   --font-mono: 'Geist Mono', monospace;
   --font-sans: 'DM Sans', sans-serif;
+
+  /* Landing page colors */
+  --color-lp-bg-primary: #0a0a0f;
+  --color-lp-bg-secondary: #12121a;
+  --color-lp-bg-tertiary: #1a1a25;
+  --color-lp-neon-green: #00ff88;
+  --color-lp-neon-cyan: #00f0ff;
+  --color-lp-neon-purple: #bd00ff;
+  --color-lp-neon-pink: #ff2d6a;
+  --color-lp-neon-blue: #4d7cff;
+  --color-lp-neon-yellow: #ffe600;
+  --color-lp-text-primary: #ffffff;
+  --color-lp-text-secondary: #a0a0b0;
+  --color-lp-text-muted: #606070;
+
+  /* Landing page fonts */
+  --font-display: 'Orbitron', sans-serif;
+  --font-body: 'Rajdhani', sans-serif;
 }
 
 :root {
@@ -187,6 +205,18 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+.animate-status-pulse {
+  animation: pulse 2s infinite;
+}
+.animate-status-pulse-fast {
+  animation: pulse 1s infinite;
+}
+.lp-animate-fade-in-up {
+  animation: lp-fade-in-up 0.8s ease forwards;
+}
+.lp-animate-blink {
+  animation: lp-blink 1s step-end infinite;
 }
 
 /* Progress bar shimmer */
@@ -319,4 +349,31 @@
 
 .lp-card-clip {
   clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+}
+
+/* Landing page reusable utilities */
+.lp-section {
+  padding: 120px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-neon-green-glow {
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.15);
+}
+
+.lp-neon-cyan-glow {
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+}
+
+.lp-neon-green-border {
+  border: 1px solid rgba(0, 255, 136, 0.1);
+}
+
+.lp-neon-green-border-bright {
+  border: 1px solid rgba(0, 255, 136, 0.2);
+}
+
+.lp-neon-cyan-border {
+  border: 1px solid rgba(0, 240, 255, 0.15);
 }

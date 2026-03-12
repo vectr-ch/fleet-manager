@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 const FEATURES = [
   {
@@ -11,7 +12,7 @@ const FEATURES = [
     color: "var(--lp-neon-green)",
     glow: "rgba(0, 255, 136, 0.15)",
     icon: (
-      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 40, height: 40 }}>
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10">
         <circle cx="24" cy="24" r="18" stroke="#00ff88" strokeWidth="1.5" opacity="0.3" />
         <circle cx="24" cy="24" r="10" stroke="#00ff88" strokeWidth="1.5" opacity="0.6" />
         <circle cx="24" cy="24" r="3" fill="#00ff88" />
@@ -30,7 +31,7 @@ const FEATURES = [
     color: "var(--lp-neon-cyan)",
     glow: "rgba(0, 240, 255, 0.15)",
     icon: (
-      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 40, height: 40 }}>
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10">
         <circle cx="24" cy="10" r="4" fill="rgba(0,240,255,0.2)" stroke="#00f0ff" strokeWidth="1.5" />
         <circle cx="10" cy="34" r="4" fill="rgba(0,240,255,0.2)" stroke="#00f0ff" strokeWidth="1.5" />
         <circle cx="38" cy="34" r="4" fill="rgba(0,240,255,0.2)" stroke="#00f0ff" strokeWidth="1.5" />
@@ -52,7 +53,7 @@ const FEATURES = [
     color: "var(--lp-neon-purple)",
     glow: "rgba(189, 0, 255, 0.15)",
     icon: (
-      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 40, height: 40 }}>
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10">
         <rect x="12" y="12" width="24" height="24" rx="2" stroke="#bd00ff" strokeWidth="1.5" fill="rgba(189,0,255,0.08)" />
         <circle cx="18" cy="18" r="2.5" fill="#bd00ff" opacity="0.8" />
         <circle cx="30" cy="18" r="2.5" fill="#bd00ff" opacity="0.8" />
@@ -78,7 +79,7 @@ const FEATURES = [
     color: "var(--lp-neon-pink)",
     glow: "rgba(255, 45, 106, 0.15)",
     icon: (
-      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 40, height: 40 }}>
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10">
         <polyline points="6,32 14,20 20,26 28,14 34,22 42,10" stroke="#ff2d6a" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
         <circle cx="42" cy="10" r="3" fill="#ff2d6a" />
         <line x1="6" y1="38" x2="42" y2="38" stroke="#ff2d6a" strokeWidth="1" opacity="0.3" />
@@ -90,6 +91,8 @@ const FEATURES = [
 
 export function FeaturesSection() {
   const [visible, setVisible] = useState(false);
+  const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
+  const [glowPos, setGlowPos] = useState<{ mx: number; my: number }>({ mx: 0, my: 0 });
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -101,58 +104,39 @@ export function FeaturesSection() {
     return () => observer.disconnect();
   }, []);
 
-  const onCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = e.currentTarget;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    card.style.setProperty("--mx", `${x}px`);
-    card.style.setProperty("--my", `${y}px`);
-    (card.querySelector(".card-glow") as HTMLElement | null)?.style &&
-      ((card.querySelector(".card-glow") as HTMLElement).style.opacity = "1");
+  const onCardMouseMove = (e: React.MouseEvent<HTMLDivElement>, i: number) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setGlowPos({ mx: e.clientX - rect.left, my: e.clientY - rect.top });
+    setActiveCardIndex(i);
   };
-  const onCardMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
-    const glow = e.currentTarget.querySelector(".card-glow") as HTMLElement | null;
-    if (glow) glow.style.opacity = "0";
+
+  const onCardMouseLeave = () => {
+    setActiveCardIndex(null);
   };
 
   return (
     <section
       id="fleet"
       ref={sectionRef}
-      style={{
-        padding: "120px 40px",
-        maxWidth: 1400,
-        margin: "0 auto",
-        boxSizing: "border-box",
-        width: "100%",
-      }}
+      className="box-border w-full"
+      style={{ padding: "128px 40px", maxWidth: 1400, margin: "0 auto" }}
     >
       {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 80 }}>
+      <div className="text-center mb-20">
         <div
-          style={{
-            fontFamily: "var(--lp-font-display)",
-            fontSize: 11,
-            letterSpacing: "0.3em",
-            color: "var(--lp-neon-green)",
-            marginBottom: 16,
-            opacity: visible ? 1 : 0,
-            transition: "opacity 0.6s",
-          }}
+          className={cn(
+            "font-display text-xs tracking-[0.3em] text-lp-neon-green mb-4 transition-opacity duration-500",
+            visible ? "opacity-100" : "opacity-0"
+          )}
         >
           // CAPABILITIES
         </div>
         <h2
-          style={{
-            fontFamily: "var(--lp-font-display)",
-            fontSize: "clamp(28px, 4vw, 52px)",
-            fontWeight: 900,
-            textTransform: "uppercase",
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateY(0)" : "translateY(20px)",
-            transition: "opacity 0.6s 0.1s, transform 0.6s 0.1s",
-          }}
+          className={cn(
+            "font-display font-black uppercase transition-[opacity,transform] duration-500 delay-100",
+            visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+          )}
+          style={{ fontSize: "clamp(28px, 4vw, 52px)" }}
         >
           Fleet{" "}
           <span className="lp-gradient-text">Intelligence</span>
@@ -161,81 +145,54 @@ export function FeaturesSection() {
 
       {/* Cards grid */}
       <div
-        className="features-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 24,
-        }}
+        className="features-grid grid grid-cols-4 gap-6"
       >
         {FEATURES.map(({ tag, title, description, color, glow, icon }, i) => (
           <div
             key={title}
-            onMouseMove={onCardMouseMove}
+            onMouseMove={(e) => onCardMouseMove(e, i)}
             onMouseLeave={onCardMouseLeave}
-            style={{
-              position: "relative",
-              background: "var(--lp-bg-secondary)",
-              border: `1px solid rgba(255,255,255,0.06)`,
-              clipPath:
-                "polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))",
-              padding: "32px 28px",
-              cursor: "default",
-              overflow: "hidden",
-              opacity: visible ? 1 : 0,
-              transform: visible ? "translateY(0)" : "translateY(40px)",
-              transition: `opacity 0.6s ${0.1 + i * 0.1}s, transform 0.6s ${0.1 + i * 0.1}s, border-color 0.3s`,
-            }}
             onMouseOver={(e) => {
               (e.currentTarget as HTMLElement).style.borderColor = color;
             }}
             onMouseOut={(e) => {
               (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)";
             }}
+            className={cn(
+              "lp-card-clip relative bg-lp-bg-secondary border border-white/5 p-8 cursor-default overflow-hidden",
+              "transition-[opacity,transform,border-color]"
+            )}
+            style={{
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(40px)",
+              transition: `opacity 0.6s ${0.1 + i * 0.1}s, transform 0.6s ${0.1 + i * 0.1}s, border-color 0.3s`,
+            }}
           >
             {/* Mouse glow */}
             <div
-              className="card-glow"
+              className={cn(
+                "card-glow absolute inset-0 pointer-events-none transition-opacity duration-300",
+                activeCardIndex === i ? "opacity-100" : "opacity-0"
+              )}
               style={{
-                position: "absolute",
-                inset: 0,
-                background: `radial-gradient(circle 120px at var(--mx, 50%) var(--my, 50%), ${glow}, transparent)`,
-                opacity: 0,
-                transition: "opacity 0.3s",
-                pointerEvents: "none",
+                background: `radial-gradient(circle 120px at ${activeCardIndex === i ? glowPos.mx : "50%"}px ${activeCardIndex === i ? glowPos.my : "50%"}px, ${glow}, transparent)`,
               }}
             />
             {/* Icon */}
-            <div style={{ marginBottom: 20 }}>{icon}</div>
+            <div className="mb-5">{icon}</div>
             {/* Tag */}
             <div
-              style={{
-                fontFamily: "var(--lp-font-display)",
-                fontSize: 9,
-                letterSpacing: "0.2em",
-                color,
-                marginBottom: 10,
-                textTransform: "uppercase",
-              }}
+              className="font-display text-[9px] tracking-[0.2em] mb-2.5 uppercase"
+              style={{ color }}
             >
               {tag}
             </div>
             {/* Title */}
-            <h3
-              style={{
-                fontFamily: "var(--lp-font-display)",
-                fontSize: 16,
-                fontWeight: 700,
-                color: "var(--lp-text-primary)",
-                marginBottom: 12,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
+            <h3 className="font-display text-base font-bold text-lp-text-primary mb-3 uppercase tracking-wider">
               {title}
             </h3>
             {/* Description */}
-            <p style={{ color: "var(--lp-text-secondary)", fontSize: 14, lineHeight: 1.6 }}>
+            <p className="text-lp-text-secondary text-sm leading-relaxed">
               {description}
             </p>
           </div>

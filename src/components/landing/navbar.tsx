@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { label: "Fleet OS", href: "#fleet" },
@@ -29,21 +30,11 @@ export function Navbar() {
 
   return (
     <nav
+      className="fixed top-0 left-0 right-0 z-50 px-10 h-18 flex items-center justify-between backdrop-blur-xl"
       style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1000,
-        padding: "0 40px",
-        height: 70,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
         background: scrolled
           ? "rgba(10, 10, 15, 0.95)"
           : "rgba(10, 10, 15, 0.6)",
-        backdropFilter: "blur(20px)",
         borderBottom: scrolled
           ? "1px solid rgba(0, 255, 136, 0.15)"
           : "1px solid transparent",
@@ -51,53 +42,18 @@ export function Navbar() {
       }}
     >
       {/* Logo */}
-      <div
-        style={{
-          fontFamily: "var(--lp-font-display)",
-          fontSize: 22,
-          fontWeight: 900,
-          letterSpacing: "0.1em",
-          background: "var(--lp-gradient-main)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-          cursor: "default",
-        }}
-      >
+      <div className="font-display text-xl font-black tracking-widest cursor-default lp-gradient-text">
         VECTR
       </div>
 
       {/* Nav links — hidden on mobile */}
-      <ul
-        className="lp-nav-links"
-        style={{
-          display: "flex",
-          listStyle: "none",
-          gap: 40,
-          margin: 0,
-          padding: 0,
-        }}
-      >
+      <ul className="lp-nav-links flex list-none gap-10 m-0 p-0">
         {NAV_LINKS.map(({ label, href }) => (
           <li key={href}>
             <a
               href={href}
               onClick={(e) => handleNavClick(e, href)}
-              style={{
-                color: "var(--lp-text-secondary)",
-                textDecoration: "none",
-                fontFamily: "var(--lp-font-display)",
-                fontSize: 11,
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                transition: "color 0.2s",
-              }}
-              onMouseOver={(e) =>
-                ((e.target as HTMLElement).style.color = "var(--lp-neon-green)")
-              }
-              onMouseOut={(e) =>
-                ((e.target as HTMLElement).style.color = "var(--lp-text-secondary)")
-              }
+              className="text-lp-text-secondary no-underline font-display text-xs tracking-[0.15em] uppercase transition-colors duration-200 hover:text-lp-neon-green"
             >
               {label}
             </a>
@@ -108,27 +64,7 @@ export function Navbar() {
       {/* CTA */}
       <Link
         href="/overview"
-        style={{
-          fontFamily: "var(--lp-font-display)",
-          fontSize: 11,
-          letterSpacing: "0.15em",
-          textTransform: "uppercase",
-          color: "var(--lp-bg-primary)",
-          background: "var(--lp-neon-green)",
-          padding: "10px 24px",
-          textDecoration: "none",
-          fontWeight: 700,
-          clipPath:
-            "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
-          transition: "box-shadow 0.2s, background 0.2s",
-        }}
-        onMouseOver={(e) => {
-          (e.currentTarget as HTMLElement).style.boxShadow =
-            "0 0 20px var(--lp-neon-green-glow)";
-        }}
-        onMouseOut={(e) => {
-          (e.currentTarget as HTMLElement).style.boxShadow = "none";
-        }}
+        className="font-display text-xs tracking-[0.15em] uppercase text-lp-bg-primary bg-lp-neon-green px-6 py-2.5 no-underline font-bold transition-[box-shadow] duration-200 hover:[box-shadow:0_0_20px_var(--lp-neon-green-glow)] lp-btn-clip"
       >
         Launch Console
       </Link>

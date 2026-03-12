@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { Drone } from "@/lib/types";
 import { statusDotClass, statusTextClass, getBatteryColor, headingToCompass } from "@/lib/drone-utils";
 import { SummaryCard, SummaryCardGrid } from "@/components/dashboard/summary-card";
+import { REFETCH_INTERVAL } from "@/lib/constants";
 
 // ── Local helpers not yet in shared utils ─────────────────────────────────────
 
@@ -237,10 +238,10 @@ function DroneRow({ drone, isSelected, onClick }: DroneRowProps) {
 export default function FleetPage() {
   const t = useTranslations("fleetPage");
 
-  const { data: drones } = trpc.drones.list.useQuery(undefined, { refetchInterval: 2000 });
-  const { data: mission } = trpc.missions.active.useQuery(undefined, { refetchInterval: 2000 });
-  const { data: alerts } = trpc.alerts.list.useQuery(undefined, { refetchInterval: 5000 });
-  const { data: meshLinks } = trpc.meshLinks.useQuery(undefined, { refetchInterval: 5000 });
+  const { data: drones } = trpc.drones.list.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.FAST });
+  const { data: mission } = trpc.missions.active.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.FAST });
+  const { data: alerts } = trpc.alerts.list.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
+  const { data: meshLinks } = trpc.meshLinks.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
 
   const [selectedDroneId, setSelectedDroneId] = useState<string | null>(null);
   const [search, setSearch] = useState("");

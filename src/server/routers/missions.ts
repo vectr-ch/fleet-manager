@@ -7,6 +7,10 @@ export const missionsRouter = router({
     return worldState.mission;
   }),
 
+  history: publicProcedure.query(() => worldState.pastMissions),
+
+  parameters: publicProcedure.query(() => worldState.missionParameters),
+
   pause: publicProcedure.mutation(() => {
     dispatchCommand("pause", "ALL");
     return worldState.mission;

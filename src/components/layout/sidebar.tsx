@@ -59,7 +59,7 @@ export function Sidebar() {
         },
         {
           label: t("map"),
-          href: "#",
+          href: "/map",
           icon: (
             <svg viewBox="0 0 14 14" fill="none">
               <path d="M2 11L5 6l2.5 3L9 7l3 4H2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
@@ -95,7 +95,7 @@ export function Sidebar() {
         },
         {
           label: t("missionPlans"),
-          href: "#",
+          href: "/missions",
           icon: (
             <svg viewBox="0 0 14 14" fill="none">
               <rect x="1.5" y="3" width="11" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
@@ -110,7 +110,7 @@ export function Sidebar() {
       items: [
         {
           label: t("alerts"),
-          href: "#",
+          href: "/alerts",
           icon: (
             <svg viewBox="0 0 14 14" fill="none">
               <path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.93 2.93l1.41 1.41M9.66 9.66l1.41 1.41M2.93 11.07l1.41-1.41M9.66 4.34l1.41-1.41" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
@@ -130,7 +130,7 @@ export function Sidebar() {
         },
         {
           label: t("settings"),
-          href: "#",
+          href: "/settings",
           icon: (
             <svg viewBox="0 0 14 14" fill="none">
               <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />

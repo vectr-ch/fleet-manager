@@ -51,7 +51,7 @@ export function MapContent() {
       zoomControl={false}
       attributionControl={false}
       className="w-full h-full"
-      style={{ background: "#080808" }}
+      style={{ background: "var(--background)" }}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

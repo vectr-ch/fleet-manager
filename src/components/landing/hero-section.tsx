@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DroneVisual } from "./drone-visual";
 
 const STATS = [
@@ -11,6 +11,8 @@ const STATS = [
 
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const visualRef = useRef<HTMLDivElement>(null);
+  const [parallax, setParallax] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -20,14 +22,10 @@ export function HeroSection() {
       const rect = section.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width - 0.5;
       const y = (e.clientY - rect.top) / rect.height - 0.5;
-      const visual = section.querySelector<HTMLElement>(".hero-drone-col");
-      if (visual) {
-        visual.style.transform = `translate(${x * 20}px, ${y * 10}px)`;
-      }
+      setParallax({ x: x * 20, y: y * 10 });
     };
     const onMouseLeave = () => {
-      const visual = section.querySelector<HTMLElement>(".hero-drone-col");
-      if (visual) visual.style.transform = "translate(0,0)";
+      setParallax({ x: 0, y: 0 });
     };
 
     section.addEventListener("mousemove", onMouseMove);
@@ -41,6 +39,7 @@ export function HeroSection() {
   return (
     <section
       ref={sectionRef}
+      className="w-full box-border"
       style={{
         minHeight: "100vh",
         display: "flex",
@@ -48,55 +47,42 @@ export function HeroSection() {
         padding: "120px 40px 80px",
         maxWidth: 1600,
         margin: "0 auto",
-        boxSizing: "border-box",
-        width: "100%",
       }}
     >
       <div
-        className="hero-grid"
+        className="hero-grid w-full"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: 80,
           alignItems: "center",
-          width: "100%",
         }}
       >
         {/* Left: content */}
-        <div style={{ animation: "lp-fade-in-up 0.8s ease forwards" }}>
+        <div className="lp-animate-fade-in-up">
           {/* Badge */}
           <div
+            className="inline-flex items-center gap-2 mb-8"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
               background: "rgba(0, 255, 136, 0.08)",
               border: "1px solid rgba(0, 255, 136, 0.3)",
               padding: "6px 16px",
-              marginBottom: 32,
               clipPath:
                 "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))",
             }}
           >
             <span
+              className="inline-block rounded-full"
               style={{
                 width: 6,
                 height: 6,
-                borderRadius: "50%",
                 background: "var(--lp-neon-green)",
                 boxShadow: "0 0 8px var(--lp-neon-green-glow)",
-                display: "inline-block",
                 animation: "lp-pulse 2s ease infinite",
               }}
             />
             <span
-              style={{
-                fontFamily: "var(--lp-font-display)",
-                fontSize: 10,
-                letterSpacing: "0.2em",
-                color: "var(--lp-neon-green)",
-                textTransform: "uppercase",
-              }}
+              className="font-display text-[10px] tracking-[0.2em] text-lp-neon-green uppercase"
             >
               Autonomous Fleet Intelligence
             </span>
@@ -104,13 +90,10 @@ export function HeroSection() {
 
           {/* Title */}
           <h1
+            className="font-display font-black uppercase mb-3"
             style={{
-              fontFamily: "var(--lp-font-display)",
               fontSize: "clamp(36px, 5vw, 72px)",
-              fontWeight: 900,
               lineHeight: 1.05,
-              marginBottom: 12,
-              textTransform: "uppercase",
             }}
           >
             COMMAND
@@ -120,11 +103,10 @@ export function HeroSection() {
 
           {/* Subtitle */}
           <p
+            className="text-lp-text-secondary mb-10"
             style={{
-              color: "var(--lp-text-secondary)",
               fontSize: 17,
               lineHeight: 1.7,
-              marginBottom: 40,
               maxWidth: 480,
             }}
           >
@@ -134,8 +116,7 @@ export function HeroSection() {
 
           {/* CTAs */}
           <div
-            className="hero-ctas"
-            style={{ display: "flex", gap: 16, marginBottom: 60, flexWrap: "wrap" }}
+            className="hero-ctas flex flex-wrap gap-4 mb-16"
           >
             <a
               href="#contact"
@@ -143,20 +124,15 @@ export function HeroSection() {
                 e.preventDefault();
                 document.querySelector("#contact")?.scrollIntoView({ behavior: "smooth" });
               }}
+              className="font-display font-bold uppercase inline-block text-lp-bg-primary bg-lp-neon-green"
               style={{
-                fontFamily: "var(--lp-font-display)",
                 fontSize: 12,
                 letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                color: "var(--lp-bg-primary)",
-                background: "var(--lp-neon-green)",
                 padding: "14px 32px",
                 textDecoration: "none",
-                fontWeight: 700,
                 clipPath:
                   "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
                 transition: "box-shadow 0.2s",
-                display: "inline-block",
               }}
               onMouseOver={(e) =>
                 ((e.currentTarget as HTMLElement).style.boxShadow =
@@ -174,21 +150,16 @@ export function HeroSection() {
                 e.preventDefault();
                 document.querySelector("#autonomy")?.scrollIntoView({ behavior: "smooth" });
               }}
+              className="font-display font-bold uppercase inline-block text-lp-neon-cyan bg-transparent"
               style={{
-                fontFamily: "var(--lp-font-display)",
                 fontSize: 12,
                 letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                color: "var(--lp-neon-cyan)",
-                background: "transparent",
                 border: "1px solid rgba(0, 240, 255, 0.4)",
                 padding: "14px 32px",
                 textDecoration: "none",
-                fontWeight: 700,
                 clipPath:
                   "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
                 transition: "border-color 0.2s, box-shadow 0.2s",
-                display: "inline-block",
               }}
               onMouseOver={(e) => {
                 const el = e.currentTarget as HTMLElement;
@@ -207,36 +178,17 @@ export function HeroSection() {
 
           {/* Stats */}
           <div
-            className="hero-stats"
-            style={{
-              display: "flex",
-              gap: 40,
-              paddingTop: 32,
-              borderTop: "1px solid rgba(255,255,255,0.06)",
-              flexWrap: "wrap",
-            }}
+            className="hero-stats flex flex-wrap gap-10 pt-8 border-t border-white/5"
           >
             {STATS.map(({ value, label }) => (
               <div key={label}>
                 <div
-                  style={{
-                    fontFamily: "var(--lp-font-display)",
-                    fontSize: 28,
-                    fontWeight: 900,
-                    color: "var(--lp-neon-green)",
-                    lineHeight: 1,
-                    marginBottom: 4,
-                  }}
+                  className="font-display font-black text-3xl text-lp-neon-green leading-none mb-1"
                 >
                   {value}
                 </div>
                 <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--lp-text-muted)",
-                    letterSpacing: "0.05em",
-                    textTransform: "uppercase",
-                  }}
+                  className="text-xs tracking-wider text-lp-text-muted uppercase"
                 >
                   {label}
                 </div>
@@ -247,12 +199,11 @@ export function HeroSection() {
 
         {/* Right: drone */}
         <div
-          className="hero-drone-col"
+          ref={visualRef}
+          className="hero-drone-col flex items-center justify-center"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             transition: "transform 0.1s ease-out",
+            transform: `translate(${parallax.x}px, ${parallax.y}px)`,
           }}
         >
           <DroneVisual />

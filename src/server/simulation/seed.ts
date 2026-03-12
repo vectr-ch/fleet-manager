@@ -1,4 +1,4 @@
-import type { Drone, Mission, Alert, Command, BaseStation, MeshLink } from "@/lib/types";
+import type { Drone, Mission, Alert, Command, BaseStation, MeshLink, PastMission, MissionParameters, SystemMetrics, EnvironmentData, MeshNetworkHealth } from "@/lib/types";
 
 export function createSeedDrones(): Drone[] {
   return [
@@ -52,8 +52,90 @@ export function createSeedCommands(): Command[] {
 
 export function createSeedBaseStations(): BaseStation[] {
   return [
-    { id: "BASE-01", position: { lat: 32.240, lng: -110.932 }, status: "online", uplinkLatency: 14 },
+    {
+      id: "BASE-01",
+      position: { lat: 32.240, lng: -110.932 },
+      status: "online",
+      uplinkLatency: 14,
+      firmware: "v2.4.2",
+      antenna: "Omni-directional",
+      signal: 88,
+      lastMaintenance: "2026-03-08",
+      connectedDrones: 8,
+    },
+    {
+      id: "BASE-02",
+      position: { lat: 32.255, lng: -110.910 },
+      status: "online",
+      uplinkLatency: 8,
+      firmware: "v2.4.1",
+      antenna: "Omni-directional",
+      signal: 94,
+      lastMaintenance: "2026-03-01",
+      connectedDrones: 3,
+    },
+    {
+      id: "BASE-03",
+      position: { lat: 32.270, lng: -110.945 },
+      status: "offline",
+      uplinkLatency: 0,
+      firmware: "v2.3.8",
+      antenna: "Directional",
+      signal: 0,
+      lastMaintenance: "2026-02-15",
+      connectedDrones: 0,
+    },
   ];
+}
+
+export function createSeedPastMissions(): PastMission[] {
+  return [
+    { id: "MISSION-240", name: "Perimeter Scan",     status: "complete", coverage: 100, duration: "42m",     date: "2026-03-10" },
+    { id: "MISSION-239", name: "Grid Survey North",  status: "complete", coverage: 98,  duration: "1h 12m",  date: "2026-03-09" },
+    { id: "MISSION-238", name: "Emergency Search",   status: "aborted",  coverage: 34,  duration: "18m",     date: "2026-03-08" },
+    { id: "MISSION-237", name: "Boundary Mapping",   status: "complete", coverage: 100, duration: "55m",     date: "2026-03-07" },
+    { id: "MISSION-236", name: "Thermal Survey",     status: "complete", coverage: 95,  duration: "1h 03m",  date: "2026-03-06" },
+  ];
+}
+
+export function createSeedMissionParameters(): MissionParameters {
+  return {
+    formation:   "Grid",
+    spacing:     "12m",
+    scanPattern: "Boustrophedon",
+    altitude:    "45m AGL",
+    overlapH:    "80%",
+    overlapV:    "60%",
+    gimbalAngle: "-90°",
+    speed:       "8 m/s",
+  };
+}
+
+export function createSeedSystemMetrics(): SystemMetrics {
+  return {
+    cpu:       23,
+    memory:    41,
+    bandwidth: "2.4 Mbps",
+    packets:   "1.2M",
+    errors:    0,
+  };
+}
+
+export function createSeedEnvironment(): EnvironmentData {
+  return {
+    temp:       "18°C",
+    humidity:   "45%",
+    wind:       "12 km/h NW",
+    visibility: "8.2 km",
+    pressure:   "1013 hPa",
+  };
+}
+
+export function createSeedMeshNetworkHealth(): MeshNetworkHealth {
+  return {
+    avgLatency: "12 ms",
+    packetLoss: "0.02%",
+  };
 }
 
 export function createSeedMeshLinks(): MeshLink[] {

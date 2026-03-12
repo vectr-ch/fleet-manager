@@ -114,6 +114,11 @@ export const baseStationSchema = z.object({
   position: positionSchema,
   status: z.enum(["online", "offline"]),
   uplinkLatency: z.number(),
+  firmware: z.string(),
+  antenna: z.string(),
+  signal: z.number(),
+  lastMaintenance: z.string(),
+  connectedDrones: z.number(),
 });
 export type BaseStation = z.infer<typeof baseStationSchema>;
 
@@ -123,3 +128,54 @@ export const meshLinkSchema = z.object({
   to: z.string(),
 });
 export type MeshLink = z.infer<typeof meshLinkSchema>;
+
+// ── Past Mission ──
+export const pastMissionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.string(),
+  coverage: z.number(),
+  duration: z.string(),
+  date: z.string(),
+});
+export type PastMission = z.infer<typeof pastMissionSchema>;
+
+// ── Mission Parameters ──
+export const missionParametersSchema = z.object({
+  formation: z.string(),
+  spacing: z.string(),
+  scanPattern: z.string(),
+  altitude: z.string(),
+  overlapH: z.string(),
+  overlapV: z.string(),
+  gimbalAngle: z.string(),
+  speed: z.string(),
+});
+export type MissionParameters = z.infer<typeof missionParametersSchema>;
+
+// ── System Metrics ──
+export const systemMetricsSchema = z.object({
+  cpu: z.number(),
+  memory: z.number(),
+  bandwidth: z.string(),
+  packets: z.string(),
+  errors: z.number(),
+});
+export type SystemMetrics = z.infer<typeof systemMetricsSchema>;
+
+// ── Environment Data ──
+export const environmentDataSchema = z.object({
+  temp: z.string(),
+  humidity: z.string(),
+  wind: z.string(),
+  visibility: z.string(),
+  pressure: z.string(),
+});
+export type EnvironmentData = z.infer<typeof environmentDataSchema>;
+
+// ── Mesh Network Health ──
+export const meshNetworkHealthSchema = z.object({
+  avgLatency: z.string(),
+  packetLoss: z.string(),
+});
+export type MeshNetworkHealth = z.infer<typeof meshNetworkHealthSchema>;

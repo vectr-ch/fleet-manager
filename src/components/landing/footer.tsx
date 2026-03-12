@@ -1,167 +1,83 @@
 "use client";
 
-import Link from "next/link";
+const PRODUCT_LINKS = [
+  { label: "Fleet OS", href: "#fleet" },
+  { label: "Autonomy Engine", href: "#autonomy" },
+  { label: "Command Center", href: "#network" },
+  { label: "API Access", href: "#contact" },
+];
+
+const COMPANY_ITEMS = ["About", "Careers", "Press", "Security"];
+const RESOURCE_ITEMS = ["Documentation", "SDK Reference", "Case Studies", "Status"];
+const LEGAL_ITEMS = ["Privacy Policy", "Terms of Service", "Cookie Policy"];
 
 export function Footer() {
+  const handleScrollClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const el = document.querySelector(href);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
-    <footer
-      style={{
-        background: "var(--lp-bg-secondary)",
-        borderTop: "1px solid rgba(0, 255, 136, 0.1)",
-        padding: "60px 40px 40px",
-      }}
-    >
-      <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+    <footer className="bg-lp-bg-secondary border-t border-lp-neon-green/10 px-10 pt-16 pb-10">
+      <div className="max-w-[1400px] mx-auto">
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "2fr 1fr 1fr 1fr",
-            gap: 40,
-            marginBottom: 40,
-          }}
-          className="footer-grid"
+          className="footer-grid grid grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-10"
         >
           {/* Brand */}
           <div>
-            <div
-              style={{
-                fontFamily: "var(--lp-font-display)",
-                fontSize: 24,
-                fontWeight: 900,
-                background: "var(--lp-gradient-main)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                marginBottom: 16,
-              }}
-            >
+            <div className="font-display text-2xl font-black lp-gradient-text mb-4">
               VECTR
             </div>
-            <p
-              style={{
-                color: "var(--lp-text-secondary)",
-                fontSize: 14,
-                lineHeight: 1.7,
-                maxWidth: 280,
-              }}
-            >
+            <p className="text-lp-text-secondary text-sm leading-relaxed max-w-[280px]">
               Next-generation autonomous drone fleet management for defense,
               enterprise, and critical infrastructure.
             </p>
           </div>
 
-          {/* Product */}
+          {/* Product — links to landing page sections */}
           <div>
-            <h4
-              style={{
-                fontFamily: "var(--lp-font-display)",
-                fontSize: 11,
-                letterSpacing: "0.15em",
-                color: "var(--lp-neon-green)",
-                marginBottom: 20,
-                textTransform: "uppercase",
-              }}
-            >
+            <h4 className="font-display text-xs tracking-[0.15em] text-lp-neon-green mb-5 uppercase">
               Product
             </h4>
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
-              {["Fleet OS", "Autonomy Engine", "Command Center", "API Access"].map((item) => (
-                <li key={item}>
-                  <Link
-                    href="#"
-                    style={{
-                      color: "var(--lp-text-secondary)",
-                      textDecoration: "none",
-                      fontSize: 14,
-                      transition: "color 0.2s",
-                    }}
-                    onMouseOver={(e) =>
-                      ((e.target as HTMLElement).style.color = "var(--lp-text-primary)")
-                    }
-                    onMouseOut={(e) =>
-                      ((e.target as HTMLElement).style.color = "var(--lp-text-secondary)")
-                    }
+            <ul className="list-none flex flex-col gap-3">
+              {PRODUCT_LINKS.map(({ label, href }) => (
+                <li key={label}>
+                  <a
+                    href={href}
+                    onClick={(e) => handleScrollClick(e, href)}
+                    className="text-lp-text-secondary hover:text-lp-text-primary transition-colors no-underline text-sm cursor-pointer"
                   >
-                    {item}
-                  </Link>
+                    {label}
+                  </a>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Company */}
+          {/* Company — static text, no links */}
           <div>
-            <h4
-              style={{
-                fontFamily: "var(--lp-font-display)",
-                fontSize: 11,
-                letterSpacing: "0.15em",
-                color: "var(--lp-neon-green)",
-                marginBottom: 20,
-                textTransform: "uppercase",
-              }}
-            >
+            <h4 className="font-display text-xs tracking-[0.15em] text-lp-neon-green mb-5 uppercase">
               Company
             </h4>
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
-              {["About", "Careers", "Press", "Security"].map((item) => (
+            <ul className="list-none flex flex-col gap-3">
+              {COMPANY_ITEMS.map((item) => (
                 <li key={item}>
-                  <Link
-                    href="#"
-                    style={{
-                      color: "var(--lp-text-secondary)",
-                      textDecoration: "none",
-                      fontSize: 14,
-                      transition: "color 0.2s",
-                    }}
-                    onMouseOver={(e) =>
-                      ((e.target as HTMLElement).style.color = "var(--lp-text-primary)")
-                    }
-                    onMouseOut={(e) =>
-                      ((e.target as HTMLElement).style.color = "var(--lp-text-secondary)")
-                    }
-                  >
-                    {item}
-                  </Link>
+                  <span className="text-lp-text-secondary text-sm">{item}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Resources */}
+          {/* Resources — static text, no links */}
           <div>
-            <h4
-              style={{
-                fontFamily: "var(--lp-font-display)",
-                fontSize: 11,
-                letterSpacing: "0.15em",
-                color: "var(--lp-neon-green)",
-                marginBottom: 20,
-                textTransform: "uppercase",
-              }}
-            >
+            <h4 className="font-display text-xs tracking-[0.15em] text-lp-neon-green mb-5 uppercase">
               Resources
             </h4>
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
-              {["Documentation", "SDK Reference", "Case Studies", "Status"].map((item) => (
+            <ul className="list-none flex flex-col gap-3">
+              {RESOURCE_ITEMS.map((item) => (
                 <li key={item}>
-                  <Link
-                    href="#"
-                    style={{
-                      color: "var(--lp-text-secondary)",
-                      textDecoration: "none",
-                      fontSize: 14,
-                      transition: "color 0.2s",
-                    }}
-                    onMouseOver={(e) =>
-                      ((e.target as HTMLElement).style.color = "var(--lp-text-primary)")
-                    }
-                    onMouseOut={(e) =>
-                      ((e.target as HTMLElement).style.color = "var(--lp-text-secondary)")
-                    }
-                  >
-                    {item}
-                  </Link>
+                  <span className="text-lp-text-secondary text-sm">{item}</span>
                 </li>
               ))}
             </ul>
@@ -169,40 +85,18 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div
-          style={{
-            borderTop: "1px solid rgba(255, 255, 255, 0.05)",
-            paddingTop: 24,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 16,
-          }}
-        >
-          <p style={{ color: "var(--lp-text-muted)", fontSize: 13 }}>
+        <div className="border-t border-white/5 pt-6 flex justify-between items-center flex-wrap gap-4">
+          <p className="text-lp-text-muted text-sm">
             &copy; 2026 VECTR Technologies AG. All rights reserved.
           </p>
-          <div style={{ display: "flex", gap: 24 }}>
-            {["Privacy Policy", "Terms of Service", "Cookie Policy"].map((item) => (
-              <Link
+          <div className="flex gap-6">
+            {LEGAL_ITEMS.map((item) => (
+              <span
                 key={item}
-                href="#"
-                style={{
-                  color: "var(--lp-text-muted)",
-                  textDecoration: "none",
-                  fontSize: 13,
-                  transition: "color 0.2s",
-                }}
-                onMouseOver={(e) =>
-                  ((e.target as HTMLElement).style.color = "var(--lp-text-secondary)")
-                }
-                onMouseOut={(e) =>
-                  ((e.target as HTMLElement).style.color = "var(--lp-text-muted)")
-                }
+                className="text-lp-text-muted text-sm"
               >
                 {item}
-              </Link>
+              </span>
             ))}
           </div>
         </div>

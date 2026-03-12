@@ -3,6 +3,7 @@ import { dronesRouter } from "./drones";
 import { missionsRouter } from "./missions";
 import { alertsRouter } from "./alerts";
 import { commandsRouter } from "./commands";
+import { telemetryRouter } from "./telemetry";
 import { worldState } from "../simulation/state";
 
 export const appRouter = router({
@@ -10,6 +11,7 @@ export const appRouter = router({
   missions: missionsRouter,
   alerts: alertsRouter,
   commands: commandsRouter,
+  telemetry: telemetryRouter,
 
   baseStations: publicProcedure.query(() => {
     return worldState.baseStations;
@@ -18,6 +20,8 @@ export const appRouter = router({
   meshLinks: publicProcedure.query(() => {
     return worldState.meshLinks;
   }),
+
+  meshNetworkHealth: publicProcedure.query(() => worldState.meshNetworkHealth),
 });
 
 export type AppRouter = typeof appRouter;
