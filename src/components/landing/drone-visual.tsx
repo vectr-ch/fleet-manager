@@ -105,7 +105,11 @@ export function DroneVisual() {
                 stroke="#00f0ff"
                 strokeWidth="2"
                 strokeDasharray="20 44"
-                style={{ animation: `lp-rotate-ring ${0.3 + i * 0.05}s linear infinite${i % 2 === 0 ? "" : " reverse"}` }}
+                style={{
+                  animation: `lp-rotate-ring ${0.3 + i * 0.05}s linear infinite${i % 2 === 0 ? "" : " reverse"}`,
+                  transformBox: "fill-box",
+                  transformOrigin: "center",
+                }}
               />
             </g>
           ))}
