@@ -279,6 +279,20 @@
   to { transform: rotate(360deg); }
 }
 
+@keyframes lp-glitch {
+  0%   { text-shadow:  2px 0 var(--lp-neon-pink), -2px 0 var(--lp-neon-cyan); }
+  25%  { text-shadow: -2px 0 var(--lp-neon-pink),  2px 0 var(--lp-neon-cyan); }
+  50%  { text-shadow:  2px 2px var(--lp-neon-pink), -2px -2px var(--lp-neon-cyan); }
+  75%  { text-shadow: -2px 2px var(--lp-neon-pink),  2px -2px var(--lp-neon-cyan); }
+  100% { text-shadow:  2px 0 var(--lp-neon-pink), -2px 0 var(--lp-neon-cyan); }
+}
+
+.lp-logo-glitch:hover {
+  animation: lp-glitch 0.3s ease-in-out infinite;
+  -webkit-text-fill-color: var(--lp-text-primary);
+  background: none;
+}
+
 @keyframes lp-float {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-15px) rotate(5deg); }

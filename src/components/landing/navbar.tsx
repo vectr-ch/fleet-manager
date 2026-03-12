@@ -42,7 +42,7 @@ export function Navbar() {
       }}
     >
       {/* Logo */}
-      <div className="font-display text-xl font-black tracking-widest cursor-default lp-gradient-text">
+      <div className="font-display text-xl font-black tracking-widest cursor-default lp-gradient-text lp-logo-glitch">
         VECTR
       </div>
 
