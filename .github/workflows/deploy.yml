@@ -106,5 +106,5 @@ jobs:
               --name fleet-manager \
               --restart unless-stopped \
               --env-file ~/fm/.env \
-              -p 80:3000 \
+              -p 3001:3000 \
               ghcr.io/vectr-ch/fleet-manager:latest
