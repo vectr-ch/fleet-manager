@@ -3,7 +3,6 @@ import { router, publicProcedure } from "@/server/trpc";
 import { overlordFetch } from "@/lib/overlord";
 import {
   setAuthCookies,
-  setCurrentOrg,
   setChallengeCookie,
   clearAuthCookies,
   getTokens,

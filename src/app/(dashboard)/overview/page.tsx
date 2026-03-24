@@ -3,7 +3,7 @@
 import { trpc } from "@/lib/trpc/client";
 
 export default function OverviewPage() {
-  const { data: stats, isLoading: statsLoading } = trpc.overview.stats.useQuery();
+  const { isLoading: statsLoading } = trpc.overview.stats.useQuery();
   const { data: activity, isLoading: activityLoading } = trpc.overview.recentActivity.useQuery();
 
   return (
