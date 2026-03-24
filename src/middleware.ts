@@ -3,12 +3,15 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/invites/accept", "/forgot-password", "/reset-password"];
 const ADMIN_PUBLIC_PATHS = ["/admin/login"];
-const STATIC_PREFIXES = ["/_next", "/api", "/favicon.ico"];
+function isPublicPath(pathname: string, publicPaths: string[]) {
+  return publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip static assets and API routes
+  const STATIC_PREFIXES = ["/_next", "/api", "/favicon.ico"];
   if (STATIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next();
   }
@@ -23,7 +26,7 @@ export function middleware(request: NextRequest) {
     const hasSysadminToken = request.cookies.has("sysadmin_access_token");
 
     // Admin public pages
-    if (ADMIN_PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    if (isPublicPath(pathname, ADMIN_PUBLIC_PATHS)) {
       if (hasSysadminToken) {
         return NextResponse.redirect(new URL("/admin/organisations", request.url));
       }
@@ -41,7 +44,7 @@ export function middleware(request: NextRequest) {
   const hasAccessToken = request.cookies.has("access_token");
 
   // Org public pages
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  if (isPublicPath(pathname, PUBLIC_PATHS)) {
     if (hasAccessToken) {
       return NextResponse.redirect(new URL("/overview", request.url));
     }

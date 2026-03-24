@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
+import { validatePassword } from "@/lib/password";
 
 export default function InviteAcceptPage() {
   return (
@@ -26,16 +27,29 @@ function InviteAcceptForm() {
 
   const acceptMutation = trpc.invites.accept.useMutation({
     onSuccess: () => setSuccess(true),
-    onError: (err) => setError(err.message),
+    onError: (err) => {
+      if (err.data?.code === "TOO_MANY_REQUESTS") {
+        setError("Too many requests. Please try again later.");
+      } else {
+        setError(err.message);
+      }
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (password && password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
+    if (password) {
+      const policyError = validatePassword(password);
+      if (policyError) {
+        setError(policyError);
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Passwords do not match");
+        return;
+      }
     }
 
     acceptMutation.mutate({

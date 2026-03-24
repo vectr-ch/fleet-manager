@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
+import { validatePassword } from "@/lib/password";
 
 export default function ResetPasswordPage() {
   return (
@@ -39,6 +40,12 @@ function ResetPasswordForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const policyError = validatePassword(newPassword);
+    if (policyError) {
+      setError(policyError);
+      return;
+    }
 
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
