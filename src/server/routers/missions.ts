@@ -1,28 +1,22 @@
-import { router, publicProcedure } from "../trpc";
-import { worldState } from "../simulation/state";
-import { dispatchCommand } from "../simulation/engine";
+import { z } from "zod";
+import { router, protectedProcedure } from "@/server/trpc";
+import type { Mission } from "@/lib/types";
 
 export const missionsRouter = router({
-  active: publicProcedure.query(() => {
-    return worldState.mission;
-  }),
-
-  history: publicProcedure.query(() => worldState.pastMissions),
-
-  parameters: publicProcedure.query(() => worldState.missionParameters),
-
-  pause: publicProcedure.mutation(() => {
-    dispatchCommand("pause", "ALL");
-    return worldState.mission;
-  }),
-
-  resume: publicProcedure.mutation(() => {
-    dispatchCommand("resume", "ALL");
-    return worldState.mission;
-  }),
-
-  abort: publicProcedure.mutation(() => {
-    dispatchCommand("abort", "ALL");
-    return worldState.mission;
-  }),
+  list: protectedProcedure.query(async (): Promise<Mission[]> => []),
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async (): Promise<Mission | null> => null),
+  create: protectedProcedure
+    .input(z.object({ name: z.string() }))
+    .mutation(async (): Promise<Mission | null> => null),
+  pause: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async () => ({ success: false })),
+  resume: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async () => ({ success: false })),
+  abort: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async () => ({ success: false })),
 });

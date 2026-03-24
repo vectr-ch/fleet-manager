@@ -1,15 +1,10 @@
 import { z } from "zod";
-import { router, publicProcedure } from "../trpc";
-import { worldState } from "../simulation/state";
+import { router, protectedProcedure } from "@/server/trpc";
+import type { Alert } from "@/lib/types";
 
 export const alertsRouter = router({
-  list: publicProcedure.query(() => {
-    return worldState.alerts;
-  }),
-
-  dismiss: publicProcedure
+  list: protectedProcedure.query(async (): Promise<Alert[]> => []),
+  dismiss: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(({ input }) => {
-      worldState.alerts = worldState.alerts.filter((a) => a.id !== input.id);
-    }),
+    .mutation(async () => ({ success: false })),
 });

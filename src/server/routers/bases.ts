@@ -1,0 +1,55 @@
+import { z } from "zod";
+import { router, protectedProcedure } from "@/server/trpc";
+import { overlordFetch } from "@/lib/overlord";
+import type { Base } from "@/lib/types";
+
+export const basesRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return overlordFetch<Base[]>(`/orgs/${ctx.orgSlug}/bases`, {
+      accessToken: ctx.accessToken,
+    });
+  }),
+
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return overlordFetch<Base>(`/orgs/${ctx.orgSlug}/bases/${input.id}`, {
+        accessToken: ctx.accessToken,
+      });
+    }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        lat: z.number().optional(),
+        lng: z.number().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return overlordFetch<Base>(`/orgs/${ctx.orgSlug}/bases`, {
+        method: "POST",
+        body: input,
+        accessToken: ctx.accessToken,
+      });
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().optional(),
+        lat: z.number().optional(),
+        lng: z.number().optional(),
+        maintenance_mode: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...body } = input;
+      return overlordFetch<Base>(`/orgs/${ctx.orgSlug}/bases/${id}`, {
+        method: "PATCH",
+        body,
+        accessToken: ctx.accessToken,
+      });
+    }),
+});

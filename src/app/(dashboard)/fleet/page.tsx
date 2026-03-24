@@ -1,233 +1,238 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
-import { cn } from "@/lib/utils";
-import type { Drone } from "@/lib/types";
-import { statusDotClass, statusTextClass, getBatteryColor, headingToCompass } from "@/lib/drone-utils";
-import { SummaryCard, SummaryCardGrid } from "@/components/dashboard/summary-card";
-import { REFETCH_INTERVAL } from "@/lib/constants";
 
-// ── Local helpers not yet in shared utils ─────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function rowAccentClass(status: Drone["status"]): string {
-  if (status === "critical") return "border-l-2 border-l-fleet-red bg-fleet-red/[0.02]";
-  if (status === "warning" || status === "rtb") return "border-l-2 border-l-fleet-amber bg-fleet-amber/[0.02]";
-  return "border-l-2 border-l-transparent";
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
 }
 
-// ── Search / Filter bar ───────────────────────────────────────────────────────
+const inputClass =
+  "bg-neutral-900 border border-neutral-700 rounded-[5px] px-2.5 py-1.5 font-mono text-[11px] text-foreground placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500 w-full";
 
-type StatusFilter = "all" | Drone["status"];
-type RoleFilter = "all" | Drone["role"];
+// ── Create Node Form ──────────────────────────────────────────────────────────
 
-interface FilterBarProps {
-  search: string;
-  onSearch: (v: string) => void;
-  statusFilter: StatusFilter;
-  onStatusFilter: (v: StatusFilter) => void;
-  roleFilter: RoleFilter;
-  onRoleFilter: (v: RoleFilter) => void;
-  total: number;
-  filtered: number;
-}
+function CreateNodeForm({ onClose }: { onClose: () => void }) {
+  const utils = trpc.useUtils();
+  const [name, setName] = useState("");
+  const [serial, setSerial] = useState("");
+  const [baseId, setBaseId] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-function FilterBar({ search, onSearch, statusFilter, onStatusFilter, roleFilter, onRoleFilter, total, filtered }: FilterBarProps) {
-  const t = useTranslations("fleetPage");
+  const { data: bases } = trpc.bases.list.useQuery();
 
-  const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
-    { value: "all", label: t("filterAll") },
-    { value: "nominal", label: t("filterNominal") },
-    { value: "warning", label: t("filterWarning") },
-    { value: "critical", label: t("filterCritical") },
-    { value: "rtb", label: t("filterRtb") },
-    { value: "offline", label: t("filterOffline") },
-  ];
+  const createMutation = trpc.nodes.create.useMutation({
+    onSuccess: () => {
+      utils.nodes.list.invalidate();
+      onClose();
+    },
+    onError: (e) => setError(e.message),
+  });
 
-  const ROLE_FILTERS: { value: RoleFilter; label: string }[] = [
-    { value: "all", label: t("filterAllRoles") },
-    { value: "coordinator", label: t("filterCoord") },
-    { value: "follower", label: t("filterFollower") },
-    { value: "relay", label: t("filterRelay") },
-  ];
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    createMutation.mutate({
+      name: name.trim(),
+      serial: serial.trim() || undefined,
+      base_id: baseId.trim() || undefined,
+    });
+  };
 
   return (
-    <div className="px-5 py-3 flex flex-wrap items-center gap-3 border-b border-border shrink-0">
-      {/* Search input */}
-      <div className="relative">
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-subtle pointer-events-none"
+    <form onSubmit={handleSubmit} className="bg-neutral-800 border border-neutral-700 rounded-[5px] p-4 mb-4">
+      <div className="font-mono text-[10px] tracking-wider text-neutral-400 uppercase mb-3">Register Node</div>
+      <div className="grid grid-cols-3 gap-3 mb-3">
+        <div>
+          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Name *</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Node-01"
+            required
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Serial</label>
+          <input
+            type="text"
+            value={serial}
+            onChange={(e) => setSerial(e.target.value)}
+            placeholder="SN-XXXXXX"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Base</label>
+          <select
+            value={baseId}
+            onChange={(e) => setBaseId(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">— None —</option>
+            {bases?.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {error && <div className="font-mono text-[10px] text-red-400 mb-3">{error}</div>}
+      <div className="flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={createMutation.isPending}
+          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
         >
-          <circle cx="5" cy="5" r="3.5" stroke="currentColor" strokeWidth="1.2" />
-          <path d="M8 8l2.5 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-        </svg>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-          placeholder={t("searchPlaceholder")}
-          className="bg-card border border-input rounded pl-7 pr-3 py-1.5 font-mono text-[11px] text-foreground placeholder:text-subtle focus:outline-none focus:border-muted w-44"
-        />
+          {createMutation.isPending ? "Creating…" : "Register Node"}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+        >
+          Cancel
+        </button>
       </div>
-
-      {/* Status filters */}
-      <div className="flex items-center gap-1">
-        {STATUS_FILTERS.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => onStatusFilter(f.value)}
-            className={cn(
-              "font-mono text-[10px] tracking-wider px-2 py-1 rounded border transition-colors",
-              statusFilter === f.value
-                ? "border-foreground/30 bg-secondary text-foreground"
-                : "border-transparent text-subtle hover:text-muted-foreground hover:border-border"
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Role filters */}
-      <div className="flex items-center gap-1">
-        {ROLE_FILTERS.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => onRoleFilter(f.value)}
-            className={cn(
-              "font-mono text-[10px] tracking-wider px-2 py-1 rounded border transition-colors",
-              roleFilter === f.value
-                ? "border-foreground/30 bg-secondary text-foreground"
-                : "border-transparent text-subtle hover:text-muted-foreground hover:border-border"
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Count indicator */}
-      <div className="ml-auto font-mono text-[10px] text-subtle">
-        {filtered === total ? (
-          <span>{t("countAll", { total })}</span>
-        ) : (
-          <span>{t("countFiltered", { filtered, total })}</span>
-        )}
-      </div>
-    </div>
+    </form>
   );
 }
 
-// ── Drone Table Row ───────────────────────────────────────────────────────────
+// ── Node Table Row ────────────────────────────────────────────────────────────
 
-interface DroneRowProps {
-  drone: Drone;
-  isSelected: boolean;
-  onClick: () => void;
+interface NodeRowProps {
+  node: {
+    id: string;
+    name: string;
+    serial?: string;
+    base_id?: string;
+    firmware_version?: string;
+    created_at: string;
+  };
+  bases: { id: string; name: string }[];
 }
 
-function DroneRow({ drone, isSelected, onClick }: DroneRowProps) {
-  const t = useTranslations("fleetPage");
-  const isAlert = drone.status === "warning" || drone.status === "critical" || drone.status === "rtb";
-  const battery = getBatteryColor(drone.battery);
+function NodeRow({ node, bases }: NodeRowProps) {
+  const utils = trpc.useUtils();
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(node.name);
+  const [editSerial, setEditSerial] = useState(node.serial ?? "");
+  const [editBaseId, setEditBaseId] = useState(node.base_id ?? "");
+  const [error, setError] = useState<string | null>(null);
 
-  const statusLabel: Record<Drone["status"], string> = {
-    nominal: t("statusNominal"),
-    warning: t("statusWarning"),
-    critical: t("statusCritical"),
-    rtb: t("statusRtb"),
-    offline: t("statusOffline"),
+  const updateMutation = trpc.nodes.update.useMutation({
+    onSuccess: () => {
+      utils.nodes.list.invalidate();
+      setEditing(false);
+      setError(null);
+    },
+    onError: (e) => setError(e.message),
+  });
+
+  const handleSave = () => {
+    setError(null);
+    updateMutation.mutate({
+      id: node.id,
+      name: editName.trim() || undefined,
+      serial: editSerial.trim() || undefined,
+      base_id: editBaseId.trim() || undefined,
+    });
   };
 
-  const roleLabel: Record<Drone["role"], string> = {
-    coordinator: t("roleCoord"),
-    follower: t("roleFollower"),
-    relay: t("roleRelay"),
+  const handleCancel = () => {
+    setEditName(node.name);
+    setEditSerial(node.serial ?? "");
+    setEditBaseId(node.base_id ?? "");
+    setEditing(false);
+    setError(null);
   };
+
+  const baseName = bases.find((b) => b.id === node.base_id)?.name ?? node.base_id ?? "—";
+
+  if (editing) {
+    return (
+      <tr className="border-b border-neutral-800 bg-neutral-800/50">
+        <td className="px-4 py-2">
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            className="bg-neutral-900 border border-neutral-600 rounded px-2 py-1 font-mono text-[11px] text-foreground focus:outline-none focus:border-neutral-400 w-36"
+          />
+        </td>
+        <td className="px-3 py-2">
+          <input
+            type="text"
+            value={editSerial}
+            onChange={(e) => setEditSerial(e.target.value)}
+            className="bg-neutral-900 border border-neutral-600 rounded px-2 py-1 font-mono text-[11px] text-foreground focus:outline-none focus:border-neutral-400 w-32"
+          />
+        </td>
+        <td className="px-3 py-2">
+          <select
+            value={editBaseId}
+            onChange={(e) => setEditBaseId(e.target.value)}
+            className="bg-neutral-900 border border-neutral-600 rounded px-2 py-1 font-mono text-[11px] text-foreground focus:outline-none focus:border-neutral-400 w-36"
+          >
+            <option value="">— None —</option>
+            {bases.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </td>
+        <td className="px-3 py-2 font-mono text-[11px] text-neutral-500">{node.firmware_version ?? "—"}</td>
+        <td className="px-3 py-2 font-mono text-[11px] text-neutral-500">{formatDate(node.created_at)}</td>
+        <td className="px-4 py-2">
+          <div className="flex items-center gap-2">
+            {error && <span className="font-mono text-[10px] text-red-400">{error}</span>}
+            <button
+              onClick={handleSave}
+              disabled={updateMutation.isPending}
+              className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded bg-emerald-700 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+            >
+              {updateMutation.isPending ? "Saving…" : "Save"}
+            </button>
+            <button
+              onClick={handleCancel}
+              className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
 
   return (
-    <tr
-      onClick={onClick}
-      className={cn(
-        "group cursor-pointer transition-colors",
-        isSelected ? "bg-secondary" : "hover:bg-card",
-        isAlert && !isSelected && rowAccentClass(drone.status)
-      )}
-    >
-      {/* Status dot */}
-      <td className="pl-5 pr-2 py-3 w-6">
-        <div className={cn("w-[7px] h-[7px] rounded-full", statusDotClass[drone.status])} />
-      </td>
-
-      {/* Drone ID */}
-      <td className="px-3 py-3">
-        <span className="font-mono text-[12px] font-semibold text-foreground">{drone.id}</span>
-      </td>
-
-      {/* Role */}
-      <td className="px-3 py-3">
-        <span className="font-mono text-[10px] tracking-wider text-subtle">{roleLabel[drone.role]}</span>
-      </td>
-
-      {/* Status */}
-      <td className="px-3 py-3">
-        <span className={cn("font-mono text-[10px] tracking-wider font-semibold", statusTextClass[drone.status])}>
-          {statusLabel[drone.status]}
-        </span>
-      </td>
-
-      {/* Battery */}
-      <td className="px-3 py-3">
-        <div className="flex items-center gap-2">
-          <div className="w-12 h-1.5 bg-secondary rounded-sm overflow-hidden shrink-0">
-            <div
-              className={cn("h-full rounded-sm transition-all", battery.bar)}
-              style={{ width: `${drone.battery}%` }}
-            />
-          </div>
-          <span className={cn("font-mono text-[11px] font-semibold tabular-nums", battery.text)}>
-            {Math.round(drone.battery)}%
-          </span>
-        </div>
-      </td>
-
-      {/* Position */}
-      <td className="px-3 py-3">
-        <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
-          {drone.position.lat.toFixed(5)}, {drone.position.lng.toFixed(5)}
-        </span>
-      </td>
-
-      {/* Grid Pos */}
-      <td className="px-3 py-3">
-        <span className="font-mono text-[11px] text-muted-foreground">
-          R{drone.gridPos.row}·C{drone.gridPos.col}
-        </span>
-      </td>
-
-      {/* Heading */}
-      <td className="pr-5 pl-3 py-3">
-        <div className="flex items-center gap-1.5">
-          {/* Compass arrow rotated to heading */}
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            className="text-subtle shrink-0"
-            style={{ transform: `rotate(${drone.heading}deg)` }}
-          >
-            <path d="M6 1.5L8.5 10 6 8.5 3.5 10 6 1.5Z" fill="currentColor" />
-          </svg>
-          <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
-            {Math.round(drone.heading)}° {headingToCompass(drone.heading)}
-          </span>
-        </div>
+    <tr className="border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors group">
+      <td className="px-4 py-3 font-mono text-[12px] font-semibold text-foreground">{node.name}</td>
+      <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">{node.serial ?? "—"}</td>
+      <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">{baseName}</td>
+      <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">{node.firmware_version ?? "—"}</td>
+      <td className="px-3 py-3 font-mono text-[11px] text-neutral-500">{formatDate(node.created_at)}</td>
+      <td className="px-4 py-3">
+        <button
+          onClick={() => setEditing(true)}
+          className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 opacity-0 group-hover:opacity-100 transition-all"
+        >
+          Edit
+        </button>
       </td>
     </tr>
   );
@@ -236,296 +241,74 @@ function DroneRow({ drone, isSelected, onClick }: DroneRowProps) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function FleetPage() {
-  const t = useTranslations("fleetPage");
-
-  const { data: drones } = trpc.drones.list.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.FAST });
-  const { data: mission } = trpc.missions.active.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.FAST });
-  const { data: alerts } = trpc.alerts.list.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
-  const { data: meshLinks } = trpc.meshLinks.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
-
-  const [selectedDroneId, setSelectedDroneId] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
-
-  // ── Derived stats ──
-  const totalDrones = drones?.length ?? 0;
-  const activeDrones = drones?.filter((d) => d.status !== "offline").length ?? 0;
-  const warningDrones = drones?.filter((d) => d.status === "warning" || d.status === "critical").length ?? 0;
-  const avgBattery =
-    drones && drones.length > 0
-      ? Math.round(drones.reduce((sum, d) => sum + d.battery, 0) / drones.length)
-      : 0;
-
-  // ── Filtered rows ──
-  const filtered = useMemo(() => {
-    const list = drones ?? [];
-    return list.filter((d) => {
-      const matchSearch =
-        search.trim() === "" || d.id.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = statusFilter === "all" || d.status === statusFilter;
-      const matchRole = roleFilter === "all" || d.role === roleFilter;
-      return matchSearch && matchStatus && matchRole;
-    });
-  }, [drones, search, statusFilter, roleFilter]);
-
-  // ── Sort: critical/warning first, then by id ──
-  const sorted = useMemo(() => {
-    const priority: Record<Drone["status"], number> = {
-      critical: 0,
-      warning: 1,
-      rtb: 2,
-      nominal: 3,
-      offline: 4,
-    };
-    return [...filtered].sort((a, b) => priority[a.status] - priority[b.status] || a.id.localeCompare(b.id));
-  }, [filtered]);
-
-  const criticalAlerts = alerts?.filter((a) => a.severity === "critical").length ?? 0;
-  const avgBatteryColor = getBatteryColor(avgBattery);
+  const { data: nodes, isLoading } = trpc.nodes.list.useQuery();
+  const { data: bases = [] } = trpc.bases.list.useQuery();
+  const [showCreate, setShowCreate] = useState(false);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* ── Page header ── */}
-      <div className="px-5 pt-4 pb-3 flex items-start justify-between shrink-0">
+    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+      {/* Page header */}
+      <div className="px-5 pt-4 pb-3 shrink-0 flex items-center justify-between border-b border-neutral-800">
         <div>
-          <div className="text-[15px] font-semibold text-foreground tracking-tight">{t("title")}</div>
-          <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-            {t("dronesRegistered", { count: totalDrones })}
-            {mission && ` · ${mission.id} · ${mission.name} · ${Math.round(mission.coverage)}% coverage`}
+          <div className="text-[15px] font-semibold text-foreground tracking-tight">Fleet</div>
+          <div className="text-[11px] text-neutral-500 font-mono mt-0.5">
+            {isLoading
+              ? "Loading…"
+              : `${nodes?.length ?? 0} node${(nodes?.length ?? 0) === 1 ? "" : "s"} registered`}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {criticalAlerts > 0 && (
-            <div className="flex items-center gap-1.5 bg-fleet-red/10 border border-fleet-red/30 rounded px-2.5 py-1.5">
-              <div className="w-[6px] h-[6px] rounded-full bg-fleet-red shadow-[0_0_4px_#ef444488]" />
-              <span className="font-mono text-[10px] tracking-wider text-fleet-red uppercase">
-                {criticalAlerts !== 1
-                  ? t("criticalAlerts", { count: criticalAlerts })
-                  : t("criticalAlert", { count: criticalAlerts })}
-              </span>
-            </div>
-          )}
-          <div className="flex items-center gap-1.5 bg-card border border-input rounded px-2.5 py-1.5">
-            <div className="w-[6px] h-[6px] rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88]" />
-            <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("liveRefresh")}</span>
-          </div>
-        </div>
+        <button
+          onClick={() => setShowCreate((v) => !v)}
+          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+        >
+          {showCreate ? "Cancel" : "+ Register Node"}
+        </button>
       </div>
 
-      {/* ── Summary cards ── */}
-      <SummaryCardGrid>
-        <SummaryCard
-          label={t("totalDrones")}
-          value={totalDrones}
-          meta={
-            <>
-              <span className="text-muted-foreground">{t("offlineMeta", { count: drones?.filter((d) => d.status === "offline").length ?? 0 })}</span>
-            </>
-          }
-        />
-        <SummaryCard
-          label={t("active")}
-          value={activeDrones}
-          valueColor="text-fleet-green"
-          meta={
-            <>
-              <span className="text-fleet-green">●</span>
-              {` ${t("nominalMeta", { count: drones?.filter((d) => d.status === "nominal").length ?? 0 })}`}
-            </>
-          }
-        />
-        <SummaryCard
-          label={t("warnings")}
-          value={warningDrones}
-          valueColor={warningDrones > 0 ? "text-fleet-amber" : "text-foreground"}
-          meta={
-            warningDrones > 0 ? (
-              <>
-                <span className="text-fleet-amber">⚠</span>
-                {` ${t("criticalMeta", { count: drones?.filter((d) => d.status === "critical").length ?? 0 })}`}
-              </>
-            ) : (
-              <>
-                <span className="text-fleet-green">●</span> {t("allClear")}
-              </>
-            )
-          }
-        />
-        <SummaryCard
-          label={t("avgBattery")}
-          value={avgBattery}
-          unit="%"
-          valueColor={avgBatteryColor.text}
-          meta={
-            <>
-              <span className={avgBattery > 50 ? "text-fleet-green" : "text-fleet-amber"}>
-                {avgBattery > 50 ? "●" : "⚠"}
-              </span>
-              {` ${t("meshLinksMeta", { count: meshLinks?.length ?? 0 })}`}
-            </>
-          }
-        />
-      </SummaryCardGrid>
+      {/* Content area */}
+      <div className="flex-1 p-5">
+        {showCreate && <CreateNodeForm onClose={() => setShowCreate(false)} />}
 
-      {/* ── Filter bar ── */}
-      <FilterBar
-        search={search}
-        onSearch={setSearch}
-        statusFilter={statusFilter}
-        onStatusFilter={setStatusFilter}
-        roleFilter={roleFilter}
-        onRoleFilter={setRoleFilter}
-        total={totalDrones}
-        filtered={sorted.length}
-      />
-
-      {/* ── Table ── */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <table className="w-full border-collapse">
-          <thead className="sticky top-0 z-10 bg-background">
-            <tr className="border-b border-border">
-              <th className="pl-5 pr-2 py-2 w-6" />
-              <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colDroneId")}</span>
-              </th>
-              <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colRole")}</span>
-              </th>
-              <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colStatus")}</span>
-              </th>
-              <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colBattery")}</span>
-              </th>
-              <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colPosition")}</span>
-              </th>
-              <th className="px-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colGridPos")}</span>
-              </th>
-              <th className="pr-5 pl-3 py-2 text-left">
-                <span className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("colHeading")}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.length === 0 && (
-              <tr>
-                <td colSpan={8} className="text-center py-16 font-mono text-[12px] text-subtle">
-                  {drones === undefined ? t("loadingDrones") : t("noMatch")}
-                </td>
-              </tr>
-            )}
-            {sorted.map((drone) => (
-              <DroneRow
-                key={drone.id}
-                drone={drone}
-                isSelected={selectedDroneId === drone.id}
-                onClick={() => setSelectedDroneId(selectedDroneId === drone.id ? null : drone.id)}
-              />
-            ))}
-          </tbody>
-        </table>
-
-        {/* ── Selected drone detail panel ── */}
-        {selectedDroneId && (() => {
-          const drone = drones?.find((d) => d.id === selectedDroneId);
-          if (!drone) return null;
-          const droneAlerts = alerts?.filter((a) => a.droneId === drone.id) ?? [];
-          const droneBattery = getBatteryColor(drone.battery);
-
-          const statusLabel: Record<Drone["status"], string> = {
-            nominal: t("statusNominal"),
-            warning: t("statusWarning"),
-            critical: t("statusCritical"),
-            rtb: t("statusRtb"),
-            offline: t("statusOffline"),
-          };
-
-          const roleLabel: Record<Drone["role"], string> = {
-            coordinator: t("roleCoord"),
-            follower: t("roleFollower"),
-            relay: t("roleRelay"),
-          };
-
-          return (
-            <div className="mx-5 my-4 bg-card border border-border rounded p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className={cn("w-[7px] h-[7px] rounded-full", statusDotClass[drone.status])} />
-                  <span className="font-mono text-[13px] font-semibold text-foreground">{drone.id}</span>
-                  <span className="font-mono text-[10px] tracking-wider text-subtle uppercase ml-1">
-                    {roleLabel[drone.role]}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setSelectedDroneId(null)}
-                  className="font-mono text-[10px] text-subtle hover:text-muted-foreground transition-colors"
-                >
-                  {t("detailClose")}
-                </button>
-              </div>
-
-              <div className="grid grid-cols-4 gap-px bg-border border border-border rounded overflow-hidden">
-                {[
-                  { label: t("detailStatus"), value: statusLabel[drone.status], color: statusTextClass[drone.status] },
-                  { label: t("detailBattery"), value: `${Math.round(drone.battery)}%`, color: droneBattery.text },
-                  { label: t("detailHeading"), value: `${Math.round(drone.heading)}° ${headingToCompass(drone.heading)}`, color: "text-foreground" },
-                  { label: t("detailGrid"), value: `R${drone.gridPos.row}·C${drone.gridPos.col}`, color: "text-foreground" },
-                ].map((item) => (
-                  <div key={item.label} className="bg-card px-3 py-2.5">
-                    <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-1">{item.label}</div>
-                    <div className={cn("font-mono text-[13px] font-semibold", item.color)}>{item.value}</div>
-                  </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-24 font-mono text-[12px] text-neutral-500">
+            Loading nodes…
+          </div>
+        ) : !nodes || nodes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-2">
+            <div className="font-mono text-[12px] text-neutral-500">No nodes registered yet</div>
+            <div className="font-mono text-[10px] text-neutral-600">Register a node to get started</div>
+          </div>
+        ) : (
+          <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] overflow-hidden">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-neutral-800 bg-neutral-950">
+                  <th className="px-4 py-2.5 text-left">
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Name</span>
+                  </th>
+                  <th className="px-3 py-2.5 text-left">
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Serial</span>
+                  </th>
+                  <th className="px-3 py-2.5 text-left">
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Base</span>
+                  </th>
+                  <th className="px-3 py-2.5 text-left">
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Firmware</span>
+                  </th>
+                  <th className="px-3 py-2.5 text-left">
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Created</span>
+                  </th>
+                  <th className="px-4 py-2.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {nodes.map((node) => (
+                  <NodeRow key={node.id} node={node} bases={bases} />
                 ))}
-              </div>
-
-              <div className="mt-3 font-mono text-[11px] text-subtle">
-                <span className="uppercase tracking-wider">{t("detailPosition")}</span>
-                <span className="text-muted-foreground ml-2 tabular-nums">
-                  {drone.position.lat.toFixed(6)}, {drone.position.lng.toFixed(6)}
-                </span>
-              </div>
-
-              {droneAlerts.length > 0 && (
-                <div className="mt-3 space-y-1.5">
-                  <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-2">{t("detailActiveAlerts")}</div>
-                  {droneAlerts.map((alert) => (
-                    <div
-                      key={alert.id}
-                      className={cn(
-                        "flex items-start gap-2 px-3 py-2 rounded border",
-                        alert.severity === "critical"
-                          ? "bg-fleet-red/5 border-fleet-red/20"
-                          : alert.severity === "warning"
-                          ? "bg-fleet-amber/5 border-fleet-amber/20"
-                          : "bg-fleet-blue/5 border-fleet-blue/20"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "font-mono text-[10px] mt-px",
-                          alert.severity === "critical"
-                            ? "text-fleet-red"
-                            : alert.severity === "warning"
-                            ? "text-fleet-amber"
-                            : "text-fleet-blue"
-                        )}
-                      >
-                        {alert.severity === "critical" ? "●" : alert.severity === "warning" ? "⚠" : "ℹ"}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="font-mono text-[11px] font-semibold text-foreground">{alert.title}</div>
-                        <div className="font-mono text-[10px] text-muted-foreground mt-0.5">{alert.detail}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

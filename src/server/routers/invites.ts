@@ -1,0 +1,54 @@
+import { z } from "zod";
+import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
+import { overlordFetch } from "@/lib/overlord";
+import type { Invite, CreateInviteResponse } from "@/lib/types";
+
+export const invitesRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return overlordFetch<Invite[]>(`/orgs/${ctx.orgSlug}/invites`, {
+      accessToken: ctx.accessToken,
+    });
+  }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        email: z.string().email(),
+        role_id: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return overlordFetch<CreateInviteResponse>(
+        `/orgs/${ctx.orgSlug}/invites`,
+        {
+          method: "POST",
+          body: input,
+          accessToken: ctx.accessToken,
+        }
+      );
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return overlordFetch(`/orgs/${ctx.orgSlug}/invites/${input.id}`, {
+        method: "DELETE",
+        accessToken: ctx.accessToken,
+      });
+    }),
+
+  accept: publicProcedure
+    .input(
+      z.object({
+        token: z.string(),
+        email: z.string().email(),
+        password: z.string().min(8),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return overlordFetch("/invites/accept", {
+        method: "POST",
+        body: input,
+      });
+    }),
+});

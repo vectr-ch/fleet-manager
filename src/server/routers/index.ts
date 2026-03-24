@@ -1,27 +1,36 @@
-import { router, publicProcedure } from "../trpc";
-import { dronesRouter } from "./drones";
+import { router } from "@/server/trpc";
+import { authRouter } from "./auth";
+import { orgRouter } from "./org";
+import { usersRouter } from "./users";
+import { basesRouter } from "./bases";
+import { nodesRouter } from "./nodes";
+import { invitesRouter } from "./invites";
+import { userAccountRouter } from "./user-account";
 import { missionsRouter } from "./missions";
 import { alertsRouter } from "./alerts";
-import { commandsRouter } from "./commands";
 import { telemetryRouter } from "./telemetry";
-import { worldState } from "../simulation/state";
+import { auditRouter } from "./audit";
+import { overviewRouter } from "./overview";
+import { sysadminAuthRouter } from "./sysadmin-auth";
+import { sysadminOrgsRouter } from "./sysadmin-orgs";
+import { sysadminAdminsRouter } from "./sysadmin-admins";
 
 export const appRouter = router({
-  drones: dronesRouter,
+  auth: authRouter,
+  org: orgRouter,
+  users: usersRouter,
+  bases: basesRouter,
+  nodes: nodesRouter,
+  invites: invitesRouter,
+  userAccount: userAccountRouter,
   missions: missionsRouter,
   alerts: alertsRouter,
-  commands: commandsRouter,
   telemetry: telemetryRouter,
-
-  baseStations: publicProcedure.query(() => {
-    return worldState.baseStations;
-  }),
-
-  meshLinks: publicProcedure.query(() => {
-    return worldState.meshLinks;
-  }),
-
-  meshNetworkHealth: publicProcedure.query(() => worldState.meshNetworkHealth),
+  audit: auditRouter,
+  overview: overviewRouter,
+  sysadminAuth: sysadminAuthRouter,
+  sysadminOrgs: sysadminOrgsRouter,
+  sysadminAdmins: sysadminAdminsRouter,
 });
 
 export type AppRouter = typeof appRouter;

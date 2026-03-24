@@ -1,264 +1,330 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
-import { SummaryCard, SummaryCardGrid } from "@/components/dashboard/summary-card";
-import { formatCoord } from "@/lib/drone-utils";
-import { REFETCH_INTERVAL } from "@/lib/constants";
 
-function latencyQuality(ms: number, t: ReturnType<typeof useTranslations<"basesPage">>): { label: string; color: string } {
-  if (ms === 0) return { label: t("latencyNa"), color: "text-subtle" };
-  if (ms <= 10) return { label: t("latencyExcellent"), color: "text-fleet-green" };
-  if (ms <= 25) return { label: t("latencyGood"), color: "text-fleet-green" };
-  if (ms <= 50) return { label: t("latencyFair"), color: "text-fleet-amber" };
-  return { label: t("latencyPoor"), color: "text-fleet-red" };
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
 }
 
-function signalBar(pct: number) {
-  const bars = 5;
-  const filled = Math.round((pct / 100) * bars);
+const inputClass =
+  "bg-neutral-900 border border-neutral-700 rounded-[5px] px-2.5 py-1.5 font-mono text-[11px] text-foreground placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500 w-full";
+
+// ── Create Base Form ──────────────────────────────────────────────────────────
+
+function CreateBaseForm({ onClose }: { onClose: () => void }) {
+  const utils = trpc.useUtils();
+  const [name, setName] = useState("");
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const createMutation = trpc.bases.create.useMutation({
+    onSuccess: () => {
+      utils.bases.list.invalidate();
+      onClose();
+    },
+    onError: (e) => setError(e.message),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    createMutation.mutate({
+      name: name.trim(),
+      lat: lat !== "" ? parseFloat(lat) : undefined,
+      lng: lng !== "" ? parseFloat(lng) : undefined,
+    });
+  };
+
   return (
-    <div className="flex items-end gap-[2px]">
-      {Array.from({ length: bars }).map((_, i) => (
-        <div
-          key={i}
-          style={{ height: `${(i + 1) * 3 + 4}px`, width: "4px", borderRadius: "1px" }}
-          className={i < filled ? "bg-fleet-green" : "bg-border"}
-        />
-      ))}
-    </div>
+    <form onSubmit={handleSubmit} className="bg-neutral-800 border border-neutral-700 rounded-[5px] p-4 mb-4">
+      <div className="font-mono text-[10px] tracking-wider text-neutral-400 uppercase mb-3">Create Base</div>
+      <div className="grid grid-cols-3 gap-3 mb-3">
+        <div>
+          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Name *</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Base Alpha"
+            required
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Latitude</label>
+          <input
+            type="number"
+            step="any"
+            value={lat}
+            onChange={(e) => setLat(e.target.value)}
+            placeholder="47.3769"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Longitude</label>
+          <input
+            type="number"
+            step="any"
+            value={lng}
+            onChange={(e) => setLng(e.target.value)}
+            placeholder="8.5417"
+            className={inputClass}
+          />
+        </div>
+      </div>
+      {error && <div className="font-mono text-[10px] text-red-400 mb-3">{error}</div>}
+      <div className="flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={createMutation.isPending}
+          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+        >
+          {createMutation.isPending ? "Creating…" : "Create Base"}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
 
+// ── Edit Base Row ─────────────────────────────────────────────────────────────
+
+interface BaseRowProps {
+  base: {
+    id: string;
+    name: string;
+    status: string;
+    lat?: number;
+    lng?: number;
+    maintenance_mode: boolean;
+    created_at: string;
+  };
+}
+
+function BaseRow({ base }: BaseRowProps) {
+  const utils = trpc.useUtils();
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(base.name);
+  const [editMaintenance, setEditMaintenance] = useState(base.maintenance_mode);
+  const [error, setError] = useState<string | null>(null);
+
+  const updateMutation = trpc.bases.update.useMutation({
+    onSuccess: () => {
+      utils.bases.list.invalidate();
+      setEditing(false);
+      setError(null);
+    },
+    onError: (e) => setError(e.message),
+  });
+
+  const handleSave = () => {
+    setError(null);
+    updateMutation.mutate({
+      id: base.id,
+      name: editName.trim() || undefined,
+      maintenance_mode: editMaintenance,
+    });
+  };
+
+  const handleCancel = () => {
+    setEditName(base.name);
+    setEditMaintenance(base.maintenance_mode);
+    setEditing(false);
+    setError(null);
+  };
+
+  const isOnline = base.status === "online";
+
+  if (editing) {
+    return (
+      <tr className="border-b border-neutral-800 bg-neutral-800/50">
+        <td className="px-4 py-3 w-3">
+          <div className={`w-2 h-2 rounded-full shrink-0 ${isOnline ? "bg-emerald-400" : "bg-neutral-600"}`} />
+        </td>
+        <td className="px-3 py-2">
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            className="bg-neutral-900 border border-neutral-600 rounded px-2 py-1 font-mono text-[11px] text-foreground focus:outline-none focus:border-neutral-400 w-40"
+          />
+        </td>
+        <td className="px-3 py-2">
+          <span
+            className={`font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border ${
+              isOnline
+                ? "bg-emerald-900/30 text-emerald-400 border-emerald-400/20"
+                : "bg-neutral-800 text-neutral-500 border-neutral-700"
+            }`}
+          >
+            {base.status}
+          </span>
+        </td>
+        <td className="px-3 py-2 font-mono text-[11px] text-neutral-400">
+          {base.lat != null && base.lng != null ? `${base.lat.toFixed(4)}, ${base.lng.toFixed(4)}` : "—"}
+        </td>
+        <td className="px-3 py-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={editMaintenance}
+              onChange={(e) => setEditMaintenance(e.target.checked)}
+              className="accent-amber-400"
+            />
+            <span className="font-mono text-[10px] text-neutral-400">Maintenance</span>
+          </label>
+        </td>
+        <td className="px-3 py-2 font-mono text-[11px] text-neutral-500">{formatDate(base.created_at)}</td>
+        <td className="px-4 py-2">
+          <div className="flex items-center gap-2">
+            {error && <span className="font-mono text-[10px] text-red-400">{error}</span>}
+            <button
+              onClick={handleSave}
+              disabled={updateMutation.isPending}
+              className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded bg-emerald-700 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+            >
+              {updateMutation.isPending ? "Saving…" : "Save"}
+            </button>
+            <button
+              onClick={handleCancel}
+              className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr className="border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors group">
+      <td className="px-4 py-3 w-3">
+        <div className={`w-2 h-2 rounded-full shrink-0 ${isOnline ? "bg-emerald-400 animate-pulse" : "bg-neutral-600"}`} />
+      </td>
+      <td className="px-3 py-3 font-mono text-[12px] font-semibold text-foreground">{base.name}</td>
+      <td className="px-3 py-3">
+        <span
+          className={`font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border ${
+            isOnline
+              ? "bg-emerald-900/30 text-emerald-400 border-emerald-400/20"
+              : "bg-neutral-800 text-neutral-500 border-neutral-700"
+          }`}
+        >
+          {base.status}
+        </span>
+      </td>
+      <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">
+        {base.lat != null && base.lng != null ? `${base.lat.toFixed(4)}, ${base.lng.toFixed(4)}` : "—"}
+      </td>
+      <td className="px-3 py-3">
+        {base.maintenance_mode ? (
+          <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-amber-900/30 text-amber-400 border-amber-400/20">
+            Maintenance
+          </span>
+        ) : (
+          <span className="font-mono text-[10px] text-neutral-500">—</span>
+        )}
+      </td>
+      <td className="px-3 py-3 font-mono text-[11px] text-neutral-500">{formatDate(base.created_at)}</td>
+      <td className="px-4 py-3">
+        <button
+          onClick={() => setEditing(true)}
+          className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 opacity-0 group-hover:opacity-100 transition-all"
+        >
+          Edit
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function BasesPage() {
-  const t = useTranslations("basesPage");
-
-  const { data: allBases = [] } = trpc.baseStations.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
-  const { data: meshLinks } = trpc.meshLinks.useQuery(undefined, { refetchInterval: REFETCH_INTERVAL.SLOW });
-
-  const totalBases = allBases.length;
-  const onlineBases = allBases.filter((b) => b.status === "online").length;
-  const avgLatency =
-    onlineBases > 0
-      ? Math.round(
-          allBases
-            .filter((b) => b.status === "online")
-            .reduce((sum, b) => sum + b.uplinkLatency, 0) / onlineBases
-        )
-      : 0;
-  const connectedDronesTotal = allBases.reduce((sum, b) => sum + b.connectedDrones, 0);
+  const { data: bases, isLoading } = trpc.bases.list.useQuery();
+  const [showCreate, setShowCreate] = useState(false);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
       {/* Page header */}
-      <div className="px-5 pt-4 pb-3 shrink-0 flex items-center justify-between border-b border-border">
+      <div className="px-5 pt-4 pb-3 shrink-0 flex items-center justify-between border-b border-neutral-800">
         <div>
-          <div className="text-[15px] font-semibold text-foreground tracking-tight">{t("title")}</div>
-          <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-            {t("subtitle", { total: totalBases, online: onlineBases })}
+          <div className="text-[15px] font-semibold text-foreground tracking-tight">Bases</div>
+          <div className="text-[11px] text-neutral-500 font-mono mt-0.5">
+            {isLoading ? "Loading…" : `${bases?.length ?? 0} base${(bases?.length ?? 0) === 1 ? "" : "s"} registered`}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-fleet-green-dim border border-fleet-green/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-fleet-green animate-pulse inline-block" />
-            <span className="font-mono text-[10px] tracking-wider text-fleet-green uppercase">{t("networkActive")}</span>
-          </div>
-        </div>
+        <button
+          onClick={() => setShowCreate((v) => !v)}
+          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+        >
+          {showCreate ? "Cancel" : "+ Create Base"}
+        </button>
       </div>
 
-      {/* Summary cards */}
-      <SummaryCardGrid>
-        <SummaryCard
-          label={t("totalBases")}
-          value={String(totalBases)}
-          meta={<><span className="text-fleet-blue">●</span> {t("registeredMeta")}</>}
-        />
-        <SummaryCard
-          label={t("online")}
-          value={String(onlineBases)}
-          valueColor={onlineBases === totalBases ? "text-fleet-green" : "text-fleet-amber"}
-          meta={
-            <>
-              <span className={onlineBases === totalBases ? "text-fleet-green" : "text-fleet-amber"}>●</span>{" "}
-              {t("offlineMeta", { count: totalBases - onlineBases })}
-            </>
-          }
-        />
-        <SummaryCard
-          label={t("avgLatency")}
-          value={avgLatency > 0 ? String(avgLatency) : "--"}
-          unit={avgLatency > 0 ? "ms" : undefined}
-          meta={<><span className="text-fleet-green">●</span> {t("uplinkNominalMeta")}</>}
-        />
-        <SummaryCard
-          label={t("connectedDrones")}
-          value={String(connectedDronesTotal)}
-          meta={<><span className="text-fleet-blue">●</span> {t("activeAssignmentsMeta")}</>}
-        />
-      </SummaryCardGrid>
+      {/* Content area */}
+      <div className="flex-1 p-5">
+        {showCreate && <CreateBaseForm onClose={() => setShowCreate(false)} />}
 
-      {/* Base station cards grid */}
-      <div className="flex-1 p-5 grid grid-cols-3 gap-3 content-start">
-        {allBases.map((base) => {
-          const latency = latencyQuality(base.uplinkLatency, t);
-          const isOnline = base.status === "online";
-
-          return (
-            <div
-              key={base.id}
-              className="bg-card border border-border rounded-[5px] p-4 flex flex-col gap-4"
-            >
-              {/* Card header */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-2 h-2 rounded-full shrink-0 ${
-                      isOnline ? "bg-fleet-green animate-pulse" : "bg-border"
-                    }`}
-                  />
-                  <div className="font-mono text-sm font-semibold text-foreground">{base.id}</div>
-                </div>
-                <div
-                  className={`px-2 py-0.5 rounded-[5px] font-mono text-[10px] tracking-wider uppercase ${
-                    isOnline
-                      ? "bg-fleet-green-dim text-fleet-green border border-fleet-green/20"
-                      : "bg-secondary text-subtle border border-border"
-                  }`}
-                >
-                  {isOnline ? t("statusOnline") : t("statusOffline")}
-                </div>
-              </div>
-
-              {/* Position */}
-              <div className="flex flex-col gap-1">
-                <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("position")}</div>
-                <div className="font-mono text-xs text-foreground">
-                  {formatCoord(base.position.lat)}°N · {formatCoord(Math.abs(base.position.lng))}°W
-                </div>
-              </div>
-
-              {/* Metrics row */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Uplink latency */}
-                <div className="bg-background rounded-[5px] p-2.5 flex flex-col gap-1.5">
-                  <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("uplinkLatency")}</div>
-                  <div className="font-mono text-sm font-semibold text-foreground">
-                    {isOnline ? `${base.uplinkLatency}ms` : "--"}
-                  </div>
-                  <div className={`font-mono text-[10px] ${latency.color}`}>{latency.label}</div>
-                </div>
-
-                {/* Connected drones */}
-                <div className="bg-background rounded-[5px] p-2.5 flex flex-col gap-1.5">
-                  <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("drones")}</div>
-                  <div className="font-mono text-sm font-semibold text-foreground">{base.connectedDrones}</div>
-                  <div className="font-mono text-[10px] text-muted-foreground">{t("assigned")}</div>
-                </div>
-              </div>
-
-              {/* Hardware info */}
-              <div className="border-t border-border pt-3 flex flex-col gap-2">
-                <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-1">{t("hardware")}</div>
-
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-subtle">{t("firmware")}</span>
-                  <span className="font-mono text-[10px] text-foreground">{base.firmware}</span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-subtle">{t("antenna")}</span>
-                  <span className="font-mono text-[10px] text-foreground">{base.antenna}</span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-subtle">{t("signal")}</span>
-                  <div className="flex items-center gap-2">
-                    {signalBar(base.signal)}
-                    <span className={`font-mono text-[10px] ${isOnline ? "text-foreground" : "text-subtle"}`}>
-                      {base.signal}%
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-subtle">{t("lastMaintenance")}</span>
-                  <span className="font-mono text-[10px] text-foreground">{base.lastMaintenance}</span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Network connectivity panel */}
-      <div className="mx-5 mb-5 bg-card border border-border rounded-[5px] p-4 shrink-0">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-1">{t("networkTopology")}</div>
-            <div className="text-[13px] font-semibold text-foreground">{t("meshConnectivity")}</div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-24 font-mono text-[12px] text-neutral-500">
+            Loading bases…
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[5px] bg-fleet-blue-dim border border-fleet-blue/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-fleet-blue inline-block" />
-            <span className="font-mono text-[10px] tracking-wider text-fleet-blue uppercase">
-              {(meshLinks?.length ?? 0) > 0 ? t("meshActive") : t("noLinks")}
-            </span>
+        ) : !bases || bases.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-2">
+            <div className="font-mono text-[12px] text-neutral-500">No bases yet</div>
+            <div className="font-mono text-[10px] text-neutral-600">Create a base to get started</div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-4 gap-3">
-          <div className="bg-background rounded-[5px] p-3 flex flex-col gap-1">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("meshLinks")}</div>
-            <div className="font-mono text-lg font-semibold text-foreground">{meshLinks?.length ?? 0}</div>
-            <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <span className="text-fleet-green">●</span> {t("activeConnectionsMeta")}
-            </div>
-          </div>
-
-          <div className="bg-background rounded-[5px] p-3 flex flex-col gap-1">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("nodesOnline")}</div>
-            <div className="font-mono text-lg font-semibold text-fleet-green">{onlineBases}</div>
-            <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <span className="text-fleet-green">●</span> {t("ofTotalMeta", { total: totalBases })}
-            </div>
-          </div>
-
-          <div className="bg-background rounded-[5px] p-3 flex flex-col gap-1">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("topology")}</div>
-            <div className="font-mono text-lg font-semibold text-foreground">{t("topologyValue")}</div>
-            <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <span className="text-fleet-blue">●</span> {t("hubSpokeConfigMeta")}
-            </div>
-          </div>
-
-          <div className="bg-background rounded-[5px] p-3 flex flex-col gap-1">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase">{t("redundancy")}</div>
-            <div className={`font-mono text-lg font-semibold ${onlineBases >= 2 ? "text-fleet-green" : "text-fleet-red"}`}>
-              {onlineBases >= 2 ? t("redundancyActive") : t("redundancyNone")}
-            </div>
-            <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <span className={onlineBases >= 2 ? "text-fleet-green" : "text-fleet-red"}>●</span>
-              {onlineBases >= 2 ? t("failoverReadyMeta") : t("singlePointMeta")}
-            </div>
-          </div>
-        </div>
-
-        {/* Link list */}
-        {(meshLinks?.length ?? 0) > 0 && (
-          <div className="mt-3 border-t border-border pt-3">
-            <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-2">{t("activeLinks")}</div>
-            <div className="flex flex-wrap gap-2">
-              {meshLinks?.map((link, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-1.5 px-2 py-1 bg-secondary rounded-[5px] border border-border"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-fleet-green inline-block" />
-                  <span className="font-mono text-[10px] text-foreground">{link.from}</span>
-                  <span className="font-mono text-[10px] text-subtle">→</span>
-                  <span className="font-mono text-[10px] text-foreground">{link.to}</span>
-                </div>
-              ))}
-            </div>
+        ) : (
+          <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] overflow-hidden">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-neutral-800 bg-neutral-950">
+                  <th className="px-4 py-2.5 w-3" />
+                  <th className="px-3 py-2.5 text-left">
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Name</span>
+                  </th>
+                  <th className="px-3 py-2.5 text-left">
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Status</span>
+                  </th>
+                  <th className="px-3 py-2.5 text-left">
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Lat / Lng</span>
+                  </th>
+                  <th className="px-3 py-2.5 text-left">
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Maintenance</span>
+                  </th>
+                  <th className="px-3 py-2.5 text-left">
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Created</span>
+                  </th>
+                  <th className="px-4 py-2.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {bases.map((base) => (
+                  <BaseRow key={base.id} base={base} />
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

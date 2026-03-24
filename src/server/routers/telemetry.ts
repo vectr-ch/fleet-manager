@@ -1,7 +1,11 @@
-import { router, publicProcedure } from "../trpc";
-import { worldState } from "../simulation/state";
+import { router, protectedProcedure } from "@/server/trpc";
+import type { SystemMetrics, EnvironmentData } from "@/lib/types";
 
 export const telemetryRouter = router({
-  systemMetrics: publicProcedure.query(() => worldState.systemMetrics),
-  environment: publicProcedure.query(() => worldState.environment),
+  systemMetrics: protectedProcedure.query(
+    async (): Promise<SystemMetrics | null> => null
+  ),
+  environment: protectedProcedure.query(
+    async (): Promise<EnvironmentData | null> => null
+  ),
 });

@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import { trpc } from "@/lib/trpc/client";
 
 interface SidebarItem {
   label: string;
@@ -23,14 +22,6 @@ const badgeVariants = {
 export function Sidebar() {
   const pathname = usePathname();
   const t = useTranslations("sidebar");
-
-  // Live badge data
-  const { data: drones } = trpc.drones.list.useQuery(undefined, { refetchInterval: 2000 });
-  const { data: alerts } = trpc.alerts.list.useQuery(undefined, { refetchInterval: 5000 });
-
-  const droneCount = drones?.length ?? 0;
-  const alertCount = alerts?.filter((a) => a.severity !== "info").length ?? 0;
-  const activeMissions = 1;
 
   const sections: { label: string; items: SidebarItem[] }[] = [
     {
@@ -55,7 +46,6 @@ export function Sidebar() {
               <path d="M7 4.5v3l1.5 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
           ),
-          badge: { value: activeMissions, variant: "green" },
         },
         {
           label: t("map"),
@@ -80,7 +70,6 @@ export function Sidebar() {
               <path d="M7 1L9 5h4L10 8l1 4-4-2.5L3 12l1-4L1 5h4z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
             </svg>
           ),
-          badge: { value: droneCount, variant: "muted" },
         },
         {
           label: t("baseStations"),
@@ -91,7 +80,6 @@ export function Sidebar() {
               <path d="M5 4V3a2 2 0 014 0v1" stroke="currentColor" strokeWidth="1.2" />
             </svg>
           ),
-          badge: { value: 2, variant: "green" },
         },
         {
           label: t("missionPlans"),
@@ -117,7 +105,6 @@ export function Sidebar() {
               <circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.2" />
             </svg>
           ),
-          badge: alertCount > 0 ? { value: alertCount, variant: "amber" } : undefined,
         },
         {
           label: t("auditLog"),

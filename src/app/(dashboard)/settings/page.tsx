@@ -1,195 +1,478 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
-import { cn } from "@/lib/utils";
+import { trpc } from "@/lib/trpc/client";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border transition-colors",
-        checked ? "bg-fleet-green border-fleet-green/30" : "bg-secondary border-input"
-      )}
-    >
-      <span
-        className={cn(
-          "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
-          checked ? "translate-x-4" : "translate-x-0"
-        )}
-      />
-    </button>
-  );
+// ── Shared styles ─────────────────────────────────────────────────────────────
+
+const inputClass =
+  "bg-neutral-900 border border-neutral-700 rounded-[5px] px-2.5 py-1.5 font-mono text-[11px] text-foreground placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500 w-full";
+
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
 }
 
-function SettingRow({ label, description, children }: { label: string; description: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
-      <div>
-        <div className="text-[12.5px] text-foreground">{label}</div>
-        <div className="font-mono text-[10px] text-subtle mt-0.5">{description}</div>
-      </div>
-      {children}
-    </div>
-  );
-}
+// ── Organisation Tab ──────────────────────────────────────────────────────────
 
-function SectionHeader({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="mb-3">
-      <div className="font-mono text-[10px] tracking-wider text-subtle uppercase mb-0.5">{title}</div>
-      <div className="text-[11px] text-muted-foreground">{description}</div>
-    </div>
-  );
-}
+function OrgTab() {
+  const utils = trpc.useUtils();
+  const { data: org, isLoading } = trpc.org.get.useQuery();
+  const [editName, setEditName] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export default function SettingsPage() {
-  const t = useTranslations("settingsPage");
+  const updateMutation = trpc.org.update.useMutation({
+    onSuccess: () => {
+      utils.org.get.invalidate();
+      setEditing(false);
+      setSuccess(true);
+      setError(null);
+      setTimeout(() => setSuccess(false), 2000);
+    },
+    onError: (e) => setError(e.message),
+  });
 
-  const [callsign, setCallsign] = useState("BRAVO-FLEET");
-  const [formation, setFormation] = useState("grid");
-  const [rtbThreshold, setRtbThreshold] = useState("15");
-  const [telemetryRate, setTelemetryRate] = useState("1000");
-  const [criticalAlerts, setCriticalAlerts] = useState(true);
-  const [batteryWarnings, setBatteryWarnings] = useState(true);
-  const [missionUpdates, setMissionUpdates] = useState(true);
-  const [meshAlerts, setMeshAlerts] = useState(false);
-  const [twoFactor, setTwoFactor] = useState(true);
-  const [sessionTimeout, setSessionTimeout] = useState("30");
-  const [encryptedComms, setEncryptedComms] = useState(true);
-  const [auditLogging, setAuditLogging] = useState(true);
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const startEdit = () => {
+    setEditName(org?.name ?? "");
+    setEditing(true);
+    setError(null);
   };
 
-  const inputClass =
-    "bg-card border border-input rounded-[5px] px-2.5 py-1 font-mono text-[11px] text-foreground focus:outline-none focus:border-muted w-36";
+  const handleSave = () => {
+    setError(null);
+    updateMutation.mutate({ name: editName.trim() });
+  };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card shrink-0">
-        <div>
-          <div className="text-[15px] font-semibold text-foreground tracking-tight">{t("title")}</div>
-          <div className="text-[11px] text-muted-foreground font-mono mt-0.5">{t("subtitle")}</div>
+    <div className="max-w-xl space-y-5">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-5">
+        <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-4">Organisation Details</div>
+
+        {isLoading ? (
+          <div className="font-mono text-[11px] text-neutral-500">Loading…</div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <div className="font-mono text-[10px] text-neutral-500 mb-1">Slug</div>
+              <div className="font-mono text-[12px] text-neutral-300">{org?.slug ?? "—"}</div>
+            </div>
+
+            <div>
+              <div className="font-mono text-[10px] text-neutral-500 mb-1">Name</div>
+              {editing ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className={inputClass + " max-w-xs"}
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleSave}
+                    disabled={updateMutation.isPending}
+                    className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors whitespace-nowrap"
+                  >
+                    {updateMutation.isPending ? "Saving…" : "Save"}
+                  </button>
+                  <button
+                    onClick={() => { setEditing(false); setError(null); }}
+                    className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="font-mono text-[12px] text-neutral-300">{org?.name ?? "—"}</div>
+                  <button
+                    onClick={startEdit}
+                    className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 transition-colors"
+                  >
+                    Edit
+                  </button>
+                  {success && (
+                    <span className="font-mono text-[10px] text-emerald-400">Saved</span>
+                  )}
+                </div>
+              )}
+              {error && <div className="font-mono text-[10px] text-red-400 mt-1">{error}</div>}
+            </div>
+
+            {org?.plan && (
+              <div>
+                <div className="font-mono text-[10px] text-neutral-500 mb-1">Plan</div>
+                <div className="font-mono text-[12px] text-neutral-300 capitalize">{org.plan}</div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-3 pt-2 border-t border-neutral-800">
+              {org?.max_nodes != null && (
+                <div>
+                  <div className="font-mono text-[10px] text-neutral-500 mb-0.5">Max Nodes</div>
+                  <div className="font-mono text-[13px] font-semibold text-foreground">{org.max_nodes}</div>
+                </div>
+              )}
+              {org?.max_bases != null && (
+                <div>
+                  <div className="font-mono text-[10px] text-neutral-500 mb-0.5">Max Bases</div>
+                  <div className="font-mono text-[13px] font-semibold text-foreground">{org.max_bases}</div>
+                </div>
+              )}
+              {org?.max_users != null && (
+                <div>
+                  <div className="font-mono text-[10px] text-neutral-500 mb-0.5">Max Users</div>
+                  <div className="font-mono text-[13px] font-semibold text-foreground">{org.max_users}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Users Tab ─────────────────────────────────────────────────────────────────
+
+function UsersTab() {
+  const { data: users, isLoading } = trpc.users.list.useQuery();
+
+  return (
+    <div className="max-w-2xl">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] overflow-hidden">
+        <div className="px-4 py-3 border-b border-neutral-800">
+          <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">
+            {isLoading ? "Loading…" : `${users?.length ?? 0} member${(users?.length ?? 0) === 1 ? "" : "s"}`}
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="py-12 text-center font-mono text-[11px] text-neutral-500">Loading users…</div>
+        ) : !users || users.length === 0 ? (
+          <div className="py-12 text-center font-mono text-[11px] text-neutral-500">No users found</div>
+        ) : (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-neutral-800 bg-neutral-950">
+                <th className="px-4 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Email</span>
+                </th>
+                <th className="px-3 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">MFA</span>
+                </th>
+                <th className="px-4 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Joined</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id} className="border-b border-neutral-800 last:border-0">
+                  <td className="px-4 py-3 font-mono text-[12px] text-foreground">{user.email}</td>
+                  <td className="px-3 py-3">
+                    {user.mfa_enabled ? (
+                      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-emerald-900/30 text-emerald-400 border-emerald-400/20">
+                        Enabled
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-neutral-800 text-neutral-500 border-neutral-700">
+                        Disabled
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-[11px] text-neutral-500">{formatDate(user.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Invites Tab ───────────────────────────────────────────────────────────────
+
+function InvitesTab() {
+  const utils = trpc.useUtils();
+  const { data: invites, isLoading } = trpc.invites.list.useQuery();
+  const [showCreate, setShowCreate] = useState(false);
+  const [email, setEmail] = useState("");
+  const [roleId, setRoleId] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const createMutation = trpc.invites.create.useMutation({
+    onSuccess: () => {
+      utils.invites.list.invalidate();
+      setShowCreate(false);
+      setEmail("");
+      setRoleId("");
+      setCreateError(null);
+    },
+    onError: (e) => setCreateError(e.message),
+  });
+
+  const deleteMutation = trpc.invites.delete.useMutation({
+    onSuccess: () => utils.invites.list.invalidate(),
+  });
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+    createMutation.mutate({ email: email.trim(), role_id: roleId.trim() });
+  };
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      {/* Create form */}
+      <div className="flex justify-between items-center">
+        <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">
+          Pending Invites
         </div>
         <button
-          onClick={handleSave}
-          className={cn(
-            "font-mono text-[10px] tracking-wider uppercase px-4 py-1.5 rounded-[5px] font-semibold transition-colors",
-            saved
-              ? "bg-fleet-green-dim text-fleet-green border border-fleet-green/20"
-              : "bg-foreground text-background hover:opacity-90"
-          )}
+          onClick={() => setShowCreate((v) => !v)}
+          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
         >
-          {saved ? t("saved") : t("save")}
+          {showCreate ? "Cancel" : "+ Invite"}
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-2xl px-5 py-5 space-y-8">
-          {/* General */}
-          <section>
-            <SectionHeader title={t("general")} description={t("generalDesc")} />
-            <div className="bg-card border border-border rounded-[5px] px-4">
-              <SettingRow label={t("fleetCallsign")} description="BRAVO-FLEET">
-                <input
-                  type="text"
-                  value={callsign}
-                  onChange={(e) => setCallsign(e.target.value)}
-                  className={inputClass}
-                />
-              </SettingRow>
-              <SettingRow label={t("defaultFormation")} description={t(`formation${formation.charAt(0).toUpperCase() + formation.slice(1)}` as "formationGrid")}>
-                <select
-                  value={formation}
-                  onChange={(e) => setFormation(e.target.value)}
-                  className={inputClass}
-                >
-                  <option value="grid">{t("formationGrid")}</option>
-                  <option value="line">{t("formationLine")}</option>
-                  <option value="orbit">{t("formationOrbit")}</option>
-                </select>
-              </SettingRow>
-              <SettingRow label={t("batteryRtbThreshold")} description={`${rtbThreshold}%`}>
-                <input
-                  type="number"
-                  min={5}
-                  max={50}
-                  value={rtbThreshold}
-                  onChange={(e) => setRtbThreshold(e.target.value)}
-                  className={cn(inputClass, "w-20")}
-                />
-              </SettingRow>
-              <SettingRow label={t("telemetryRate")} description={`${telemetryRate}ms`}>
-                <select
-                  value={telemetryRate}
-                  onChange={(e) => setTelemetryRate(e.target.value)}
-                  className={inputClass}
-                >
-                  <option value="500">500ms</option>
-                  <option value="1000">1s</option>
-                  <option value="2000">2s</option>
-                  <option value="5000">5s</option>
-                </select>
-              </SettingRow>
+      {showCreate && (
+        <form onSubmit={handleCreate} className="bg-neutral-800 border border-neutral-700 rounded-[5px] p-4">
+          <div className="font-mono text-[10px] tracking-wider text-neutral-400 uppercase mb-3">Create Invite</div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="font-mono text-[10px] text-neutral-500 block mb-1">Email *</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="user@example.com"
+                required
+                className={inputClass}
+              />
             </div>
-          </section>
+            <div>
+              <label className="font-mono text-[10px] text-neutral-500 block mb-1">Role ID *</label>
+              <input
+                type="text"
+                value={roleId}
+                onChange={(e) => setRoleId(e.target.value)}
+                placeholder="member"
+                required
+                className={inputClass}
+              />
+            </div>
+          </div>
+          {createError && <div className="font-mono text-[10px] text-red-400 mb-3">{createError}</div>}
+          <button
+            type="submit"
+            disabled={createMutation.isPending}
+            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+          >
+            {createMutation.isPending ? "Sending…" : "Send Invite"}
+          </button>
+        </form>
+      )}
 
-          {/* Notifications */}
-          <section>
-            <SectionHeader title={t("notifications")} description={t("notificationsDesc")} />
-            <div className="bg-card border border-border rounded-[5px] px-4">
-              <SettingRow label={t("criticalAlerts")} description={t("criticalAlertsDesc")}>
-                <Toggle checked={criticalAlerts} onChange={setCriticalAlerts} />
-              </SettingRow>
-              <SettingRow label={t("batteryWarnings")} description={t("batteryWarningsDesc")}>
-                <Toggle checked={batteryWarnings} onChange={setBatteryWarnings} />
-              </SettingRow>
-              <SettingRow label={t("missionUpdates")} description={t("missionUpdatesDesc")}>
-                <Toggle checked={missionUpdates} onChange={setMissionUpdates} />
-              </SettingRow>
-              <SettingRow label={t("meshAlerts")} description={t("meshAlertsDesc")}>
-                <Toggle checked={meshAlerts} onChange={setMeshAlerts} />
-              </SettingRow>
-            </div>
-          </section>
+      <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] overflow-hidden">
+        {isLoading ? (
+          <div className="py-12 text-center font-mono text-[11px] text-neutral-500">Loading invites…</div>
+        ) : !invites || invites.length === 0 ? (
+          <div className="py-12 text-center font-mono text-[11px] text-neutral-500">No pending invites</div>
+        ) : (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-neutral-800 bg-neutral-950">
+                <th className="px-4 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Email</span>
+                </th>
+                <th className="px-3 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Role</span>
+                </th>
+                <th className="px-3 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Expires</span>
+                </th>
+                <th className="px-4 py-2.5" />
+              </tr>
+            </thead>
+            <tbody>
+              {invites.map((invite) => (
+                <tr key={invite.id} className="border-b border-neutral-800 last:border-0 group">
+                  <td className="px-4 py-3 font-mono text-[12px] text-foreground">{invite.email}</td>
+                  <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">{invite.role_id}</td>
+                  <td className="px-3 py-3 font-mono text-[11px] text-neutral-500">{formatDate(invite.expires_at)}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => deleteMutation.mutate({ id: invite.id })}
+                      disabled={deleteMutation.isPending}
+                      className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-red-400 hover:text-red-300 hover:border-red-700 opacity-0 group-hover:opacity-100 disabled:opacity-50 transition-all"
+                    >
+                      Revoke
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
 
-          {/* Security */}
-          <section>
-            <SectionHeader title={t("security")} description={t("securityDesc")} />
-            <div className="bg-card border border-border rounded-[5px] px-4">
-              <SettingRow label={t("twoFactor")} description={t("twoFactorDesc")}>
-                <Toggle checked={twoFactor} onChange={setTwoFactor} />
-              </SettingRow>
-              <SettingRow label={t("sessionTimeout")} description={`${sessionTimeout} minutes`}>
-                <select
-                  value={sessionTimeout}
-                  onChange={(e) => setSessionTimeout(e.target.value)}
-                  className={inputClass}
-                >
-                  <option value="15">15 min</option>
-                  <option value="30">30 min</option>
-                  <option value="60">1 hour</option>
-                  <option value="120">2 hours</option>
-                </select>
-              </SettingRow>
-              <SettingRow label={t("encryptedComms")} description={t("encryptedCommsDesc")}>
-                <Toggle checked={encryptedComms} onChange={setEncryptedComms} />
-              </SettingRow>
-              <SettingRow label={t("auditLogging")} description={t("auditLoggingDesc")}>
-                <Toggle checked={auditLogging} onChange={setAuditLogging} />
-              </SettingRow>
-            </div>
-          </section>
+// ── Security Tab ──────────────────────────────────────────────────────────────
+
+function SecurityTab() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  // userId is not yet available from JWT context — disabled until backend provides current user endpoint
+  const changePasswordMutation = trpc.userAccount.changePassword.useMutation({
+    onSuccess: () => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setError(null);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    },
+    onError: (e) => setError(e.message),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError("New password must be at least 8 characters.");
+      return;
+    }
+    // TODO: replace placeholder with real userId once /me endpoint is available
+    changePasswordMutation.mutate({
+      userId: "me",
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+  };
+
+  return (
+    <div className="max-w-md space-y-5">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-5">
+        <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-4">Change Password</div>
+
+        <div className="mb-3 px-3 py-2.5 bg-amber-900/20 border border-amber-700/30 rounded-[5px]">
+          <div className="font-mono text-[10px] text-amber-400">
+            Note: Password change requires a current user endpoint which is not yet available. This form will be fully functional once the backend provides /users/me.
+          </div>
         </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="font-mono text-[10px] text-neutral-500 block mb-1">Current Password</label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="font-mono text-[10px] text-neutral-500 block mb-1">New Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="font-mono text-[10px] text-neutral-500 block mb-1">Confirm New Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className={inputClass}
+            />
+          </div>
+
+          {error && <div className="font-mono text-[10px] text-red-400">{error}</div>}
+          {success && <div className="font-mono text-[10px] text-emerald-400">Password changed successfully.</div>}
+
+          <button
+            type="submit"
+            disabled={changePasswordMutation.isPending}
+            className="font-mono text-[10px] tracking-wider uppercase px-4 py-2 rounded-[5px] bg-foreground text-background hover:opacity-90 disabled:opacity-50 transition-opacity mt-1"
+          >
+            {changePasswordMutation.isPending ? "Updating…" : "Update Password"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default function SettingsPage() {
+  return (
+    <div className="flex-1 flex flex-col min-h-0 overflow-auto">
+      {/* Header */}
+      <div className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-950 shrink-0">
+        <div>
+          <div className="text-[15px] font-semibold text-foreground tracking-tight">Settings</div>
+          <div className="text-[11px] text-neutral-500 font-mono mt-0.5">Manage your organisation and account</div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto p-5">
+        <Tabs defaultValue="org">
+          <TabsList variant="line" className="mb-6">
+            <TabsTrigger value="org">Organisation</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="invites">Invites</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="org">
+            <OrgTab />
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UsersTab />
+          </TabsContent>
+
+          <TabsContent value="invites">
+            <InvitesTab />
+          </TabsContent>
+
+          <TabsContent value="security">
+            <SecurityTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
