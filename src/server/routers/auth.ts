@@ -138,4 +138,27 @@ export const authRouter = router({
     await clearAuthCookies();
     return { success: true };
   }),
+
+  forgotPassword: publicProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ input }) => {
+      return overlordFetch<{ message: string }>("/auth/forgot-password", {
+        method: "POST",
+        body: input,
+      });
+    }),
+
+  resetPassword: publicProcedure
+    .input(
+      z.object({
+        token: z.string().min(1),
+        new_password: z.string().min(8),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return overlordFetch<{ message: string }>("/auth/reset-password", {
+        method: "POST",
+        body: input,
+      });
+    }),
 });

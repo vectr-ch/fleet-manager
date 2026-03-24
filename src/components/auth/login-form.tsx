@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 
 interface LoginFormProps {
@@ -66,6 +67,14 @@ export function LoginForm({ onMfaRequired, onSuccess }: LoginFormProps) {
           className="mt-1 block w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-white placeholder-neutral-500 focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-500"
           placeholder="Enter your password"
         />
+      </div>
+      <div className="flex justify-end">
+        <Link
+          href="/forgot-password"
+          className="text-xs text-neutral-400 hover:text-white"
+        >
+          Forgot password?
+        </Link>
       </div>
       {error && (
         <p className="text-sm text-red-400">{error}</p>

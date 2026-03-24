@@ -42,13 +42,20 @@ export const invitesRouter = router({
       z.object({
         token: z.string(),
         email: z.string().email(),
-        password: z.string().min(8),
+        password: z.string().min(8).optional(),
       })
     )
     .mutation(async ({ input }) => {
-      return overlordFetch("/invites/accept", {
+      const body: Record<string, string> = {
+        token: input.token,
+        email: input.email,
+      };
+      if (input.password) {
+        body.password = input.password;
+      }
+      return overlordFetch<{ message: string }>("/invites/accept", {
         method: "POST",
-        body: input,
+        body,
       });
     }),
 });
