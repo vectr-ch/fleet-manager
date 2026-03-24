@@ -25,8 +25,11 @@ export function OrgSwitcher({ currentOrg, userId }: OrgSwitcherProps) {
       setIsOpen(false);
       return;
     }
-    document.cookie = `current_org=${slug};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
-    switchOrgMutation.mutate({ userId, orgSlug: slug });
+    switchOrgMutation.mutate({ userId, orgSlug: slug }, {
+      onSuccess: () => {
+        document.cookie = `current_org=${slug};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
+      },
+    });
     setIsOpen(false);
   };
 

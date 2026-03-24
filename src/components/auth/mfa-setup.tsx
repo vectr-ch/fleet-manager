@@ -67,7 +67,7 @@ export function MfaSetup({ onSuccess }: MfaSetupProps) {
           onClick={onSuccess}
           className="w-full rounded-md bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200"
         >
-          I've saved my codes — continue
+          I&apos;ve saved my codes — continue
         </button>
       </div>
     );
@@ -86,7 +86,7 @@ export function MfaSetup({ onSuccess }: MfaSetupProps) {
       </div>
       <details className="text-sm">
         <summary className="cursor-pointer text-neutral-400 hover:text-neutral-300">
-          Can't scan? Enter this code manually
+          Can&apos;t scan? Enter this code manually
         </summary>
         <code className="mt-2 block break-all rounded bg-neutral-800 p-2 text-xs text-neutral-200">
           {setupMutation.data.secret}

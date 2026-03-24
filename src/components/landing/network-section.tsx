@@ -128,7 +128,7 @@ export function NetworkSection() {
       {/* Content */}
       <div className="max-w-5xl mx-auto relative z-10 text-center">
         <div className="font-display text-xs tracking-[0.3em] text-lp-neon-green mb-4">
-          // GLOBAL NETWORK
+          {/* // */} GLOBAL NETWORK
         </div>
         <h2
           className="font-display font-black uppercase mb-5"

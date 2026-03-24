@@ -14,7 +14,9 @@ function formatTimestamp(dateStr: string): string {
 }
 
 export default function AuditPage() {
-  const { data: entries = [], isLoading } = trpc.audit.list.useQuery();
+  const query = trpc.audit.list.useQuery();
+  const entries = query.data ?? [];
+  const isLoading = query.isLoading;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -37,7 +39,7 @@ export default function AuditPage() {
         <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-4">
           <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-1">Last 24h</div>
           <div className="font-mono text-2xl font-semibold text-neutral-300">
-            {isLoading ? "—" : entries.filter((e) => Date.now() - new Date(e.created_at).getTime() < 86_400_000).length}
+            {isLoading ? "—" : entries.filter((e) => query.dataUpdatedAt - new Date(e.created_at).getTime() < 86_400_000).length}
           </div>
         </div>
       </div>

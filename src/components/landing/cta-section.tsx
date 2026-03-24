@@ -36,7 +36,7 @@ export function CtaSection() {
 
       <div className="relative z-10 max-w-2xl mx-auto">
         <div className="font-display text-xs tracking-[0.3em] text-lp-neon-green mb-5">
-          // GET EARLY ACCESS
+          {/* // */} GET EARLY ACCESS
         </div>
         <h2
           className="font-display font-black uppercase leading-[1.1] mb-5"

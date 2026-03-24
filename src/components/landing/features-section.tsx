@@ -129,7 +129,7 @@ export function FeaturesSection() {
             visible ? "opacity-100" : "opacity-0"
           )}
         >
-          // CAPABILITIES
+          {/* // */} CAPABILITIES
         </div>
         <h2
           className={cn(

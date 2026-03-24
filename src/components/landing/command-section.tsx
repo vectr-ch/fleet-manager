@@ -64,7 +64,7 @@ export function CommandSection() {
         {/* Left: text content */}
         <div>
           <div className="font-display text-xs tracking-[0.3em] text-lp-neon-cyan mb-4">
-            // COMMAND CENTER
+            {/* // */} COMMAND CENTER
           </div>
           <h2
             className="font-display font-black uppercase leading-[1.1] mb-5"
