@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { overlordFetch } from "@/lib/overlord";
+import { decodeJwtPayload } from "@/lib/auth/refresh";
 
 const SECURE = process.env.NODE_ENV === "production";
 const REFRESH_THRESHOLD_MS = 2 * 60 * 1000;
@@ -77,17 +78,6 @@ interface RefreshResponse {
   expires_in: number;
   refresh_token: string;
   refresh_token_ttl: number;
-}
-
-function decodeJwtPayload(token: string): { exp?: number } {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return {};
-    const payload = Buffer.from(parts[1], "base64url").toString("utf-8");
-    return JSON.parse(payload);
-  } catch {
-    return {};
-  }
 }
 
 function isTokenExpiringSoon(accessToken: string): boolean {

@@ -40,7 +40,8 @@ export const protectedProcedure = t.procedure.use(async ({ next }) => {
   if (!orgSlug) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "no_org_selected" });
   }
-  const { sub: userId } = decodeJwtPayload(accessToken);
+  const { sub } = decodeJwtPayload(accessToken);
+  const userId = typeof sub === "string" ? sub : null;
   if (!userId) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "unauthenticated" });
   }
@@ -55,7 +56,8 @@ export const authOnlyProcedure = t.procedure.use(async ({ next }) => {
   if (!accessToken) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "unauthenticated" });
   }
-  const { sub: userId } = decodeJwtPayload(accessToken);
+  const { sub } = decodeJwtPayload(accessToken);
+  const userId = typeof sub === "string" ? sub : null;
   if (!userId) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "unauthenticated" });
   }
@@ -70,6 +72,6 @@ export const sysadminProcedure = t.procedure.use(async ({ next }) => {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "unauthenticated" });
   }
   return next({
-    ctx: { accessToken, orgSlug: null },
+    ctx: { accessToken, orgSlug: null, userId: null },
   });
 });
