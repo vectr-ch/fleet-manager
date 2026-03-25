@@ -153,7 +153,11 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
           // Mark that we came from trace-out so re-entry recalculates
           transitions[i] = -1;
         } else if (lineEased < 1) {
-          // TRACING IN: static path (time=0), animate dashoffset only
+          // TRACING IN: ensure path is the static shape (time=0)
+          // This is critical on re-entry after living/trace-out modified the d attribute
+          if (transitions[i] >= 0 || lastT[i] > 0) {
+            path.setAttribute("d", buildWavePath(configs[i], 0));
+          }
           path.style.strokeDasharray = `${len}`;
           path.style.strokeDashoffset = `${len * (1 - lineEased)}`;
           transitions[i] = -1;
