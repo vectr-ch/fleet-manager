@@ -73,12 +73,14 @@ export function HeroSection({ scrollY }: HeroSectionProps) {
         <div
           style={{
             fontFamily: "var(--lp-font-mono)",
-            fontSize: "11px",
-            letterSpacing: "8px",
+            fontSize: "clamp(8px, 2vw, 11px)",
+            letterSpacing: "clamp(3px, 1vw, 8px)",
             color: "var(--lp-text-faint)",
             textTransform: "uppercase",
             marginBottom: "48px",
             opacity: eyebrowOpacity,
+            textAlign: "center",
+            padding: "0 16px",
           }}
         >
           AUTONOMOUS FLEET INFRASTRUCTURE
