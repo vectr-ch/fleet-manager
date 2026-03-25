@@ -87,8 +87,9 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
   const pathRefs = useRef<SVGPathElement[]>([]);
   const pathLengths = useRef<number[]>([]);
   const lineConfigs = useRef<LineConfig[]>(makeLineConfigs());
-  // Track when each line transitions to living phase (to avoid glitch)
+  // Track wave continuity per line
   const transitionTimes = useRef<number[]>(new Array(LINE_COUNT).fill(-1));
+  const lastWaveT = useRef<number[]>(new Array(LINE_COUNT).fill(0));
 
   // On mount: set initial static paths (time=0) and measure lengths
   useEffect(() => {
@@ -126,6 +127,7 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
       const lengths = pathLengths.current;
       const configs = lineConfigs.current;
       const transitions = transitionTimes.current;
+      const lastT = lastWaveT.current;
 
       for (let i = 0; i < paths.length; i++) {
         const path = paths[i];
@@ -141,28 +143,30 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
         const lineEased = easeOutCubic(lineProgress);
 
         if (exitProgress > 0 && lineEased >= 1) {
-          // Fix #3: TRACING OUT — reverse dashoffset as user scrolls past
-          // Freeze path at current wave position, re-apply dash
-          const t = transitions[i] >= 0 ? waveTime - transitions[i] : 0;
+          // TRACING OUT — reverse dashoffset as user scrolls past
+          // Continue wave from last known position
+          const t = lastT[i];
           path.setAttribute("d", buildWavePath(configs[i], t));
           const currentLen = path.getTotalLength();
           path.style.strokeDasharray = `${currentLen}`;
-          // Trace out from left (dashoffset increases)
           path.style.strokeDashoffset = `${currentLen * exitProgress}`;
+          // Mark that we came from trace-out so re-entry recalculates
+          transitions[i] = -1;
         } else if (lineEased < 1) {
           // TRACING IN: static path (time=0), animate dashoffset only
           path.style.strokeDasharray = `${len}`;
           path.style.strokeDashoffset = `${len * (1 - lineEased)}`;
-          // Reset transition time if line is still tracing
           transitions[i] = -1;
+          lastT[i] = 0;
         } else {
           // LIVING PHASE: wave animation
-          // Fix #2: record waveTime when first entering living phase
-          // Use offset so wave starts from same position as static path (time=0)
+          // Always recalculate transition time to maintain continuity
+          // On first entry or re-entry: set so that t = lastT (no jump)
           if (transitions[i] < 0) {
-            transitions[i] = waveTime;
+            transitions[i] = waveTime - lastT[i];
           }
           const t = waveTime - transitions[i];
+          lastT[i] = t;
 
           path.style.strokeDasharray = "none";
           path.style.strokeDashoffset = "0";
