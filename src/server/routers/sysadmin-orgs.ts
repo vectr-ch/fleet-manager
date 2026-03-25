@@ -5,9 +5,10 @@ import type { SysadminOrg, CreateOrgResponse, InviteAdminResponse } from "@/lib/
 
 export const sysadminOrgsRouter = router({
   list: sysadminProcedure.query(async ({ ctx }) => {
-    return overlordFetch<SysadminOrg[]>("/sysadmin/orgs", {
+    const res = await overlordFetch<{ orgs: SysadminOrg[] }>("/sysadmin/orgs", {
       accessToken: ctx.accessToken,
     });
+    return res.orgs;
   }),
 
   get: sysadminProcedure

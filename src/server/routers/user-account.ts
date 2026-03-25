@@ -9,9 +9,10 @@ export const userAccountRouter = router({
   // Identity derived from JWT ctx.userId — no client-supplied userId.
   listOrgs: protectedProcedure
     .query(async ({ ctx }) => {
-      return overlordFetch<Org[]>(`/users/${ctx.userId}/orgs`, {
+      const res = await overlordFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
         accessToken: ctx.accessToken,
       });
+      return res.orgs;
     }),
 
   updateDefaultOrg: protectedProcedure
@@ -42,19 +43,20 @@ export const userAccountRouter = router({
   // Fallback for /select-org when sessionStorage is absent (new tab, browser restore).
   listMyOrgs: authOnlyProcedure
     .query(async ({ ctx }) => {
-      return overlordFetch<Org[]>(`/users/${ctx.userId}/orgs`, {
+      const res = await overlordFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
         accessToken: ctx.accessToken,
       });
+      return res.orgs;
     }),
 
   // Server-validates org membership before writing current_org cookie.
   selectOrg: authOnlyProcedure
     .input(z.object({ slug: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const orgs = await overlordFetch<Org[]>(`/users/${ctx.userId}/orgs`, {
+      const res = await overlordFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
         accessToken: ctx.accessToken,
       });
-      if (!orgs.some((o) => o.slug === input.slug)) {
+      if (!res.orgs.some((o) => o.slug === input.slug)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "not_member_of_org" });
       }
       await setCurrentOrg(input.slug);

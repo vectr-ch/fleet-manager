@@ -5,9 +5,10 @@ import type { User } from "@/lib/types";
 
 export const usersRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return overlordFetch<User[]>(`/orgs/${ctx.orgSlug}/users`, {
+    const res = await overlordFetch<{ users: User[] }>(`/orgs/${ctx.orgSlug}/users`, {
       accessToken: ctx.accessToken,
     });
+    return res.users;
   }),
 
   getById: protectedProcedure

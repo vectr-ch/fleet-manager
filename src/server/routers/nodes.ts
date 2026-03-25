@@ -5,9 +5,10 @@ import type { Node } from "@/lib/types";
 
 export const nodesRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return overlordFetch<Node[]>(`/orgs/${ctx.orgSlug}/nodes`, {
+    const res = await overlordFetch<{ nodes: Node[] }>(`/orgs/${ctx.orgSlug}/nodes`, {
       accessToken: ctx.accessToken,
     });
+    return res.nodes;
   }),
 
   getById: protectedProcedure

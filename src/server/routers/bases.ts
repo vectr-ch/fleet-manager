@@ -5,9 +5,10 @@ import type { Base } from "@/lib/types";
 
 export const basesRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return overlordFetch<Base[]>(`/orgs/${ctx.orgSlug}/bases`, {
+    const res = await overlordFetch<{ bases: Base[] }>(`/orgs/${ctx.orgSlug}/bases`, {
       accessToken: ctx.accessToken,
     });
+    return res.bases;
   }),
 
   getById: protectedProcedure

@@ -4,8 +4,9 @@ import type { Sysadmin } from "@/lib/types";
 
 export const sysadminAdminsRouter = router({
   list: sysadminProcedure.query(async ({ ctx }) => {
-    return overlordFetch<Sysadmin[]>("/sysadmin/admins", {
+    const res = await overlordFetch<{ admins: Sysadmin[] }>("/sysadmin/admins", {
       accessToken: ctx.accessToken,
     });
+    return res.admins;
   }),
 });

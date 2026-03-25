@@ -5,9 +5,10 @@ import type { Invite, CreateInviteResponse } from "@/lib/types";
 
 export const invitesRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return overlordFetch<Invite[]>(`/orgs/${ctx.orgSlug}/invites`, {
+    const res = await overlordFetch<{ invites: Invite[] }>(`/orgs/${ctx.orgSlug}/invites`, {
       accessToken: ctx.accessToken,
     });
+    return res.invites;
   }),
 
   create: protectedProcedure
