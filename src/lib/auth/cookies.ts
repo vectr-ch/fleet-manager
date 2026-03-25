@@ -43,7 +43,7 @@ export async function setCurrentOrg(slug: string) {
     secure: SECURE,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 365,
+    maxAge: 60 * 60 * 24 * 7,  // 7 days, aligned with refresh_token TTL
   });
 }
 

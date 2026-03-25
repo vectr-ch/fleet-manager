@@ -112,7 +112,7 @@ export const authRouter = router({
     }),
 
   mfaVerify: publicProcedure
-    .input(z.object({ code: z.string().min(6) }))
+    .input(z.object({ code: z.string().length(6).regex(/^\d{6}$/) }))
     .mutation(async ({ input }) => {
       const challengeToken = await getChallengeToken();
       if (!challengeToken) {
