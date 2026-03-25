@@ -60,24 +60,6 @@
 
   --font-mono: 'Geist Mono', monospace;
   --font-sans: 'DM Sans', sans-serif;
-
-  /* Landing page colors */
-  --color-lp-bg-primary: #0a0a0f;
-  --color-lp-bg-secondary: #12121a;
-  --color-lp-bg-tertiary: #1a1a25;
-  --color-lp-neon-green: #00ff88;
-  --color-lp-neon-cyan: #00f0ff;
-  --color-lp-neon-purple: #bd00ff;
-  --color-lp-neon-pink: #ff2d6a;
-  --color-lp-neon-blue: #4d7cff;
-  --color-lp-neon-yellow: #ffe600;
-  --color-lp-text-primary: #ffffff;
-  --color-lp-text-secondary: #a0a0b0;
-  --color-lp-text-muted: #606070;
-
-  /* Landing page fonts */
-  --font-display: 'Orbitron', sans-serif;
-  --font-body: 'Rajdhani', sans-serif;
 }
 
 :root {
@@ -212,12 +194,6 @@
 .animate-status-pulse-fast {
   animation: pulse 1s infinite;
 }
-.lp-animate-fade-in-up {
-  animation: lp-fade-in-up 0.8s ease forwards;
-}
-.lp-animate-blink {
-  animation: lp-blink 1s step-end infinite;
-}
 
 /* Progress bar shimmer */
 @keyframes shimmer {
@@ -230,164 +206,32 @@
 /* ======================================== */
 
 .landing-page {
-  --lp-bg-primary: #0a0a0f;
-  --lp-bg-secondary: #12121a;
-  --lp-bg-tertiary: #1a1a25;
-  --lp-neon-pink: #ff2d6a;
-  --lp-neon-pink-glow: rgba(255, 45, 106, 0.6);
-  --lp-neon-cyan: #00f0ff;
-  --lp-neon-cyan-glow: rgba(0, 240, 255, 0.6);
-  --lp-neon-purple: #bd00ff;
-  --lp-neon-purple-glow: rgba(189, 0, 255, 0.5);
-  --lp-neon-green: #00ff88;
-  --lp-neon-green-glow: rgba(0, 255, 136, 0.6);
-  --lp-neon-blue: #4d7cff;
-  --lp-neon-yellow: #ffe600;
-  --lp-text-primary: #ffffff;
-  --lp-text-secondary: #a0a0b0;
-  --lp-text-muted: #606070;
-  --lp-gradient-main: linear-gradient(135deg, #00ff88 0%, #00f0ff 30%, #bd00ff 70%, #ff2d6a 100%);
-  --lp-gradient-accent: linear-gradient(90deg, #00ff88 0%, #00f0ff 50%, #bd00ff 100%);
-  --lp-font-display: 'Orbitron', sans-serif;
-  --lp-font-body: 'Rajdhani', sans-serif;
+  /* Backgrounds */
+  --lp-bg-primary: #09090b;
+  --lp-bg-secondary: #18181b;
+  --lp-bg-tertiary: #27272a;
 
-  font-family: var(--lp-font-body);
-  background-color: var(--lp-bg-primary);
-  color: var(--lp-text-primary);
-  overflow-x: hidden;
-  line-height: 1.6;
-  font-size: 16px;
-  height: 100dvh;
+  /* Text */
+  --lp-text-primary: #fafafa;
+  --lp-text-secondary: #a1a1aa;
+  --lp-text-muted: #52525b;
+  --lp-text-faint: #3f3f46;
+
+  /* Borders */
+  --lp-border: rgba(255, 255, 255, 0.04);
+  --lp-border-subtle: rgba(255, 255, 255, 0.03);
+
+  /* Fonts */
+  --lp-font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --lp-font-mono: ui-monospace, "SF Mono", "Fira Code", monospace;
+}
+
+body:has(.landing-page) {
   overflow-y: auto;
+  height: auto;
 }
 
-/* Landing page animations */
-@keyframes lp-grid-move {
-  0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
-  100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
-}
-
-@keyframes lp-scan-line {
-  0% { transform: translateY(0); opacity: 0; }
-  10% { opacity: 0.5; }
-  90% { opacity: 0.5; }
-  100% { transform: translateY(100vh); opacity: 0; }
-}
-
-@keyframes lp-rotate-ring {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes lp-glitch {
-  0%   { text-shadow:  2px 0 var(--lp-neon-pink), -2px 0 var(--lp-neon-cyan); }
-  25%  { text-shadow: -2px 0 var(--lp-neon-pink),  2px 0 var(--lp-neon-cyan); }
-  50%  { text-shadow:  2px 2px var(--lp-neon-pink), -2px -2px var(--lp-neon-cyan); }
-  75%  { text-shadow: -2px 2px var(--lp-neon-pink),  2px -2px var(--lp-neon-cyan); }
-  100% { text-shadow:  2px 0 var(--lp-neon-pink), -2px 0 var(--lp-neon-cyan); }
-}
-
-.lp-logo-glitch:hover {
-  animation: lp-glitch 0.3s ease-in-out infinite;
-  -webkit-text-fill-color: var(--lp-text-primary);
-  background: none;
-}
-
-@keyframes lp-float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-15px) rotate(5deg); }
-}
-
-@keyframes lp-particle-float {
-  0%, 100% { transform: translate(0, 0); opacity: 0.3; }
-  50% { transform: translate(10px, -10px); opacity: 1; }
-}
-
-@keyframes lp-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-@keyframes lp-gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@keyframes lp-blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
-}
-
-@keyframes lp-node-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 10px var(--lp-neon-green-glow); }
-  50% { transform: scale(1.5); box-shadow: 0 0 30px var(--lp-neon-green-glow); }
-}
-
-@keyframes lp-glitch {
-  0% { text-shadow: 2px 0 #bd00ff, -2px 0 #00ff88; }
-  25% { text-shadow: -2px 0 #bd00ff, 2px 0 #00ff88; }
-  50% { text-shadow: 2px 2px #bd00ff, -2px -2px #00ff88; }
-  75% { text-shadow: -2px 2px #bd00ff, 2px -2px #00ff88; }
-  100% { text-shadow: 2px 0 #bd00ff, -2px 0 #00ff88; }
-}
-
-@keyframes lp-spin-rotor {
-  from { stroke-dasharray: 0 63; stroke-dashoffset: 0; }
-  to { stroke-dasharray: 63 0; stroke-dashoffset: -63; }
-}
-
-@keyframes lp-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-}
-
-@keyframes lp-fade-in-up {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.lp-gradient-text {
-  background: var(--lp-gradient-main);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: lp-gradient-shift 3s ease infinite;
-  background-size: 200% 200%;
-}
-
-.lp-btn-clip {
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
-}
-
-.lp-card-clip {
-  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
-}
-
-/* Landing page reusable utilities */
-.lp-section {
-  padding: 120px 40px;
-  position: relative;
-  overflow: hidden;
-}
-
-.lp-neon-green-glow {
-  box-shadow: 0 0 30px rgba(0, 255, 136, 0.15);
-}
-
-.lp-neon-cyan-glow {
-  box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
-}
-
-.lp-neon-green-border {
-  border: 1px solid rgba(0, 255, 136, 0.1);
-}
-
-.lp-neon-green-border-bright {
-  border: 1px solid rgba(0, 255, 136, 0.2);
-}
-
-.lp-neon-cyan-border {
-  border: 1px solid rgba(0, 240, 255, 0.15);
+@keyframes lp-pulse-line {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.9; }
 }

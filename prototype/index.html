@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VECTR — Scroll Prototype</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: auto; }
+  body {
+    background: #09090b; color: #fafafa;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+
+  .scroll-runway { height: 400vh; position: relative; }
+
+  .viewport {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+  }
+
+  /* ===== ACT 1: THE VOID ===== */
+  .act-1 {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+  }
+
+  .void-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  .void-line {
+    position: absolute; top: 50%; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.035) 50%, transparent 95%);
+  }
+
+  .act-1-content {
+    position: relative; z-index: 2; text-align: center; padding: 40px;
+  }
+
+  .vectr-tag {
+    font-family: ui-monospace, 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px; letter-spacing: 8px; color: #3f3f46;
+    text-transform: uppercase; margin-bottom: 48px;
+  }
+
+  .vectr-title {
+    font-size: clamp(72px, 13vw, 140px);
+    font-weight: 100; color: #fafafa;
+    letter-spacing: 20px;
+  }
+
+  .scroll-hint {
+    position: absolute; bottom: 48px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .scroll-hint span {
+    font-size: 10px; letter-spacing: 3px; color: #3f3f46;
+    text-transform: uppercase;
+  }
+  .scroll-line {
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, #3f3f46, transparent);
+    animation: pulse-line 2s ease-in-out infinite;
+  }
+  @keyframes pulse-line {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.9; }
+  }
+
+  /* ===== ACT 2: THE SIGNAL ===== */
+  .act-2 {
+    position: absolute; inset: 0;
+    z-index: 5;
+    display: flex; align-items: center;
+    /* No opacity fade here — lines are revealed via stroke-dashoffset,
+       other elements have their own opacity controls */
+  }
+
+  .topo-svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+  }
+  .topo-svg path {
+    stroke: rgba(255,255,255,0.045);
+    stroke-width: 0.8; fill: none;
+    stroke-linecap: round;
+  }
+
+  .noise-layer {
+    position: absolute; inset: 0; opacity: 0;
+    background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 512 512%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.75%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22 opacity=%220.04%22/%3E%3C/svg%3E');
+    background-size: 256px 256px;
+  }
+
+  .glow-orb {
+    position: absolute; top: 25%; right: 8%;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 65%);
+    border-radius: 50%;
+  }
+
+  .act-2-content {
+    position: relative; z-index: 2;
+    padding: 0 clamp(40px, 10vw, 140px);
+    max-width: 780px;
+  }
+
+  .statement {
+    font-size: clamp(30px, 4.5vw, 50px);
+    font-weight: 200; color: #fafafa;
+    line-height: 1.4; letter-spacing: -0.5px;
+  }
+
+  .statement-follow {
+    font-size: clamp(17px, 2vw, 22px);
+    color: #52525b; line-height: 1.8;
+    margin-top: 28px;
+    opacity: 0; transform: translateY(20px);
+  }
+
+  .divider-line {
+    width: 32px; height: 1px; background: #3f3f46;
+    margin: 44px 0 20px;
+    opacity: 0; transform: scaleX(0); transform-origin: left;
+  }
+
+  .stack-labels {
+    font-family: ui-monospace, 'SF Mono', 'Fira Code', monospace;
+    font-size: 10px; color: #3f3f46; letter-spacing: 4px;
+    opacity: 0; transform: translateY(12px);
+  }
+
+  /* ===== FIXED NAV ===== */
+  .fixed-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    padding: 24px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .fixed-nav.visible { opacity: 1; pointer-events: auto; }
+  .fixed-nav .logo {
+    font-size: 14px; font-weight: 500; color: #e4e4e7; letter-spacing: 5px;
+  }
+  .fixed-nav .meta {
+    font-size: 10px; color: #3f3f46; letter-spacing: 3px;
+  }
+
+  /* ===== ACT 3: REMAINING PAGE ===== */
+  .act-3 {
+    position: absolute; top: 0; left: 0; right: 0;
+    z-index: 3; opacity: 0;
+    padding-top: 100vh;
+  }
+
+  .section-block {
+    padding: 120px clamp(40px, 10vw, 140px);
+    border-top: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .section-eyebrow {
+    font-family: ui-monospace, monospace;
+    font-size: 10px; letter-spacing: 4px; color: #3f3f46;
+    text-transform: uppercase; margin-bottom: 20px;
+  }
+  .section-heading {
+    font-size: 28px; font-weight: 300; color: #e4e4e7;
+    margin-bottom: 16px; letter-spacing: -0.3px;
+  }
+  .section-text {
+    font-size: 15px; color: #52525b; line-height: 1.8;
+    max-width: 520px;
+  }
+
+  .tech-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 32px; margin-top: 48px;
+  }
+  .tech-item {
+    padding: 24px; border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 2px;
+  }
+  .tech-item-label {
+    font-family: ui-monospace, monospace;
+    font-size: 11px; color: #71717a; letter-spacing: 2px; margin-bottom: 8px;
+  }
+  .tech-item-desc {
+    font-size: 13px; color: #3f3f46; line-height: 1.6;
+  }
+
+  .loop-section {
+    padding: 120px clamp(40px, 10vw, 140px);
+    border-top: 1px solid rgba(255,255,255,0.03);
+  }
+  .loop-form {
+    display: flex; gap: 12px; margin-top: 24px; max-width: 400px;
+  }
+  .loop-input {
+    flex: 1; padding: 10px 16px;
+    background: rgba(255,255,255,0.03); border: 1px solid #27272a;
+    color: #a1a1aa; font-size: 13px; font-family: inherit;
+    outline: none;
+  }
+  .loop-input:focus { border-color: #3f3f46; }
+  .loop-input::placeholder { color: #3f3f46; }
+  .loop-btn {
+    padding: 10px 24px; background: transparent;
+    border: 1px solid #27272a; color: #71717a;
+    font-size: 12px; letter-spacing: 1px; cursor: pointer;
+    font-family: inherit; transition: all 0.3s;
+  }
+  .loop-btn:hover { border-color: #52525b; color: #a1a1aa; }
+
+  .footer {
+    padding: 48px clamp(40px, 10vw, 140px);
+    border-top: 1px solid rgba(255,255,255,0.03);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-left { font-size: 12px; color: #27272a; letter-spacing: 1px; }
+  .footer-right { font-size: 11px; color: #27272a; }
+</style>
+</head>
+<body>
+
+<div class="fixed-nav" id="fixedNav">
+  <div class="logo">VECTR</div>
+  <div class="meta">EST. 2026 · ZÜRICH</div>
+</div>
+
+<div class="scroll-runway" id="scrollRunway">
+  <div class="viewport" id="viewport">
+
+    <!-- ACT 1: The Void -->
+    <div class="act-1" id="act1">
+      <div class="void-grid" id="voidGrid"></div>
+      <div class="void-line" id="voidLine"></div>
+      <div class="act-1-content" id="act1Content">
+        <div class="vectr-tag" id="vectrTag">Autonomous Fleet Infrastructure</div>
+        <div class="vectr-title" id="vectrTitle">VECTR</div>
+      </div>
+      <div class="scroll-hint" id="scrollHint">
+        <span>Scroll</span>
+        <div class="scroll-line"></div>
+      </div>
+    </div>
+
+    <!-- ACT 2: The Signal -->
+    <div class="act-2" id="act2">
+      <svg class="topo-svg" id="topoSvg" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid slice">
+        <g id="topoGroup">
+          <!-- Lines will be generated by JS for proper dasharray control -->
+        </g>
+      </svg>
+      <div class="noise-layer" id="noiseLayer"></div>
+      <div class="glow-orb" id="glowOrb"></div>
+      <div class="act-2-content" id="act2Content">
+        <div class="statement" id="statement">
+          Autonomous fleets need infrastructure that doesn't exist yet.
+        </div>
+        <div class="statement-follow" id="statementFollow">
+          We're building it.
+        </div>
+        <div class="divider-line" id="dividerLine"></div>
+        <div class="stack-labels" id="stackLabels">
+          MESH · EDGE · TELEMETRY · FLEET
+        </div>
+      </div>
+    </div>
+
+    <!-- ACT 3: Rest of page -->
+    <div class="act-3" id="act3">
+      <div class="section-block">
+        <div class="section-eyebrow">The Stack</div>
+        <div class="section-heading">Built for the edge</div>
+        <div class="section-text">Every layer designed for environments where connectivity is a luxury, not a given.</div>
+        <div class="tech-grid">
+          <div class="tech-item">
+            <div class="tech-item-label">VectRNet</div>
+            <div class="tech-item-desc">Mesh transport protocol. Go port of Reticulum. Wire-compatible, GPS-denied capable.</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-item-label">Edge Compute</div>
+            <div class="tech-item-desc">On-device processing. No cloud dependency. Full autonomy at the node level.</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-item-label">Gateway</div>
+            <div class="tech-item-desc">mTLS ingress. Bidirectional gRPC streams. Telemetry to Kafka in real-time.</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-item-label">Fleet Manager</div>
+            <div class="tech-item-desc">Command, coordinate, observe. The control plane for autonomous operations.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-eyebrow">Why</div>
+        <div class="section-heading">The infrastructure gap</div>
+        <div class="section-text">Autonomous fleets are held back by fragmented tooling, cloud dependencies, and architectures designed for a connected world. We're building the unified platform that operates where connectivity ends.</div>
+      </div>
+
+      <div class="loop-section">
+        <div class="section-eyebrow">Stay in the loop</div>
+        <div class="section-text" style="margin-bottom: 0;">We're early. If this resonates, leave your email — we'll reach out when there's something to show.</div>
+        <div class="loop-form">
+          <input class="loop-input" type="email" placeholder="you@company.com">
+          <button class="loop-btn">Submit</button>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="footer-left">VECTR TECHNOLOGIES AG</div>
+        <div class="footer-right">© 2026</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const vh = window.innerHeight;
+  const topoGroup = document.getElementById('topoGroup');
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // ===== GENERATE TOPO LINES =====
+  // Fewer lines (7), centered horizontally through the middle of the viewport,
+  // with strong waviness. Each line is built from many sample points so we can
+  // animate a true traveling wave.
+
+  const lineCount = 7;
+  const yCenter = 450; // center of SVG viewBox (900 tall)
+  const ySpacing = 55;
+  const sampleCount = 80; // points per line for smooth curves
+  const xMin = -300;
+  const xMax = 1700;
+
+  const paths = [];
+  const pathLengths = [];
+  const lineConfigs = [];
+
+  for (let i = 0; i < lineCount; i++) {
+    const yBase = yCenter + (i - Math.floor(lineCount / 2)) * ySpacing;
+    // Each line has its own wave character
+    const config = {
+      yBase,
+      amplitude: 40 + Math.sin(i * 1.2) * 20,     // 20–60px waves — very wavy
+      frequency: 0.003 + i * 0.0003,                 // slightly different freq per line
+      phaseOffset: i * 1.1,                           // offset so they don't sync
+      speed: 0.4 + i * 0.03,                         // slightly different travel speed
+    };
+    lineConfigs.push(config);
+
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', buildWavePath(config, 0));
+    topoGroup.appendChild(path);
+
+    const len = path.getTotalLength();
+    pathLengths.push(len);
+    paths.push(path);
+
+    path.style.strokeDasharray = len;
+    path.style.strokeDashoffset = len;
+  }
+
+  // Build a smooth wave path from sampled points
+  function buildWavePath(cfg, time) {
+    const points = [];
+    for (let s = 0; s <= sampleCount; s++) {
+      const t = s / sampleCount;
+      const x = xMax - t * (xMax - xMin); // right to left
+      // Traveling wave: phase shifts with both x-position AND time
+      const y = cfg.yBase + cfg.amplitude * Math.sin(
+        x * cfg.frequency + cfg.phaseOffset + time * cfg.speed
+      );
+      points.push({ x, y });
+    }
+
+    // Build SVG path with smooth cubic beziers through the points
+    let d = `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+    for (let j = 1; j < points.length - 1; j++) {
+      const prev = points[j - 1];
+      const curr = points[j];
+      const next = points[j + 1];
+      // Catmull-Rom to cubic bezier control points
+      const tension = 0.3;
+      const cp1x = curr.x - (next.x - prev.x) * tension;
+      const cp1y = curr.y - (next.y - prev.y) * tension;
+      const cp2x = curr.x + (next.x - prev.x) * tension;
+      const cp2y = curr.y + (next.y - prev.y) * tension;
+
+      if (j === 1) {
+        d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${curr.x.toFixed(1)},${curr.y.toFixed(1)}`;
+      } else {
+        d += ` S${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${curr.x.toFixed(1)},${curr.y.toFixed(1)}`;
+      }
+    }
+    const last = points[points.length - 1];
+    d += ` L${last.x.toFixed(1)},${last.y.toFixed(1)}`;
+    return d;
+  }
+
+  // ===== ELEMENTS =====
+  const voidGrid = document.getElementById('voidGrid');
+  const voidLine = document.getElementById('voidLine');
+  const vectrTitle = document.getElementById('vectrTitle');
+  const vectrTag = document.getElementById('vectrTag');
+  const scrollHint = document.getElementById('scrollHint');
+  const fixedNav = document.getElementById('fixedNav');
+  const act2 = document.getElementById('act2');
+  const noiseLayer = document.getElementById('noiseLayer');
+  const glowOrb = document.getElementById('glowOrb');
+  const statement = document.getElementById('statement');
+  const statementFollow = document.getElementById('statementFollow');
+  const dividerLine = document.getElementById('dividerLine');
+  const stackLabels = document.getElementById('stackLabels');
+  const act3 = document.getElementById('act3');
+
+  // ===== EASING =====
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+  function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; }
+
+  let ticking = false;
+  let waveTime = 0;
+  let lastTimestamp = 0;
+  let linesVisible = false;
+
+  function onScroll() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+  }
+
+  function update(timestamp) {
+    const scrollY = window.scrollY;
+    const transitionEnd = vh * 1.5;
+
+    // === Wave time ===
+    if (lastTimestamp) {
+      waveTime += (timestamp - lastTimestamp) * 0.001;
+    }
+    lastTimestamp = timestamp;
+
+    // === PHASE 1: Act 1 Exit (0 → 0.2vh) — FAST ===
+    const exitZone = vh * 0.2;
+    const exitProgress = Math.min(scrollY / exitZone, 1);
+    const exitEased = easeOutCubic(exitProgress);
+
+    voidGrid.style.opacity = 1 - exitEased;
+    voidLine.style.opacity = 1 - exitEased;
+
+    const titleOffset = exitEased * vh * 0.7;
+    vectrTitle.style.transform = `translateY(${-titleOffset}px)`;
+    vectrTitle.style.opacity = Math.max(0, 1 - exitProgress * 2.5);
+    vectrTag.style.opacity = Math.max(0, 1 - exitProgress * 4);
+    scrollHint.style.opacity = Math.max(0, 1 - exitProgress * 6);
+
+    // === PHASE 2: Act 2 Enter (0.05vh → 0.55vh) ===
+    const enterStart = vh * 0.05;
+    const enterEnd = vh * 0.55;
+    const enterProgress = Math.max(0, Math.min(1, (scrollY - enterStart) / (enterEnd - enterStart)));
+    const enterEased = easeInOutCubic(enterProgress);
+
+    // Don't fade act2 container — lines use dashoffset for reveal,
+    // noise/glow/text have their own opacity controls
+    linesVisible = enterProgress > 0;
+
+    // === TOPO LINES: trace path, THEN traveling wave ===
+    paths.forEach((path, i) => {
+      const len = pathLengths[i];
+      // Slower trace: bigger stagger, longer draw
+      const staggerDelay = i * 0.06;
+      const lineProgress = Math.max(0, Math.min(1, (enterProgress - staggerDelay) / 0.85));
+      const lineEased = easeOutCubic(lineProgress);
+
+      if (lineEased < 1) {
+        // TRACING PHASE: static path, animate dashoffset only
+        path.style.strokeDasharray = len;
+        path.style.strokeDashoffset = len * (1 - lineEased);
+      } else {
+        // FULLY DRAWN: remove dash, start traveling wave
+        path.style.strokeDasharray = 'none';
+        path.style.strokeDashoffset = '0';
+        const cfg = lineConfigs[i];
+        path.setAttribute('d', buildWavePath(cfg, waveTime));
+      }
+    });
+
+    // Noise and glow
+    noiseLayer.style.opacity = enterEased * 0.35;
+    glowOrb.style.opacity = enterEased;
+
+    // === Statement text ===
+    const textStart = vh * 0.12;
+    const textProgress = Math.max(0, Math.min(1, (scrollY - textStart) / (vh * 0.22)));
+    const textEased = easeOutCubic(textProgress);
+    statement.style.opacity = textEased;
+    statement.style.transform = `translateY(${(1 - textEased) * 30}px)`;
+
+    const followStart = vh * 0.22;
+    const followProgress = Math.max(0, Math.min(1, (scrollY - followStart) / (vh * 0.15)));
+    const followEased = easeOutCubic(followProgress);
+    statementFollow.style.opacity = followEased;
+    statementFollow.style.transform = `translateY(${(1 - followEased) * 16}px)`;
+
+    const divStart = vh * 0.32;
+    const divProgress = Math.max(0, Math.min(1, (scrollY - divStart) / (vh * 0.1)));
+    dividerLine.style.opacity = divProgress;
+    dividerLine.style.transform = `scaleX(${easeOutCubic(divProgress)})`;
+
+    const stackStart = vh * 0.36;
+    const stackProgress = Math.max(0, Math.min(1, (scrollY - stackStart) / (vh * 0.1)));
+    const stackEased = easeOutCubic(stackProgress);
+    stackLabels.style.opacity = stackEased;
+    stackLabels.style.transform = `translateY(${(1 - stackEased) * 10}px)`;
+
+    // === Fixed nav ===
+    if (scrollY > vh * 0.35) {
+      fixedNav.classList.add('visible');
+    } else {
+      fixedNav.classList.remove('visible');
+    }
+
+    // === Act 3 ===
+    const act3Start = vh * 0.8;
+    const act3Progress = Math.max(0, Math.min(1, (scrollY - act3Start) / (vh * 0.25)));
+    act3.style.opacity = act3Progress;
+
+    if (scrollY > transitionEnd) {
+      act3.style.transform = `translateY(${-(scrollY - transitionEnd)}px)`;
+    } else {
+      act3.style.transform = 'translateY(0)';
+    }
+
+    ticking = false;
+
+    // Always keep animation loop running for traveling wave
+    if (linesVisible) {
+      requestAnimationFrame(update);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  requestAnimationFrame(update);
+</script>
+
+</body>
+</html>

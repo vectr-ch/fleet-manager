@@ -5,8 +5,8 @@ import { TRPCProvider } from "@/lib/trpc/provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VECTR | Autonomous Drone Fleet Intelligence",
-  description: "Autonomous drone fleet deployment. Real-time orchestration. Zero latency decisions.",
+  title: "VECTR",
+  description: "Autonomous fleet infrastructure",
 };
 
 export default async function RootLayout({
@@ -23,7 +23,7 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&family=Inter:wght@100;200;300;400;500&display=swap"
           rel="stylesheet"
         />
       </head>
