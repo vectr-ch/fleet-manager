@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { router, sysadminProcedure } from "@/server/trpc";
-import { overlordFetch } from "@/lib/overlord";
+import { fmsFetch } from "@/lib/fms";
 import type { SysadminOrg, CreateOrgResponse, InviteAdminResponse } from "@/lib/types";
 
 export const sysadminOrgsRouter = router({
   list: sysadminProcedure.query(async ({ ctx }) => {
-    const res = await overlordFetch<{ orgs: SysadminOrg[] }>("/sysadmin/orgs", {
+    const res = await fmsFetch<{ orgs: SysadminOrg[] }>("/sysadmin/orgs", {
       accessToken: ctx.accessToken,
     });
     return res.orgs;
@@ -14,7 +14,7 @@ export const sysadminOrgsRouter = router({
   get: sysadminProcedure
     .input(z.object({ slug: z.string() }))
     .query(async ({ ctx, input }) => {
-      return overlordFetch<SysadminOrg>(`/sysadmin/orgs/${input.slug}`, {
+      return fmsFetch<SysadminOrg>(`/sysadmin/orgs/${input.slug}`, {
         accessToken: ctx.accessToken,
       });
     }),
@@ -29,7 +29,7 @@ export const sysadminOrgsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return overlordFetch<CreateOrgResponse>("/sysadmin/orgs", {
+      return fmsFetch<CreateOrgResponse>("/sysadmin/orgs", {
         method: "POST",
         body: input,
         accessToken: ctx.accessToken,
@@ -50,7 +50,7 @@ export const sysadminOrgsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const { slug, ...body } = input;
-      return overlordFetch<SysadminOrg>(`/sysadmin/orgs/${slug}`, {
+      return fmsFetch<SysadminOrg>(`/sysadmin/orgs/${slug}`, {
         method: "PATCH",
         body,
         accessToken: ctx.accessToken,
@@ -60,7 +60,7 @@ export const sysadminOrgsRouter = router({
   deactivate: sysadminProcedure
     .input(z.object({ slug: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return overlordFetch(`/sysadmin/orgs/${input.slug}`, {
+      return fmsFetch(`/sysadmin/orgs/${input.slug}`, {
         method: "DELETE",
         accessToken: ctx.accessToken,
       });
@@ -69,7 +69,7 @@ export const sysadminOrgsRouter = router({
   inviteAdmin: sysadminProcedure
     .input(z.object({ slug: z.string(), email: z.string().email() }))
     .mutation(async ({ ctx, input }) => {
-      return overlordFetch<InviteAdminResponse>(
+      return fmsFetch<InviteAdminResponse>(
         `/sysadmin/orgs/${input.slug}/invite-admin`,
         {
           method: "POST",

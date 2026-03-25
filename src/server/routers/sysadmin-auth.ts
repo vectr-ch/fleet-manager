@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, publicProcedure } from "@/server/trpc";
-import { overlordFetch } from "@/lib/overlord";
+import { fmsFetch } from "@/lib/fms";
 import {
   setSysadminAuthCookies,
   clearSysadminAuthCookies,
@@ -14,7 +14,7 @@ export const sysadminAuthRouter = router({
   login: publicProcedure
     .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
     .mutation(async ({ input }) => {
-      const result = await overlordFetch<LoginResponse>("/sysadmin/login", {
+      const result = await fmsFetch<LoginResponse>("/sysadmin/login", {
         method: "POST",
         body: input,
       });
@@ -38,7 +38,7 @@ export const sysadminAuthRouter = router({
     const challengeToken = await getSysadminChallengeToken();
     if (!challengeToken) throw new Error("No MFA challenge token");
 
-    return overlordFetch<MFASetupResponse>("/sysadmin/mfa/setup", {
+    return fmsFetch<MFASetupResponse>("/sysadmin/mfa/setup", {
       method: "POST",
       accessToken: challengeToken,
     });
@@ -50,7 +50,7 @@ export const sysadminAuthRouter = router({
       const challengeToken = await getSysadminChallengeToken();
       if (!challengeToken) throw new Error("No MFA challenge token");
 
-      const result = await overlordFetch<MFAConfirmResponse>(
+      const result = await fmsFetch<MFAConfirmResponse>(
         "/sysadmin/mfa/confirm",
         {
           method: "POST",
@@ -72,7 +72,7 @@ export const sysadminAuthRouter = router({
       const challengeToken = await getSysadminChallengeToken();
       if (!challengeToken) throw new Error("No MFA challenge token");
 
-      const result = await overlordFetch<LoginResponse>("/sysadmin/mfa/verify", {
+      const result = await fmsFetch<LoginResponse>("/sysadmin/mfa/verify", {
         method: "POST",
         body: { code: input.code, mfa_challenge_token: challengeToken },
       });
@@ -88,7 +88,7 @@ export const sysadminAuthRouter = router({
     const { refreshToken } = await getSysadminTokens();
     if (!refreshToken) throw new Error("No refresh token");
 
-    const result = await overlordFetch<LoginResponse>("/sysadmin/refresh", {
+    const result = await fmsFetch<LoginResponse>("/sysadmin/refresh", {
       method: "POST",
       body: { refresh_token: refreshToken },
     });
@@ -105,7 +105,7 @@ export const sysadminAuthRouter = router({
 
     if (refreshToken && accessToken) {
       try {
-        await overlordFetch("/sysadmin/logout", {
+        await fmsFetch("/sysadmin/logout", {
           method: "POST",
           body: { refresh_token: refreshToken },
           accessToken,

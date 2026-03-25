@@ -1,4 +1,4 @@
-import { overlordFetch } from "@/lib/overlord";
+import { fmsFetch } from "@/lib/fms";
 import { setAuthCookies, clearAuthCookies, type AuthTokens } from "./cookies";
 
 const REFRESH_THRESHOLD_MS = 2 * 60 * 1000;
@@ -43,7 +43,7 @@ export async function ensureValidToken(
   }
 
   try {
-    const result = await overlordFetch<RefreshResponse>("/auth/refresh", {
+    const result = await fmsFetch<RefreshResponse>("/auth/refresh", {
       method: "POST",
       body: { refresh_token: refreshToken },
     });

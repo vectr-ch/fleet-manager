@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, publicProcedure, authOnlyProcedure } from "@/server/trpc";
-import { overlordFetch } from "@/lib/overlord";
+import { fmsFetch } from "@/lib/fms";
 import {
   setAuthCookies,
   setChallengeCookie,
@@ -55,7 +55,7 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const result = await overlordFetch<LoginResponse>("/auth/login", {
+      const result = await fmsFetch<LoginResponse>("/auth/login", {
         method: "POST",
         body: input,
       });
@@ -82,7 +82,7 @@ export const authRouter = router({
       throw new Error("No MFA challenge token");
     }
 
-    return overlordFetch<MFASetupResponse>("/auth/mfa/setup", {
+    return fmsFetch<MFASetupResponse>("/auth/mfa/setup", {
       method: "POST",
       accessToken: challengeToken,
     });
@@ -96,7 +96,7 @@ export const authRouter = router({
         throw new Error("No MFA challenge token");
       }
 
-      const result = await overlordFetch<MFAConfirmResponse>(
+      const result = await fmsFetch<MFAConfirmResponse>(
         "/auth/mfa/confirm",
         {
           method: "POST",
@@ -121,7 +121,7 @@ export const authRouter = router({
         throw new Error("No MFA challenge token");
       }
 
-      const result = await overlordFetch<LoginResponse>("/auth/mfa/verify", {
+      const result = await fmsFetch<LoginResponse>("/auth/mfa/verify", {
         method: "POST",
         body: {
           code: input.code,
@@ -143,7 +143,7 @@ export const authRouter = router({
       throw new Error("No refresh token");
     }
 
-    const result = await overlordFetch<LoginResponse>("/auth/refresh", {
+    const result = await fmsFetch<LoginResponse>("/auth/refresh", {
       method: "POST",
       body: { refresh_token: refreshToken },
     });
@@ -160,7 +160,7 @@ export const authRouter = router({
 
     if (refreshToken && accessToken) {
       try {
-        await overlordFetch("/auth/logout", {
+        await fmsFetch("/auth/logout", {
           method: "POST",
           body: { refresh_token: refreshToken },
           accessToken,
@@ -177,7 +177,7 @@ export const authRouter = router({
   forgotPassword: publicProcedure
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ input }) => {
-      return overlordFetch<{ message: string }>("/auth/forgot-password", {
+      return fmsFetch<{ message: string }>("/auth/forgot-password", {
         method: "POST",
         body: input,
       });
@@ -191,7 +191,7 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      return overlordFetch<{ message: string }>("/auth/reset-password", {
+      return fmsFetch<{ message: string }>("/auth/reset-password", {
         method: "POST",
         body: input,
       });

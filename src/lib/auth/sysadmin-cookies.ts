@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { overlordFetch } from "@/lib/overlord";
+import { fmsFetch } from "@/lib/fms";
 import { decodeJwtPayload } from "@/lib/auth/refresh";
 
 const SECURE = process.env.NODE_ENV === "production";
@@ -100,7 +100,7 @@ export async function ensureSysadminValidToken(
   }
 
   try {
-    const result = await overlordFetch<RefreshResponse>("/sysadmin/refresh", {
+    const result = await fmsFetch<RefreshResponse>("/sysadmin/refresh", {
       method: "POST",
       body: { refresh_token: refreshToken },
     });

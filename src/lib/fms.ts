@@ -1,15 +1,15 @@
 import { TRPCError } from "@trpc/server";
 
-const OVERLORD_URL = "http://fms:4000";
+const FMS_URL = "http://fms:4000";
 
-interface OverlordFetchOptions {
+interface FmsClientOptions {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
   accessToken?: string | null;
   headers?: Record<string, string>;
 }
 
-interface OverlordErrorBody {
+interface FmsErrorBody {
   error?: string;
   request_id?: string;
 }
@@ -24,9 +24,9 @@ const STATUS_TO_TRPC_CODE: Record<number, TRPCError["code"]> = {
   500: "INTERNAL_SERVER_ERROR",
 };
 
-export async function overlordFetch<T = unknown>(
+export async function fmsFetch<T = unknown>(
   path: string,
-  options: OverlordFetchOptions = {}
+  options: FmsClientOptions = {}
 ): Promise<T> {
   const { method = "GET", body, accessToken, headers: extraHeaders } = options;
 
@@ -39,14 +39,14 @@ export async function overlordFetch<T = unknown>(
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
-  const res = await fetch(`${OVERLORD_URL}${path}`, {
+  const res = await fetch(`${FMS_URL}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
 
   if (!res.ok) {
-    let errorBody: OverlordErrorBody = {};
+    let errorBody: FmsErrorBody = {};
     try {
       errorBody = await res.json();
     } catch {
@@ -58,7 +58,7 @@ export async function overlordFetch<T = unknown>(
 
     throw new TRPCError({
       code,
-      message: errorBody.error ?? `overlord responded with ${res.status}`,
+      message: errorBody.error ?? `fleet-manager-server responded with ${res.status}`,
       cause: retryAfter ? { retryAfter: parseInt(retryAfter, 10) } : undefined,
     });
   }

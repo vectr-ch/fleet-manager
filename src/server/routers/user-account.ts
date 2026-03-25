@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, authOnlyProcedure } from "@/server/trpc";
-import { overlordFetch } from "@/lib/overlord";
+import { fmsFetch } from "@/lib/fms";
 import { setCurrentOrg } from "@/lib/auth/cookies";
 import type { Org } from "@/lib/types";
 
@@ -9,7 +9,7 @@ export const userAccountRouter = router({
   // Identity derived from JWT ctx.userId — no client-supplied userId.
   listOrgs: protectedProcedure
     .query(async ({ ctx }) => {
-      const res = await overlordFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
+      const res = await fmsFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
         accessToken: ctx.accessToken,
       });
       return res.orgs;
@@ -18,7 +18,7 @@ export const userAccountRouter = router({
   updateDefaultOrg: protectedProcedure
     .input(z.object({ orgSlug: z.string(), orgName: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
-      const result = await overlordFetch(`/users/${ctx.userId}/default-org`, {
+      const result = await fmsFetch(`/users/${ctx.userId}/default-org`, {
         method: "PATCH",
         body: { slug: input.orgSlug },
         accessToken: ctx.accessToken,
@@ -33,7 +33,7 @@ export const userAccountRouter = router({
       new_password: z.string().min(8),
     }))
     .mutation(async ({ ctx, input }) => {
-      return overlordFetch(`/users/${ctx.userId}/change-password`, {
+      return fmsFetch(`/users/${ctx.userId}/change-password`, {
         method: "POST",
         body: input,
         accessToken: ctx.accessToken,
@@ -43,7 +43,7 @@ export const userAccountRouter = router({
   // Fallback for /select-org when sessionStorage is absent (new tab, browser restore).
   listMyOrgs: authOnlyProcedure
     .query(async ({ ctx }) => {
-      const res = await overlordFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
+      const res = await fmsFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
         accessToken: ctx.accessToken,
       });
       return res.orgs;
@@ -53,7 +53,7 @@ export const userAccountRouter = router({
   selectOrg: authOnlyProcedure
     .input(z.object({ slug: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const res = await overlordFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
+      const res = await fmsFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
         accessToken: ctx.accessToken,
       });
       const matchedOrg = res.orgs.find((o) => o.slug === input.slug);

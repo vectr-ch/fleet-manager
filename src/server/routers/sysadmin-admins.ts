@@ -1,10 +1,10 @@
 import { router, sysadminProcedure } from "@/server/trpc";
-import { overlordFetch } from "@/lib/overlord";
+import { fmsFetch } from "@/lib/fms";
 import type { Sysadmin } from "@/lib/types";
 
 export const sysadminAdminsRouter = router({
   list: sysadminProcedure.query(async ({ ctx }) => {
-    const res = await overlordFetch<{ admins: Sysadmin[] }>("/sysadmin/admins", {
+    const res = await fmsFetch<{ admins: Sysadmin[] }>("/sysadmin/admins", {
       accessToken: ctx.accessToken,
     });
     return res.admins;
