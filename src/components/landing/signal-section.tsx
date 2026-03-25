@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { easeOutCubic, easeInOutCubic } from "@/lib/easing";
+import { useViewportHeight } from "@/hooks/use-viewport-height";
 import { TopoLines, type TopoLinesHandle } from "./topo-lines";
 
 interface SignalSectionProps {
@@ -9,14 +10,7 @@ interface SignalSectionProps {
 }
 
 export function SignalSection({ scrollY }: SignalSectionProps) {
-  const [vh, setVh] = useState(800);
-
-  useEffect(() => {
-    setVh(window.innerHeight);
-    const onResize = () => setVh(window.innerHeight);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+  const vh = useViewportHeight();
 
   // Keep scrollY in a ref so the rAF loop always reads the latest value
   const scrollYRef = useRef(scrollY);

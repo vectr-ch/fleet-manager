@@ -1,18 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useScrollProgress } from "@/hooks/use-scroll-progress";
+import { useViewportHeight } from "@/hooks/use-viewport-height";
 
 export function FixedNav() {
   const scrollY = useScrollProgress();
-  const [vh, setVh] = useState(800); // safe SSR default
-
-  useEffect(() => {
-    setVh(window.innerHeight);
-    const onResize = () => setVh(window.innerHeight);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+  const vh = useViewportHeight();
 
   const visible = scrollY > vh * 0.35;
 

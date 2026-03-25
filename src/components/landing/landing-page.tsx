@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useScrollProgress } from "@/hooks/use-scroll-progress";
+import { useViewportHeight } from "@/hooks/use-viewport-height";
 import { ScrollViewport } from "./scroll-viewport";
 import { FixedNav } from "./fixed-nav";
 import { HeroSection } from "./hero-section";
@@ -14,28 +15,27 @@ import { Footer } from "./footer";
 function Act3({
   scrollY,
   vh,
-  contentRef,
+  contentHeight,
+  onRef,
 }: {
   scrollY: number;
   vh: number;
-  contentRef: React.RefObject<HTMLDivElement | null>;
+  contentHeight: number;
+  onRef: (el: HTMLDivElement | null) => void;
 }) {
-  // Act 3 fades in as Act 2 text exits (starting at 0.8vh scroll)
   const act3Progress = Math.max(
     0,
     Math.min(1, (scrollY - vh * 0.8) / (vh * 0.25)),
   );
 
-  // Act 3 starts translating up immediately from 0.8vh
   const scrollStart = vh * 0.8;
-  const contentHeight = contentRef.current?.scrollHeight ?? 0;
   const maxTranslate = contentHeight > vh ? contentHeight - vh : 0;
   const rawTranslate = scrollY > scrollStart ? scrollY - scrollStart : 0;
   const translateY = -Math.min(rawTranslate, maxTranslate);
 
   return (
     <div
-      ref={contentRef}
+      ref={onRef}
       style={{
         position: "absolute",
         top: 0,
@@ -58,29 +58,34 @@ function Act3({
 
 export function LandingPage() {
   const scrollY = useScrollProgress();
-  const [vh, setVh] = useState(800);
-  const act3Ref = useRef<HTMLDivElement>(null);
+  const vh = useViewportHeight();
+  const act3Ref = useRef<HTMLDivElement | null>(null);
   const [contentHeight, setContentHeight] = useState(0);
 
-  useEffect(() => {
-    setVh(window.innerHeight);
-    const onResize = () => setVh(window.innerHeight);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+  // Measure Act 3 content via callback ref + ResizeObserver
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const onAct3Ref = useCallback((el: HTMLDivElement | null) => {
+    // Clean up old observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+    act3Ref.current = el;
+    if (el) {
+      setContentHeight(el.scrollHeight);
+      observerRef.current = new ResizeObserver(() => {
+        setContentHeight(el.scrollHeight);
+      });
+      observerRef.current.observe(el);
+    }
   }, []);
 
-  // Measure Act 3 content to size the scroll runway exactly
+  // Clean up observer on unmount
   useEffect(() => {
-    if (!act3Ref.current) return;
-    const measure = () => setContentHeight(act3Ref.current?.scrollHeight ?? 0);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(act3Ref.current);
-    return () => observer.disconnect();
+    return () => observerRef.current?.disconnect();
   }, []);
 
   // Runway = scroll needed for hero transition + Act 3 content
-  // scrollStart (0.8vh) + maxTranslate (contentHeight - vh) + vh
   const scrollStart = vh * 0.8;
   const maxTranslate = contentHeight > vh ? contentHeight - vh : 0;
   const runwayHeight = `${scrollStart + maxTranslate + vh}px`;
@@ -91,7 +96,7 @@ export function LandingPage() {
       <ScrollViewport runwayHeight={runwayHeight}>
         <HeroSection scrollY={scrollY} />
         <SignalSection scrollY={scrollY} />
-        <Act3 scrollY={scrollY} vh={vh} contentRef={act3Ref} />
+        <Act3 scrollY={scrollY} vh={vh} contentHeight={contentHeight} onRef={onAct3Ref} />
       </ScrollViewport>
     </div>
   );

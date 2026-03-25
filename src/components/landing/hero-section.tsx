@@ -1,21 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { easeOutCubic } from "@/lib/easing";
+import { useViewportHeight } from "@/hooks/use-viewport-height";
 
 interface HeroSectionProps {
   scrollY: number;
 }
 
 export function HeroSection({ scrollY }: HeroSectionProps) {
-  const [vh, setVh] = useState(800);
-
-  useEffect(() => {
-    setVh(window.innerHeight);
-    const onResize = () => setVh(window.innerHeight);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+  const vh = useViewportHeight();
 
   const exitProgress = Math.min(1, scrollY / (vh * 0.2));
   const exitEased = easeOutCubic(exitProgress);
