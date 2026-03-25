@@ -3,6 +3,7 @@
 import { useScrollProgress } from "@/hooks/use-scroll-progress";
 import { ScrollViewport } from "./scroll-viewport";
 import { HeroSection } from "./hero-section";
+import { SignalSection } from "./signal-section";
 import { FixedNav } from "./fixed-nav";
 
 export function LandingPage() {
@@ -13,6 +14,7 @@ export function LandingPage() {
       <FixedNav />
       <ScrollViewport>
         <HeroSection scrollY={scrollY} />
+        <SignalSection scrollY={scrollY} />
       </ScrollViewport>
     </div>
   );
