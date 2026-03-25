@@ -68,10 +68,10 @@ export const authRouter = router({
 
       if (result.access_token) {
         await setAuthCookies(result);
+        const { orgs } = await handleLoginEnrichment(result);
+        return { mfa_required: false as const, setup_required: false, orgs };
       }
-
-      const { orgs } = await handleLoginEnrichment(result);
-      return { mfa_required: false as const, setup_required: false, orgs };
+      return { mfa_required: false as const, setup_required: false };
     }),
 
   mfaSetup: publicProcedure.mutation(async () => {
@@ -105,10 +105,10 @@ export const authRouter = router({
 
       if (result.access_token) {
         await setAuthCookies(result);
+        const { orgs } = await handleLoginEnrichment(result);
+        return { backup_codes: result.backup_codes, orgs };
       }
-
-      const { orgs } = await handleLoginEnrichment(result);
-      return { backup_codes: result.backup_codes, orgs };
+      return { backup_codes: result.backup_codes };
     }),
 
   mfaVerify: publicProcedure
@@ -129,10 +129,10 @@ export const authRouter = router({
 
       if (result.access_token) {
         await setAuthCookies(result);
+        const { orgs } = await handleLoginEnrichment(result);
+        return { success: true, orgs };
       }
-
-      const { orgs } = await handleLoginEnrichment(result);
-      return { success: true, orgs };
+      return { success: true };
     }),
 
   refresh: publicProcedure.mutation(async () => {

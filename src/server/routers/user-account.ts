@@ -17,12 +17,13 @@ export const userAccountRouter = router({
   updateDefaultOrg: protectedProcedure
     .input(z.object({ orgSlug: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await setCurrentOrg(input.orgSlug);
-      return overlordFetch(`/users/${ctx.userId}/default-org`, {
+      const result = await overlordFetch(`/users/${ctx.userId}/default-org`, {
         method: "PATCH",
         body: { slug: input.orgSlug },
         accessToken: ctx.accessToken,
       });
+      await setCurrentOrg(input.orgSlug);
+      return result;
     }),
 
   changePassword: protectedProcedure
