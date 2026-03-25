@@ -90,6 +90,8 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
   // Track wave continuity per line
   const transitionTimes = useRef<number[]>(new Array(LINE_COUNT).fill(-1));
   const lastWaveT = useRef<number[]>(new Array(LINE_COUNT).fill(0));
+  // Once a line has fully traced in, it never goes back to the static path
+  const everCompleted = useRef<boolean[]>(new Array(LINE_COUNT).fill(false));
 
   // On mount: set initial static paths (time=0) and measure lengths
   useEffect(() => {
@@ -128,13 +130,12 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
       const configs = lineConfigs.current;
       const transitions = transitionTimes.current;
       const lastT = lastWaveT.current;
+      const completed = everCompleted.current;
 
       for (let i = 0; i < paths.length; i++) {
         const path = paths[i];
         const len = lengths[i];
 
-        // Fix #1: reduced divisor from 0.85 to 0.6 so all 7 lines can finish
-        // (last line stagger = 0.36, needs enterProgress 0.36 + 0.6 = 0.96 ≤ 1.0)
         const staggerDelay = i * 0.06;
         const lineProgress = Math.max(
           0,
@@ -142,30 +143,29 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
         );
         const lineEased = easeOutCubic(lineProgress);
 
-        if (exitProgress > 0 && lineEased >= 1) {
-          // TRACING OUT — reverse dashoffset as user scrolls past
-          // Continue wave from last known position
-          const t = lastT[i];
-          path.setAttribute("d", buildWavePath(configs[i], t));
-          const currentLen = path.getTotalLength();
-          path.style.strokeDasharray = `${currentLen}`;
-          path.style.strokeDashoffset = `${currentLen * exitProgress}`;
-          // Mark that we came from trace-out so re-entry recalculates
-          transitions[i] = -1;
-        } else if (lineEased < 1) {
-          // TRACING IN: ensure path is the static shape (time=0)
-          // This is critical on re-entry after living/trace-out modified the d attribute
-          if (transitions[i] >= 0 || lastT[i] > 0) {
-            path.setAttribute("d", buildWavePath(configs[i], 0));
-          }
+        // Once completed, never go back to static trace-in
+        if (!completed[i] && lineEased < 1) {
+          // FIRST TRACE IN: static path (time=0), dashoffset reveal
           path.style.strokeDasharray = `${len}`;
           path.style.strokeDashoffset = `${len * (1 - lineEased)}`;
           transitions[i] = -1;
           lastT[i] = 0;
+        } else if (exitProgress > 0 || (completed[i] && lineEased < 1)) {
+          // TRACE OUT (or reverse-trace on scroll up after completion)
+          // Use lineEased for reverse-trace visibility, exitProgress for forward trace-out
+          const visibility = completed[i] && lineEased < 1
+            ? lineEased  // scroll up: line fades back using lineEased
+            : 1 - exitProgress;  // scroll down: line traces out
+
+          const t = lastT[i];
+          path.setAttribute("d", buildWavePath(configs[i], t));
+          const currentLen = path.getTotalLength();
+          path.style.strokeDasharray = `${currentLen}`;
+          path.style.strokeDashoffset = `${currentLen * (1 - visibility)}`;
+          transitions[i] = -1;
         } else {
-          // LIVING PHASE: wave animation
-          // Always recalculate transition time to maintain continuity
-          // On first entry or re-entry: set so that t = lastT (no jump)
+          // LIVING: wave animation
+          completed[i] = true;
           if (transitions[i] < 0) {
             transitions[i] = waveTime - lastT[i];
           }
