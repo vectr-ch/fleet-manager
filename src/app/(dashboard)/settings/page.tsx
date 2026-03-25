@@ -341,7 +341,6 @@ function SecurityTab() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // userId is not yet available from JWT context — disabled until backend provides current user endpoint
   const changePasswordMutation = trpc.userAccount.changePassword.useMutation({
     onSuccess: () => {
       setCurrentPassword("");
@@ -365,9 +364,7 @@ function SecurityTab() {
       setError("New password must be at least 8 characters.");
       return;
     }
-    // TODO: replace placeholder with real userId once /me endpoint is available
     changePasswordMutation.mutate({
-      userId: "me",
       current_password: currentPassword,
       new_password: newPassword,
     });
