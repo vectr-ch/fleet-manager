@@ -11,7 +11,7 @@ interface RefreshResponse {
   refresh_token_ttl: number;
 }
 
-function decodeJwtPayload(token: string): { exp?: number } {
+export function decodeJwtPayload(token: string): { exp?: number; sub?: string } {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return {};
