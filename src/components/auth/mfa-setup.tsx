@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { trpc } from "@/lib/trpc/client";
+import type { OrgFromLogin } from "@/lib/types";
 
 interface MfaSetupProps {
-  onSuccess: () => void;
+  onSuccess: (orgs?: OrgFromLogin[]) => void;
 }
 
 export function MfaSetup({ onSuccess }: MfaSetupProps) {
@@ -13,6 +14,7 @@ export function MfaSetup({ onSuccess }: MfaSetupProps) {
   const [code, setCode] = useState("");
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [pendingOrgs, setPendingOrgs] = useState<OrgFromLogin[] | undefined>();
 
   const setupMutation = trpc.auth.mfaSetup.useMutation({
     onSuccess: () => setStep("qr"),
@@ -22,6 +24,7 @@ export function MfaSetup({ onSuccess }: MfaSetupProps) {
     onSuccess: (data) => {
       setBackupCodes(data.backup_codes);
       setStep("backup");
+      setPendingOrgs(data.orgs);
     },
     onError: (err) => setError(err.message === "invalid_code" ? "Invalid code. Please try again." : err.message),
   });
@@ -64,7 +67,7 @@ export function MfaSetup({ onSuccess }: MfaSetupProps) {
           Copy all codes
         </button>
         <button
-          onClick={onSuccess}
+          onClick={() => onSuccess(pendingOrgs)}
           className="w-full rounded-md bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200"
         >
           I&apos;ve saved my codes — continue

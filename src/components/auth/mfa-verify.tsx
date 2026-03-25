@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
+import type { OrgFromLogin } from "@/lib/types";
 
 interface MfaVerifyProps {
-  onSuccess: () => void;
+  onSuccess: (orgs?: OrgFromLogin[]) => void;
 }
 
 export function MfaVerify({ onSuccess }: MfaVerifyProps) {
@@ -12,7 +13,7 @@ export function MfaVerify({ onSuccess }: MfaVerifyProps) {
   const [error, setError] = useState<string | null>(null);
 
   const verifyMutation = trpc.auth.mfaVerify.useMutation({
-    onSuccess: () => onSuccess(),
+    onSuccess: (data) => onSuccess(data.orgs),
     onError: (err) => setError(err.message === "invalid_code" ? "Invalid code. Please try again." : err.message),
   });
 
