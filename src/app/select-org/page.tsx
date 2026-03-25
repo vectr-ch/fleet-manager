@@ -51,6 +51,13 @@ export default function SelectOrgPage() {
     },
   });
 
+  const logoutMutation = trpc.auth.logout.useMutation({
+    onSuccess: () => {
+      sessionStorage.removeItem("pending_orgs");
+      window.location.href = "/login";
+    },
+  });
+
   const handleSelect = (slug: string) => {
     selectOrgMutation.mutate({ slug });
   };
@@ -75,13 +82,6 @@ export default function SelectOrgPage() {
       </div>
     );
   }
-
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      sessionStorage.removeItem("pending_orgs");
-      window.location.href = "/login";
-    },
-  });
 
   if (orgs !== null && orgs.length === 0) {
     return (
