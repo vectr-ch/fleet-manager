@@ -19,17 +19,22 @@ export function BorderGlowCard({ children }: BorderGlowCardProps) {
         borderRadius: "2px",
       }}
     >
-      {/* Glow overlay */}
+      {/* Border-only glow: the radial gradient is masked to only show
+          on a 1px border ring, keeping the card interior clean */}
       <div
         style={{
           position: "absolute",
           inset: "-1px",
           borderRadius: "inherit",
           pointerEvents: "none",
-          overflow: "hidden",
           opacity: isNear ? 1 : 0,
           transition: "opacity 0.3s ease",
-          background: `radial-gradient(circle 150px at ${x}px ${y}px, rgba(255,255,255,0.1), transparent)`,
+          background: `radial-gradient(circle 120px at ${x + 1}px ${y + 1}px, rgba(255,255,255,0.4), transparent)`,
+          mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+          WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+          maskComposite: "exclude",
+          WebkitMaskComposite: "xor",
+          padding: "1px",
         }}
       />
       {children}
