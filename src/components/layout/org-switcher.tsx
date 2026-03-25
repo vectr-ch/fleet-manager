@@ -28,13 +28,15 @@ export function OrgSwitcher({ currentOrg }: OrgSwitcherProps) {
     setIsOpen(false);
   };
 
+  const currentOrgName = orgsQuery.data?.find((o) => o.slug === currentOrg)?.name ?? currentOrg;
+
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-700"
       >
-        {currentOrg}
+        {currentOrgName}
         <span className="text-neutral-500">&#x25BE;</span>
       </button>
       {isOpen && orgsQuery.data && (
