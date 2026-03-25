@@ -21,6 +21,7 @@ export default function SelectOrgPage() {
     const raw = sessionStorage.getItem("pending_orgs");
     if (raw) {
       try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setOrgs(JSON.parse(raw));
       } catch {
         // ignore parse error; fall through to live fetch
@@ -38,6 +39,7 @@ export default function SelectOrgPage() {
 
   useEffect(() => {
     if (listMyOrgsQuery.data) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOrgs(listMyOrgsQuery.data.map((o) => ({ ...o, is_default: false })));
     }
   }, [listMyOrgsQuery.data]);

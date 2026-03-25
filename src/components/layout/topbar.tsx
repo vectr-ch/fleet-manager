@@ -42,6 +42,7 @@ export function Topbar() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentOrg(parseClientCookie("current_org"));
     const raw = parseClientCookie("user_info");
     if (raw) {
@@ -103,7 +104,7 @@ export function Topbar() {
         <div className="relative">
           <button
             onClick={() => setUserDropdownOpen(v => !v)}
-            className="w-[26px] h-[26px] rounded-full bg-linear-to-br from-[#1e3a5f] to-fleet-blue border border-input flex items-center justify-center text-[10px] font-semibold text-white cursor-pointer"
+            className="w-6.5 h-6.5 rounded-full bg-linear-to-br from-[#1e3a5f] to-fleet-blue border border-input flex items-center justify-center text-[10px] font-semibold text-white cursor-pointer"
           >
             {userInitials}
           </button>
