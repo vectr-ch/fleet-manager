@@ -6,14 +6,13 @@ import { trpc } from "@/lib/trpc/client";
 
 interface OrgSwitcherProps {
   currentOrg: string;
-  userId: string;
 }
 
-export function OrgSwitcher({ currentOrg, userId }: OrgSwitcherProps) {
+export function OrgSwitcher({ currentOrg }: OrgSwitcherProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
-  const orgsQuery = trpc.userAccount.listOrgs.useQuery({ userId });
+  const orgsQuery = trpc.userAccount.listOrgs.useQuery();
   const switchOrgMutation = trpc.userAccount.updateDefaultOrg.useMutation({
     onSuccess: () => {
       router.refresh();
@@ -25,11 +24,7 @@ export function OrgSwitcher({ currentOrg, userId }: OrgSwitcherProps) {
       setIsOpen(false);
       return;
     }
-    switchOrgMutation.mutate({ userId, orgSlug: slug }, {
-      onSuccess: () => {
-        document.cookie = `current_org=${slug};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
-      },
-    });
+    switchOrgMutation.mutate({ orgSlug: slug });
     setIsOpen(false);
   };
 

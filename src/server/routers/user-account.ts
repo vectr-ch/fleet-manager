@@ -1,23 +1,24 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "@/server/trpc";
+import { TRPCError } from "@trpc/server";
+import { router, protectedProcedure, authOnlyProcedure } from "@/server/trpc";
 import { overlordFetch } from "@/lib/overlord";
 import { setCurrentOrg } from "@/lib/auth/cookies";
 import type { Org } from "@/lib/types";
 
 export const userAccountRouter = router({
+  // Identity derived from JWT ctx.userId — no client-supplied userId.
   listOrgs: protectedProcedure
-    .input(z.object({ userId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return overlordFetch<Org[]>(`/users/${input.userId}/orgs`, {
+    .query(async ({ ctx }) => {
+      return overlordFetch<Org[]>(`/users/${ctx.userId}/orgs`, {
         accessToken: ctx.accessToken,
       });
     }),
 
   updateDefaultOrg: protectedProcedure
-    .input(z.object({ userId: z.string(), orgSlug: z.string() }))
+    .input(z.object({ orgSlug: z.string() }))
     .mutation(async ({ ctx, input }) => {
       await setCurrentOrg(input.orgSlug);
-      return overlordFetch(`/users/${input.userId}/default-org`, {
+      return overlordFetch(`/users/${ctx.userId}/default-org`, {
         method: "PATCH",
         body: { slug: input.orgSlug },
         accessToken: ctx.accessToken,
@@ -25,19 +26,37 @@ export const userAccountRouter = router({
     }),
 
   changePassword: protectedProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-        current_password: z.string(),
-        new_password: z.string().min(8),
-      })
-    )
+    .input(z.object({
+      current_password: z.string(),
+      new_password: z.string().min(8),
+    }))
     .mutation(async ({ ctx, input }) => {
-      const { userId, ...body } = input;
-      return overlordFetch(`/users/${userId}/change-password`, {
+      return overlordFetch(`/users/${ctx.userId}/change-password`, {
         method: "POST",
-        body,
+        body: input,
         accessToken: ctx.accessToken,
       });
+    }),
+
+  // Fallback for /select-org when sessionStorage is absent (new tab, browser restore).
+  listMyOrgs: authOnlyProcedure
+    .query(async ({ ctx }) => {
+      return overlordFetch<Org[]>(`/users/${ctx.userId}/orgs`, {
+        accessToken: ctx.accessToken,
+      });
+    }),
+
+  // Server-validates org membership before writing current_org cookie.
+  selectOrg: authOnlyProcedure
+    .input(z.object({ slug: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const orgs = await overlordFetch<Org[]>(`/users/${ctx.userId}/orgs`, {
+        accessToken: ctx.accessToken,
+      });
+      if (!orgs.some((o) => o.slug === input.slug)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "not_member_of_org" });
+      }
+      await setCurrentOrg(input.slug);
+      return { success: true };
     }),
 });
