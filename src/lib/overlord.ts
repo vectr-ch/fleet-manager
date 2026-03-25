@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 
-const OVERLORD_URL = process.env.OVERLORD_URL!.replace(/\/+$/, "");
+const OVERLORD_URL = "http://fms:4000";
 
 interface OverlordFetchOptions {
   method?: "GET" | "POST" | "PATCH" | "DELETE";

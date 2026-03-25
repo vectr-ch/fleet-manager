@@ -9,8 +9,6 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ARG OVERLORD_URL
-ENV OVERLORD_URL=${OVERLORD_URL}
 RUN npm run build
 
 FROM base AS runner
