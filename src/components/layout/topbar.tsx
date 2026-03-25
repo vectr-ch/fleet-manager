@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
@@ -17,43 +17,17 @@ const navItems = [
   { href: "/audit", key: "audit" },
 ] as const;
 
-function parseClientCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
-  return match ? decodeURIComponent(match[1]) : null;
+interface TopbarProps {
+  currentOrg: string | null;
+  userInitials: string;
 }
 
-function deriveInitials(email: string): string {
-  const local = email.split("@")[0];
-  const lastDot = local.lastIndexOf(".");
-  if (lastDot > 0 && lastDot < local.length - 1) {
-    return (local[0] + local[lastDot + 1]).toUpperCase();
-  }
-  return local.slice(0, 2).toUpperCase();
-}
-
-export function Topbar() {
+export function Topbar({ currentOrg, userInitials }: TopbarProps) {
   const pathname = usePathname();
   const t = useTranslations("topbar");
   const tc = useTranslations("common");
 
-  const [currentOrg, setCurrentOrg] = useState<string | null>(null);
-  const [userInitials, setUserInitials] = useState<string>("--");
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentOrg(parseClientCookie("current_org"));
-    const raw = parseClientCookie("user_info");
-    if (raw) {
-      try {
-        const { email } = JSON.parse(raw);
-        if (email) setUserInitials(deriveInitials(email));
-      } catch {
-        // leave default
-      }
-    }
-  }, []);
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {

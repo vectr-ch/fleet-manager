@@ -40,6 +40,9 @@ export const protectedProcedure = t.procedure.use(async ({ next }) => {
   if (!orgSlug) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "no_org_selected" });
   }
+  // decodeJwtPayload does not verify the signature; the Go backend enforces
+  // token validity on every API call. ctx.userId is used only for tRPC
+  // scoping — all authorization decisions happen server-side.
   const { sub } = decodeJwtPayload(accessToken);
   const userId = typeof sub === "string" ? sub : null;
   if (!userId) {
@@ -56,6 +59,8 @@ export const authOnlyProcedure = t.procedure.use(async ({ next }) => {
   if (!accessToken) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "unauthenticated" });
   }
+  // decodeJwtPayload does not verify the signature; the Go backend enforces
+  // token validity on every API call. ctx.userId is used only for tRPC scoping.
   const { sub } = decodeJwtPayload(accessToken);
   const userId = typeof sub === "string" ? sub : null;
   if (!userId) {

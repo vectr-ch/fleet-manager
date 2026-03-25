@@ -29,6 +29,8 @@ async function handleLoginEnrichment(result: {
   const defaultOrg = orgs.find((o) => o.is_default);
   const singleOrg = orgs.length === 1 ? orgs[0] : null;
 
+  // Auto-selection: users with a default org or exactly one org bypass /select-org.
+  // Only users with 2+ orgs and no default are sent to /select-org for manual selection.
   if (defaultOrg) {
     await setCurrentOrg(defaultOrg.slug);
     return {};

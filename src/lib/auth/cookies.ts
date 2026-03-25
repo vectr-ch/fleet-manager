@@ -58,12 +58,23 @@ export async function setChallengeCookie(token: string) {
   });
 }
 
-// user_info is DISPLAY-ONLY — stores email for initials rendering only.
+function deriveInitials(email: string): string {
+  const local = email.split("@")[0];
+  const lastDot = local.lastIndexOf(".");
+  if (lastDot > 0 && lastDot < local.length - 1) {
+    return (local[0] + local[lastDot + 1]).toUpperCase();
+  }
+  return local.slice(0, 2).toUpperCase();
+}
+
+// user_info is DISPLAY-ONLY — stores pre-computed initials for the avatar.
+// Stores initials rather than the full email to minimise PII in a client-readable cookie.
 // Never passed as identity to backend calls. TTL matches refresh_token (7 days).
 export async function setUserInfo(email: string) {
+  const initials = deriveInitials(email);
   const cookieStore = await cookies();
-  cookieStore.set("user_info", JSON.stringify({ email }), {
-    httpOnly: false, // intentionally client-readable for initials
+  cookieStore.set("user_info", JSON.stringify({ initials }), {
+    httpOnly: false, // intentionally client-readable for avatar display
     secure: SECURE,
     sameSite: "lax",
     path: "/",
