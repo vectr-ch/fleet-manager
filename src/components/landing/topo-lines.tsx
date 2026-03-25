@@ -74,7 +74,7 @@ function buildWavePath(cfg: LineConfig, time: number): string {
 // ===== Public handle =====
 
 export interface TopoLinesHandle {
-  update: (enterProgress: number, waveTime: number) => void;
+  update: (enterProgress: number, waveTime: number, exitProgress?: number) => void;
 }
 
 // ===== Component =====
@@ -87,6 +87,8 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
   const pathRefs = useRef<SVGPathElement[]>([]);
   const pathLengths = useRef<number[]>([]);
   const lineConfigs = useRef<LineConfig[]>(makeLineConfigs());
+  // Track when each line transitions to living phase (to avoid glitch)
+  const transitionTimes = useRef<number[]>(new Array(LINE_COUNT).fill(-1));
 
   // On mount: set initial static paths (time=0) and measure lengths
   useEffect(() => {
@@ -119,31 +121,52 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
 
   // Expose update method to parent
   useImperativeHandle(ref, () => ({
-    update(enterProgress: number, waveTime: number) {
+    update(enterProgress: number, waveTime: number, exitProgress: number = 0) {
       const paths = pathRefs.current;
       const lengths = pathLengths.current;
       const configs = lineConfigs.current;
+      const transitions = transitionTimes.current;
 
       for (let i = 0; i < paths.length; i++) {
         const path = paths[i];
         const len = lengths[i];
 
+        // Fix #1: reduced divisor from 0.85 to 0.6 so all 7 lines can finish
+        // (last line stagger = 0.36, needs enterProgress 0.36 + 0.6 = 0.96 ≤ 1.0)
         const staggerDelay = i * 0.06;
         const lineProgress = Math.max(
           0,
-          Math.min(1, (enterProgress - staggerDelay) / 0.85),
+          Math.min(1, (enterProgress - staggerDelay) / 0.6),
         );
         const lineEased = easeOutCubic(lineProgress);
 
-        if (lineEased < 1) {
-          // TRACING PHASE: static path, animate dashoffset only
+        if (exitProgress > 0 && lineEased >= 1) {
+          // Fix #3: TRACING OUT — reverse dashoffset as user scrolls past
+          // Freeze path at current wave position, re-apply dash
+          const t = transitions[i] >= 0 ? waveTime - transitions[i] : 0;
+          path.setAttribute("d", buildWavePath(configs[i], t));
+          const currentLen = path.getTotalLength();
+          path.style.strokeDasharray = `${currentLen}`;
+          // Trace out from left (dashoffset increases)
+          path.style.strokeDashoffset = `${currentLen * exitProgress}`;
+        } else if (lineEased < 1) {
+          // TRACING IN: static path (time=0), animate dashoffset only
           path.style.strokeDasharray = `${len}`;
           path.style.strokeDashoffset = `${len * (1 - lineEased)}`;
+          // Reset transition time if line is still tracing
+          transitions[i] = -1;
         } else {
-          // LIVING PHASE: remove dash, rebuild path each frame
+          // LIVING PHASE: wave animation
+          // Fix #2: record waveTime when first entering living phase
+          // Use offset so wave starts from same position as static path (time=0)
+          if (transitions[i] < 0) {
+            transitions[i] = waveTime;
+          }
+          const t = waveTime - transitions[i];
+
           path.style.strokeDasharray = "none";
           path.style.strokeDashoffset = "0";
-          path.setAttribute("d", buildWavePath(configs[i], waveTime));
+          path.setAttribute("d", buildWavePath(configs[i], t));
         }
       }
     },

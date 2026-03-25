@@ -50,13 +50,19 @@ export function SignalSection({ scrollY }: SignalSectionProps) {
       );
       const enterEased = easeInOutCubic(enterProgress);
 
+      // Exit progress: lines trace out as user scrolls past (0.8vh → 1.3vh)
+      const exitProgress = Math.max(
+        0,
+        Math.min(1, (sy - vh * 0.8) / (vh * 0.5)),
+      );
+
       // Wave time increments continuously
       if (enterProgress > 0) {
         waveTime += delta;
       }
 
-      // Topo lines
-      topoRef.current?.update(enterProgress, waveTime);
+      // Topo lines (pass exitProgress for trace-out)
+      topoRef.current?.update(enterProgress, waveTime, exitProgress);
 
       // Noise layer
       if (noiseRef.current) {
