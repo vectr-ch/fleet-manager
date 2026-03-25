@@ -64,15 +64,21 @@ export function SignalSection({ scrollY }: SignalSectionProps) {
       // Topo lines (pass exitProgress for trace-out)
       topoRef.current?.update(enterProgress, waveTime, exitProgress);
 
-      // Noise layer
+      // Noise layer (fades out on exit)
       if (noiseRef.current) {
-        noiseRef.current.style.opacity = `${enterEased * 0.35}`;
+        const noiseOpacity = enterEased * 0.35 * Math.max(0, 1 - exitProgress);
+        noiseRef.current.style.opacity = `${noiseOpacity}`;
       }
 
-      // Glow orb
+      // Glow orb (fades out on exit)
       if (glowRef.current) {
-        glowRef.current.style.opacity = `${enterEased}`;
+        const glowOpacity = enterEased * Math.max(0, 1 - exitProgress);
+        glowRef.current.style.opacity = `${glowOpacity}`;
       }
+
+      // Text exit: as exitProgress increases, text fades and moves up
+      const textExitOffset = exitProgress * vh * 0.4; // accelerated upward exit
+      const textExitOpacity = 1 - exitProgress * 2; // fades out in first half of exit
 
       // Statement
       if (statementRef.current) {
@@ -81,8 +87,10 @@ export function SignalSection({ scrollY }: SignalSectionProps) {
           Math.min(1, (sy - vh * 0.12) / (vh * 0.22)),
         );
         const eased = easeOutCubic(progress);
-        statementRef.current.style.opacity = `${eased}`;
-        statementRef.current.style.transform = `translateY(${(1 - eased) * 30}px)`;
+        const enterY = (1 - eased) * 30;
+        const opacity = Math.max(0, Math.min(eased, textExitOpacity));
+        statementRef.current.style.opacity = `${opacity}`;
+        statementRef.current.style.transform = `translateY(${enterY - textExitOffset}px)`;
       }
 
       // Follow
@@ -92,8 +100,10 @@ export function SignalSection({ scrollY }: SignalSectionProps) {
           Math.min(1, (sy - vh * 0.22) / (vh * 0.15)),
         );
         const eased = easeOutCubic(progress);
-        followRef.current.style.opacity = `${eased}`;
-        followRef.current.style.transform = `translateY(${(1 - eased) * 16}px)`;
+        const enterY = (1 - eased) * 16;
+        const opacity = Math.max(0, Math.min(eased, textExitOpacity));
+        followRef.current.style.opacity = `${opacity}`;
+        followRef.current.style.transform = `translateY(${enterY - textExitOffset}px)`;
       }
 
       // Divider
@@ -102,8 +112,9 @@ export function SignalSection({ scrollY }: SignalSectionProps) {
           0,
           Math.min(1, (sy - vh * 0.32) / (vh * 0.1)),
         );
-        dividerRef.current.style.opacity = `${progress}`;
-        dividerRef.current.style.transform = `scaleX(${easeOutCubic(progress)})`;
+        const opacity = Math.max(0, Math.min(progress, textExitOpacity));
+        dividerRef.current.style.opacity = `${opacity}`;
+        dividerRef.current.style.transform = `scaleX(${easeOutCubic(progress)}) translateY(${-textExitOffset}px)`;
       }
 
       // Stack
@@ -113,8 +124,10 @@ export function SignalSection({ scrollY }: SignalSectionProps) {
           Math.min(1, (sy - vh * 0.36) / (vh * 0.1)),
         );
         const eased = easeOutCubic(progress);
-        stackRef.current.style.opacity = `${eased}`;
-        stackRef.current.style.transform = `translateY(${(1 - eased) * 10}px)`;
+        const enterY = (1 - eased) * 10;
+        const opacity = Math.max(0, Math.min(eased, textExitOpacity));
+        stackRef.current.style.opacity = `${opacity}`;
+        stackRef.current.style.transform = `translateY(${enterY - textExitOffset}px)`;
       }
 
       // Keep loop running when lines are visible (for traveling wave)
