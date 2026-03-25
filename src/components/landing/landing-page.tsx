@@ -1,7 +1,19 @@
+"use client";
+
+import { useScrollProgress } from "@/hooks/use-scroll-progress";
+import { ScrollViewport } from "./scroll-viewport";
+import { HeroSection } from "./hero-section";
+import { FixedNav } from "./fixed-nav";
+
 export function LandingPage() {
+  const scrollY = useScrollProgress();
+
   return (
-    <div style={{ minHeight: "100vh", background: "#09090b", color: "#fafafa" }}>
-      <p style={{ padding: "40px", color: "#52525b" }}>Landing page redesign in progress</p>
+    <div style={{ background: "var(--lp-bg-primary)" }}>
+      <FixedNav />
+      <ScrollViewport>
+        <HeroSection scrollY={scrollY} />
+      </ScrollViewport>
     </div>
   );
 }
