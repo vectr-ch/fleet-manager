@@ -12,14 +12,17 @@ import { CtaSection } from "./cta-section";
 import { Footer } from "./footer";
 
 function Act3({ scrollY, vh }: { scrollY: number; vh: number }) {
+  // Act 3 fades in as Act 2 text exits (starting at 0.8vh scroll)
   const act3Progress = Math.max(
     0,
     Math.min(1, (scrollY - vh * 0.8) / (vh * 0.25)),
   );
 
-  const transitionEnd = vh * 1.5;
+  // Act 3 starts translating up immediately from 0.8vh
+  // so it scrolls into view as Act 2 exits
+  const scrollStart = vh * 0.8;
   const translateY =
-    scrollY > transitionEnd ? -(scrollY - transitionEnd) : 0;
+    scrollY > scrollStart ? -(scrollY - scrollStart) : 0;
 
   return (
     <div
