@@ -60,9 +60,9 @@ export async function setChallengeCookie(token: string) {
 
 // user_info is DISPLAY-ONLY — stores email for initials rendering only.
 // Never passed as identity to backend calls. TTL matches refresh_token (7 days).
-export async function setUserInfo(user: { email: string }) {
+export async function setUserInfo(email: string) {
   const cookieStore = await cookies();
-  cookieStore.set("user_info", JSON.stringify(user), {
+  cookieStore.set("user_info", JSON.stringify({ email }), {
     httpOnly: false, // intentionally client-readable for initials
     secure: SECURE,
     sameSite: "lax",
