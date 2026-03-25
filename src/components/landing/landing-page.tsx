@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useScrollProgress } from "@/hooks/use-scroll-progress";
 import { ScrollViewport } from "./scroll-viewport";
 import { FixedNav } from "./fixed-nav";
@@ -11,7 +11,15 @@ import { MissionSection } from "./mission-section";
 import { CtaSection } from "./cta-section";
 import { Footer } from "./footer";
 
-function Act3({ scrollY, vh }: { scrollY: number; vh: number }) {
+function Act3({
+  scrollY,
+  vh,
+  contentRef,
+}: {
+  scrollY: number;
+  vh: number;
+  contentRef: React.RefObject<HTMLDivElement | null>;
+}) {
   // Act 3 fades in as Act 2 text exits (starting at 0.8vh scroll)
   const act3Progress = Math.max(
     0,
@@ -19,13 +27,15 @@ function Act3({ scrollY, vh }: { scrollY: number; vh: number }) {
   );
 
   // Act 3 starts translating up immediately from 0.8vh
-  // so it scrolls into view as Act 2 exits
   const scrollStart = vh * 0.8;
-  const translateY =
-    scrollY > scrollStart ? -(scrollY - scrollStart) : 0;
+  const contentHeight = contentRef.current?.scrollHeight ?? 0;
+  const maxTranslate = contentHeight > vh ? contentHeight - vh : 0;
+  const rawTranslate = scrollY > scrollStart ? scrollY - scrollStart : 0;
+  const translateY = -Math.min(rawTranslate, maxTranslate);
 
   return (
     <div
+      ref={contentRef}
       style={{
         position: "absolute",
         top: 0,
@@ -49,6 +59,8 @@ function Act3({ scrollY, vh }: { scrollY: number; vh: number }) {
 export function LandingPage() {
   const scrollY = useScrollProgress();
   const [vh, setVh] = useState(800);
+  const act3Ref = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState(0);
 
   useEffect(() => {
     setVh(window.innerHeight);
@@ -57,13 +69,29 @@ export function LandingPage() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // Measure Act 3 content to size the scroll runway exactly
+  useEffect(() => {
+    if (!act3Ref.current) return;
+    const measure = () => setContentHeight(act3Ref.current?.scrollHeight ?? 0);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(act3Ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Runway = scroll needed for hero transition + Act 3 content
+  // scrollStart (0.8vh) + maxTranslate (contentHeight - vh) + vh
+  const scrollStart = vh * 0.8;
+  const maxTranslate = contentHeight > vh ? contentHeight - vh : 0;
+  const runwayHeight = `${scrollStart + maxTranslate + vh}px`;
+
   return (
     <div style={{ background: "var(--lp-bg-primary)" }}>
       <FixedNav />
-      <ScrollViewport>
+      <ScrollViewport runwayHeight={runwayHeight}>
         <HeroSection scrollY={scrollY} />
         <SignalSection scrollY={scrollY} />
-        <Act3 scrollY={scrollY} vh={vh} />
+        <Act3 scrollY={scrollY} vh={vh} contentRef={act3Ref} />
       </ScrollViewport>
     </div>
   );

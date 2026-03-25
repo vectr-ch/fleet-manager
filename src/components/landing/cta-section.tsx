@@ -21,7 +21,7 @@ export function CtaSection() {
   return (
     <section
       style={{
-        padding: "120px clamp(40px, 10vw, 140px)",
+        padding: "80px clamp(40px, 10vw, 140px)",
         borderTop: "1px solid var(--lp-border-subtle)",
       }}
     >

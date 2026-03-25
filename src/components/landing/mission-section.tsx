@@ -2,8 +2,7 @@ export function MissionSection() {
   return (
     <section
       style={{
-        padding: "120px clamp(40px, 10vw, 140px)",
-        borderTop: "1px solid var(--lp-border-subtle)",
+        padding: "60px clamp(40px, 10vw, 140px)",
       }}
     >
       <div

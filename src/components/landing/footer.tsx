@@ -2,7 +2,7 @@ export function Footer() {
   return (
     <footer
       style={{
-        padding: "48px clamp(40px, 10vw, 140px)",
+        padding: "32px clamp(32px, 8vw, 100px)",
         borderTop: "1px solid var(--lp-border-subtle)",
         display: "flex",
         flexDirection: "row",
