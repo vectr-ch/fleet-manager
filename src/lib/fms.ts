@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 
-const FMS_URL = "http://fms:4000";
+const FMS_URL = process.env.FMS_URL ?? "http://fms:4000";
 
 interface FmsClientOptions {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
