@@ -32,11 +32,11 @@ async function handleLoginEnrichment(result: {
   // Auto-selection: users with a default org or exactly one org bypass /select-org.
   // Only users with 2+ orgs and no default are sent to /select-org for manual selection.
   if (defaultOrg) {
-    await setCurrentOrg(defaultOrg.slug);
+    await setCurrentOrg(defaultOrg.slug, defaultOrg.name);
     return {};
   }
   if (singleOrg) {
-    await setCurrentOrg(singleOrg.slug);
+    await setCurrentOrg(singleOrg.slug, singleOrg.name);
     return {};
   }
   if (orgs.length > 1) {

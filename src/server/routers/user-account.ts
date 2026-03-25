@@ -16,14 +16,14 @@ export const userAccountRouter = router({
     }),
 
   updateDefaultOrg: protectedProcedure
-    .input(z.object({ orgSlug: z.string() }))
+    .input(z.object({ orgSlug: z.string(), orgName: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const result = await overlordFetch(`/users/${ctx.userId}/default-org`, {
         method: "PATCH",
         body: { slug: input.orgSlug },
         accessToken: ctx.accessToken,
       });
-      await setCurrentOrg(input.orgSlug);
+      await setCurrentOrg(input.orgSlug, input.orgName);
       return result;
     }),
 
@@ -56,10 +56,11 @@ export const userAccountRouter = router({
       const res = await overlordFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
         accessToken: ctx.accessToken,
       });
-      if (!res.orgs.some((o) => o.slug === input.slug)) {
+      const matchedOrg = res.orgs.find((o) => o.slug === input.slug);
+      if (!matchedOrg) {
         throw new TRPCError({ code: "FORBIDDEN", message: "not_member_of_org" });
       }
-      await setCurrentOrg(input.slug);
+      await setCurrentOrg(input.slug, matchedOrg.name);
       return { success: true };
     }),
 });
