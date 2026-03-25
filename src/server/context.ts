@@ -1,6 +1,7 @@
 export interface Context {
   accessToken: string | null;
   orgSlug: string | null;
+  userId: string | null; // derived from JWT sub claim; null until set by middleware
 }
 
 export async function createContext(): Promise<Context> {
@@ -11,5 +12,6 @@ export async function createContext(): Promise<Context> {
   return {
     accessToken: null,
     orgSlug: null,
+    userId: null,
   };
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
 import { MfaSetup } from "@/components/auth/mfa-setup";
 import { MfaVerify } from "@/components/auth/mfa-verify";
+import type { OrgFromLogin } from "@/lib/types";
 
 type LoginStep = "credentials" | "mfa-setup" | "mfa-verify";
 
@@ -12,8 +13,13 @@ export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<LoginStep>("credentials");
 
-  const handleSuccess = () => {
-    router.push("/overview");
+  const handleAuthComplete = (orgs?: OrgFromLogin[]) => {
+    if (orgs && orgs.length > 1) {
+      sessionStorage.setItem("pending_orgs", JSON.stringify(orgs));
+      router.push("/select-org");
+    } else {
+      router.push("/overview");
+    }
   };
 
   const handleMfaRequired = (setupRequired: boolean) => {
@@ -29,13 +35,13 @@ export default function LoginPage() {
         </div>
 
         {step === "credentials" && (
-          <LoginForm onMfaRequired={handleMfaRequired} onSuccess={handleSuccess} />
+          <LoginForm onMfaRequired={handleMfaRequired} onSuccess={handleAuthComplete} />
         )}
         {step === "mfa-setup" && (
-          <MfaSetup onSuccess={handleSuccess} />
+          <MfaSetup onSuccess={handleAuthComplete} />
         )}
         {step === "mfa-verify" && (
-          <MfaVerify onSuccess={handleSuccess} />
+          <MfaVerify onSuccess={handleAuthComplete} />
         )}
       </div>
     </div>

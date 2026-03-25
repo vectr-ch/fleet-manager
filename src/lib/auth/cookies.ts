@@ -43,7 +43,7 @@ export async function setCurrentOrg(slug: string) {
     secure: SECURE,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 365,
+    maxAge: 60 * 60 * 24 * 7,  // 7 days, aligned with refresh_token TTL
   });
 }
 
@@ -58,12 +58,42 @@ export async function setChallengeCookie(token: string) {
   });
 }
 
+function deriveInitials(email: string): string {
+  const local = email.split("@")[0];
+  const lastDot = local.lastIndexOf(".");
+  if (lastDot > 0 && lastDot < local.length - 1) {
+    return (local[0] + local[lastDot + 1]).toUpperCase();
+  }
+  return local.slice(0, 2).toUpperCase();
+}
+
+// user_info is DISPLAY-ONLY — stores pre-computed initials for the avatar.
+// Stores initials rather than the full email to minimise PII in a client-readable cookie.
+// Never passed as identity to backend calls. TTL matches refresh_token (7 days).
+export async function setUserInfo(email: string) {
+  const initials = deriveInitials(email);
+  const cookieStore = await cookies();
+  cookieStore.set("user_info", JSON.stringify({ initials }), {
+    httpOnly: false, // intentionally client-readable for avatar display
+    secure: SECURE,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+}
+
+export async function clearUserInfo() {
+  const cookieStore = await cookies();
+  cookieStore.delete("user_info");
+}
+
 export async function clearAuthCookies() {
   const cookieStore = await cookies();
   cookieStore.delete("access_token");
   cookieStore.delete("refresh_token");
   cookieStore.delete("current_org");
   cookieStore.delete("mfa_challenge");
+  cookieStore.delete("user_info");
 }
 
 export async function getTokens(): Promise<AuthTokens> {

@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
+import type { OrgFromLogin } from "@/lib/types";
 
 interface LoginFormProps {
   onMfaRequired: (setupRequired: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (orgs?: OrgFromLogin[]) => void;
 }
 
 export function LoginForm({ onMfaRequired, onSuccess }: LoginFormProps) {
@@ -19,7 +20,7 @@ export function LoginForm({ onMfaRequired, onSuccess }: LoginFormProps) {
       if (data.mfa_required) {
         onMfaRequired(data.setup_required);
       } else {
-        onSuccess();
+        onSuccess(data.orgs);
       }
     },
     onError: (err) => {

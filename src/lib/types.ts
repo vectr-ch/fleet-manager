@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+// ─── Organisation (login subset) ─────────────────────────────
+// Defined before Auth schemas because loginResponseSchema and
+// mfaConfirmResponseSchema reference it.
+export const orgFromLoginSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  is_default: z.boolean(),
+});
+export type OrgFromLogin = z.infer<typeof orgFromLoginSchema>;
+
 // ─── Auth ────────────────────────────────────────────────────
 export const loginResponseSchema = z.object({
   access_token: z.string().optional(),
@@ -10,6 +21,8 @@ export const loginResponseSchema = z.object({
   mfa_required: z.boolean().optional(),
   mfa_challenge_token: z.string().optional(),
   setup_required: z.boolean().optional(),
+  user: z.object({ id: z.string(), email: z.string() }).optional(),
+  organisations: z.array(orgFromLoginSchema).optional(),
 });
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 
@@ -26,6 +39,8 @@ export const mfaConfirmResponseSchema = z.object({
   expires_in: z.number().optional(),
   refresh_token: z.string().optional(),
   refresh_token_ttl: z.number().optional(),
+  user: z.object({ id: z.string(), email: z.string() }).optional(),
+  organisations: z.array(orgFromLoginSchema).optional(),
 });
 export type MFAConfirmResponse = z.infer<typeof mfaConfirmResponseSchema>;
 

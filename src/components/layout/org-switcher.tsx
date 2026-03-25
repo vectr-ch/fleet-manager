@@ -6,14 +6,13 @@ import { trpc } from "@/lib/trpc/client";
 
 interface OrgSwitcherProps {
   currentOrg: string;
-  userId: string;
 }
 
-export function OrgSwitcher({ currentOrg, userId }: OrgSwitcherProps) {
+export function OrgSwitcher({ currentOrg }: OrgSwitcherProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
-  const orgsQuery = trpc.userAccount.listOrgs.useQuery({ userId });
+  const orgsQuery = trpc.userAccount.listOrgs.useQuery();
   const switchOrgMutation = trpc.userAccount.updateDefaultOrg.useMutation({
     onSuccess: () => {
       router.refresh();
@@ -25,13 +24,11 @@ export function OrgSwitcher({ currentOrg, userId }: OrgSwitcherProps) {
       setIsOpen(false);
       return;
     }
-    switchOrgMutation.mutate({ userId, orgSlug: slug }, {
-      onSuccess: () => {
-        document.cookie = `current_org=${slug};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
-      },
-    });
+    switchOrgMutation.mutate({ orgSlug: slug });
     setIsOpen(false);
   };
+
+  const currentOrgName = orgsQuery.data?.find((o) => o.slug === currentOrg)?.name ?? currentOrg;
 
   return (
     <div className="relative">
@@ -39,7 +36,7 @@ export function OrgSwitcher({ currentOrg, userId }: OrgSwitcherProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-700"
       >
-        {currentOrg}
+        {currentOrgName}
         <span className="text-neutral-500">&#x25BE;</span>
       </button>
       {isOpen && orgsQuery.data && (
