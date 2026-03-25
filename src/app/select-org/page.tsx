@@ -74,6 +74,16 @@ export default function SelectOrgPage() {
     );
   }
 
+  if (orgs !== null && orgs.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <p className="text-neutral-400">
+          You are not a member of any organisation. Contact your administrator.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-black">
       <div className="w-full max-w-md space-y-6 rounded-lg border border-neutral-800 bg-neutral-900 p-8">

@@ -54,17 +54,11 @@ export function Topbar() {
     }
   }, []);
 
-  const orgQuery = trpc.org.get.useQuery(undefined, {
-    enabled: !!currentOrg,
-  });
-
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       window.location.href = "/login";
     },
   });
-
-  const orgDisplayName = orgQuery.data?.name ?? currentOrg;
 
   return (
     <header className="h-11 border-b border-border bg-card flex items-center px-4 shrink-0">
@@ -97,7 +91,9 @@ export function Topbar() {
       <div className="ml-auto flex items-center gap-2.5">
         {/* Org badge with switcher */}
         {currentOrg && (
-          <OrgSwitcher currentOrg={orgDisplayName ?? currentOrg} />
+          <div onClick={() => setUserDropdownOpen(false)}>
+            <OrgSwitcher currentOrg={currentOrg} />
+          </div>
         )}
 
         {/* Divider */}
