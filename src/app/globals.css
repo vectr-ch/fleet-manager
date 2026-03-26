@@ -139,8 +139,6 @@
     @apply bg-background text-foreground;
     font-size: 13px;
     line-height: 1.5;
-    height: 100vh;
-    overflow: hidden;
   }
   html {
     @apply font-sans;
@@ -226,10 +224,6 @@
   --lp-font-mono: ui-monospace, "SF Mono", "Fira Code", monospace;
 }
 
-body:has(.landing-page) {
-  overflow-y: auto;
-  height: auto;
-}
 
 @keyframes lp-pulse-line {
   0%, 100% { opacity: 0.3; }
