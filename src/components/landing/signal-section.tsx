@@ -157,7 +157,7 @@ export function SignalSection({ scrollY }: SignalSectionProps) {
           inset: 0,
           opacity: 0,
           backgroundImage:
-            "url('data:image/svg+xml,%3Csvg viewBox=%220 0 512 512%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.75%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22 opacity=%220.08%22/%3E%3C/svg%3E')",
+            "url('data:image/svg+xml,%3Csvg viewBox=%220 0 512 512%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.75%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22 opacity=%220.14%22/%3E%3C/svg%3E')",
           backgroundSize: "256px 256px",
         }}
       />
@@ -172,7 +172,7 @@ export function SignalSection({ scrollY }: SignalSectionProps) {
           width: 500,
           height: 500,
           background:
-            "radial-gradient(circle, rgba(255,255,255,0.045) 0%, transparent 65%)",
+            "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 65%)",
           borderRadius: "50%",
           opacity: 0,
         }}

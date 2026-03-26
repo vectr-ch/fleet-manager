@@ -197,7 +197,7 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
         {Array.from({ length: LINE_COUNT }, (_, i) => (
           <path
             key={i}
-            stroke="rgba(255,255,255,0.09)"
+            stroke="rgba(255,255,255,0.15)"
             strokeWidth={0.8}
             fill="none"
             strokeLinecap="round"
