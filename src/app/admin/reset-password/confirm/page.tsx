@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 
@@ -15,6 +15,14 @@ function validatePassword(pw: string): string[] {
 }
 
 export default function ResetPasswordConfirmPage() {
+  return (
+    <Suspense>
+      <ResetPasswordConfirmContent />
+    </Suspense>
+  );
+}
+
+function ResetPasswordConfirmContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
