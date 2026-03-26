@@ -83,7 +83,7 @@ export function CtaSection() {
             style={{
               flex: 1,
               padding: "10px 16px",
-              background: "rgba(255,255,255,0.03)",
+              background: "rgba(255,255,255,0.06)",
               border: `1px solid ${error ? "rgba(255,100,100,0.4)" : "var(--lp-bg-tertiary)"}`,
               color: "var(--lp-text-secondary)",
               fontSize: "13px",
