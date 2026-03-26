@@ -88,4 +88,13 @@ export const sysadminOrgsRouter = router({
       );
       return res.members;
     }),
+
+  revokeInvite: sysadminProcedure
+    .input(z.object({ slug: z.string(), inviteId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch(`/sysadmin/orgs/${input.slug}/invites/${input.inviteId}`, {
+        method: "DELETE",
+        accessToken: ctx.accessToken,
+      });
+    }),
 });

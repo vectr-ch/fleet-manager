@@ -153,7 +153,14 @@ function CreateOrgForm({ onClose }: { onClose: () => void }) {
 // ─── Org Members ─────────────────────────────────────────────
 
 function OrgMembers({ slug }: { slug: string }) {
+  const utils = trpc.useUtils();
   const { data: members, isLoading, error } = trpc.sysadminOrgs.listMembers.useQuery({ slug });
+
+  const revokeMutation = trpc.sysadminOrgs.revokeInvite.useMutation({
+    onSuccess: () => {
+      utils.sysadminOrgs.listMembers.invalidate({ slug });
+    },
+  });
 
   return (
     <div className="mt-6">
@@ -175,6 +182,7 @@ function OrgMembers({ slug }: { slug: string }) {
               <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">Role</th>
               <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">Status</th>
               <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">MFA</th>
+              <th className="px-4 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -200,6 +208,18 @@ function OrgMembers({ slug }: { slug: string }) {
                     <span className="text-xs text-emerald-400">Enabled</span>
                   ) : (
                     <span className="text-xs text-neutral-500">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-2 text-right">
+                  {member.status === "pending" && (
+                    <button
+                      type="button"
+                      onClick={() => revokeMutation.mutate({ slug, inviteId: member.id })}
+                      disabled={revokeMutation.isPending && revokeMutation.variables?.inviteId === member.id}
+                      className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                    >
+                      {revokeMutation.isPending && revokeMutation.variables?.inviteId === member.id ? "Revoking…" : "Revoke"}
+                    </button>
                   )}
                 </td>
               </tr>
