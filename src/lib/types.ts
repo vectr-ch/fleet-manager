@@ -228,3 +228,14 @@ export const sysadminResetVerifyResponseSchema = z.object({
   reset_token: z.string(),
 });
 export type SysadminResetVerifyResponse = z.infer<typeof sysadminResetVerifyResponseSchema>;
+
+// ─── Org Member (sysadmin view) ─────────────────────────────
+export const orgMemberSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  role: z.string(),
+  status: z.enum(["active", "pending"]),
+  mfa_enabled: z.boolean(),
+  created_at: z.string(),
+});
+export type OrgMember = z.infer<typeof orgMemberSchema>;

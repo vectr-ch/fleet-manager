@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, sysadminProcedure } from "@/server/trpc";
 import { fmsFetch } from "@/lib/fms";
-import type { SysadminOrg, CreateOrgResponse, InviteAdminResponse } from "@/lib/types";
+import type { SysadminOrg, CreateOrgResponse, InviteAdminResponse, OrgMember } from "@/lib/types";
 
 export const sysadminOrgsRouter = router({
   list: sysadminProcedure.query(async ({ ctx }) => {
@@ -77,5 +77,15 @@ export const sysadminOrgsRouter = router({
           accessToken: ctx.accessToken,
         }
       );
+    }),
+
+  listMembers: sysadminProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const res = await fmsFetch<{ members: OrgMember[] }>(
+        `/sysadmin/orgs/${input.slug}/members`,
+        { accessToken: ctx.accessToken },
+      );
+      return res.members;
     }),
 });

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
-import type { SysadminOrg } from "@/lib/types";
+import type { SysadminOrg, OrgMember } from "@/lib/types";
 
 // ─── Create Form ─────────────────────────────────────────────
 
@@ -146,6 +146,67 @@ function CreateOrgForm({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+// ─── Org Members ─────────────────────────────────────────────
+
+function OrgMembers({ slug }: { slug: string }) {
+  const { data: members, isLoading, error } = trpc.sysadminOrgs.listMembers.useQuery({ slug });
+
+  return (
+    <div className="mt-6">
+      <h3 className="mb-4 text-xs font-medium uppercase tracking-wider text-neutral-400">
+        Members
+      </h3>
+
+      {isLoading ? (
+        <p className="text-sm text-neutral-500">Loading…</p>
+      ) : error ? (
+        <p className="text-sm text-red-400">{error.message}</p>
+      ) : !members || members.length === 0 ? (
+        <p className="text-sm text-neutral-500">No members</p>
+      ) : (
+        <table className="w-full">
+          <thead>
+            <tr>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">Email</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">Role</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">Status</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">MFA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {members.map((member: OrgMember) => (
+              <tr key={member.id} className="border-t border-neutral-800/50 text-sm text-neutral-300">
+                <td className="px-4 py-2">{member.email}</td>
+                <td className="px-4 py-2">
+                  {member.role === "org_admin" ? (
+                    <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-amber-400">admin</span>
+                  ) : (
+                    <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-300">{member.role}</span>
+                  )}
+                </td>
+                <td className="px-4 py-2">
+                  {member.status === "active" ? (
+                    <span className="rounded border border-emerald-400/20 bg-emerald-900/30 px-2 py-0.5 text-xs text-emerald-400">Active</span>
+                  ) : (
+                    <span className="rounded border border-yellow-400/20 bg-yellow-900/30 px-2 py-0.5 text-xs text-yellow-400">Pending</span>
+                  )}
+                </td>
+                <td className="px-4 py-2">
+                  {member.mfa_enabled ? (
+                    <span className="text-xs text-emerald-400">Enabled</span>
+                  ) : (
+                    <span className="text-xs text-neutral-500">—</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
@@ -409,6 +470,9 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
             )}
           </div>
         </div>
+
+        {/* Members */}
+        <OrgMembers slug={org.slug} />
       </td>
     </tr>
   );
