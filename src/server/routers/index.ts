@@ -14,8 +14,10 @@ import { overviewRouter } from "./overview";
 import { sysadminAuthRouter } from "./sysadmin-auth";
 import { sysadminOrgsRouter } from "./sysadmin-orgs";
 import { sysadminAdminsRouter } from "./sysadmin-admins";
+import { initRouter } from "./init";
 
 export const appRouter = router({
+  init: initRouter,
   auth: authRouter,
   org: orgRouter,
   users: usersRouter,

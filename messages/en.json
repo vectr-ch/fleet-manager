@@ -364,6 +364,71 @@
     "meshOverlay": "Mesh Links",
     "missionBounds": "Mission Bounds"
   },
+  "setup": {
+    "title": "Set up VECTR",
+    "steps": {
+      "account": "Account",
+      "security": "Security",
+      "organisation": "Organisation"
+    },
+    "account": {
+      "heading": "Create admin account",
+      "description": "This will be the system administrator account.",
+      "email": "Email",
+      "emailPlaceholder": "admin@example.com",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "submitting": "Creating account…"
+    },
+    "mfa": {
+      "heading": "Set up two-factor authentication",
+      "description": "Scan the QR code with your authenticator app.",
+      "cantScan": "Can't scan? Enter code manually",
+      "manualKey": "Manual entry key",
+      "codeLabel": "Verification code",
+      "codePlaceholder": "000000",
+      "submit": "Verify and continue",
+      "submitting": "Verifying…",
+      "backupCodesHeading": "Save your backup codes",
+      "backupCodesWarning": "Store them somewhere safe. Each code can only be used once. You will not see these again.",
+      "copyAll": "Copy all",
+      "copied": "Copied!",
+      "savedCodes": "I've saved them"
+    },
+    "organisation": {
+      "heading": "Create your first organisation",
+      "description": "Organisations contain your fleet, missions, and team members.",
+      "name": "Organisation name",
+      "namePlaceholder": "Acme Corp",
+      "slug": "URL slug",
+      "slugPlaceholder": "acme-corp",
+      "submit": "Create organisation",
+      "submitting": "Creating…"
+    },
+    "complete": {
+      "heading": "Setup complete",
+      "description": "VECTR is ready. You will be redirected shortly.",
+      "continue": "Go to dashboard"
+    },
+    "errors": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Enter a valid email address",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "At least {minLength} characters",
+      "passwordUppercase": "At least one uppercase letter",
+      "passwordLowercase": "At least one lowercase letter",
+      "passwordDigit": "At least one number",
+      "passwordSpecial": "At least one special character",
+      "passwordMismatch": "Passwords don't match",
+      "nameRequired": "Organisation name is required",
+      "slugRequired": "URL slug is required",
+      "slugFormat": "Only lowercase letters, numbers, and hyphens",
+      "rateLimited": "Too many attempts. Please try again later.",
+      "alreadyInitialized": "System is already set up. Redirecting…",
+      "invalidCode": "Invalid verification code"
+    }
+  },
   "auditPage": {
     "totalEvents": "Total Events",
     "commands": "Commands",
