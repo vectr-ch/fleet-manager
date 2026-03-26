@@ -13,7 +13,13 @@ function handleGlobalError(error: unknown) {
     "data" in error &&
     (error as { data?: { code?: string } }).data?.code === "UNAUTHORIZED"
   ) {
-    const isAdmin = window.location.pathname.startsWith("/admin");
+    // Don't redirect if already on a login page — UNAUTHORIZED is the expected
+    // error for bad credentials and should be handled inline by the form.
+    const path = window.location.pathname;
+    if (path === "/login" || path === "/admin/login") {
+      return;
+    }
+    const isAdmin = path.startsWith("/admin");
     window.location.href = isAdmin ? "/admin/login" : "/login";
   }
 }
