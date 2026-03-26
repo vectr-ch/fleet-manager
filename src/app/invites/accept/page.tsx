@@ -25,8 +25,15 @@ function InviteAcceptForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // user_info cookie is client-readable and indicates an active session
+  const isLoggedIn = typeof document !== "undefined" && document.cookie.includes("user_info=");
+
   const acceptMutation = trpc.invites.accept.useMutation({
-    onSuccess: () => setSuccess(true),
+    onSuccess: () => {
+      // Clear stale org list so /select-org does a fresh fetch
+      sessionStorage.removeItem("pending_orgs");
+      setSuccess(true);
+    },
     onError: (err) => {
       if (err.data?.code === "TOO_MANY_REQUESTS") {
         setError("Too many requests. Please try again later.");
@@ -71,13 +78,19 @@ function InviteAcceptForm() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-neutral-950">
         <div className="w-full max-w-md space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-8 text-center">
-          <h2 className="text-xl font-bold text-white">Account Created</h2>
-          <p className="text-neutral-400">Your account has been created successfully.</p>
+          <h2 className="text-xl font-bold text-white">
+            {isLoggedIn ? "Invitation Accepted" : "Account Created"}
+          </h2>
+          <p className="text-neutral-400">
+            {isLoggedIn
+              ? "You have been added to the organisation."
+              : "Your account has been created successfully."}
+          </p>
           <button
-            onClick={() => router.push("/login")}
+            onClick={() => router.push(isLoggedIn ? "/select-org" : "/login")}
             className="w-full rounded-md bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200"
           >
-            Go to login
+            {isLoggedIn ? "Continue" : "Go to login"}
           </button>
         </div>
       </div>

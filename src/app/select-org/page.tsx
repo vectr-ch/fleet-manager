@@ -51,6 +51,13 @@ export default function SelectOrgPage() {
     },
   });
 
+  const logoutMutation = trpc.auth.logout.useMutation({
+    onSuccess: () => {
+      sessionStorage.removeItem("pending_orgs");
+      window.location.href = "/login";
+    },
+  });
+
   const handleSelect = (slug: string) => {
     selectOrgMutation.mutate({ slug });
   };
@@ -79,9 +86,18 @@ export default function SelectOrgPage() {
   if (orgs !== null && orgs.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black">
-        <p className="text-neutral-400">
-          You are not a member of any organisation. Contact your administrator.
-        </p>
+        <div className="space-y-4 text-center">
+          <p className="text-neutral-400">
+            You are not a member of any organisation. Contact your administrator.
+          </p>
+          <button
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+            className="text-sm text-neutral-500 underline hover:text-white disabled:opacity-50"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     );
   }

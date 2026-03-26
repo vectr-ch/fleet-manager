@@ -24,8 +24,6 @@ jobs:
         run: npm run lint
 
       - name: Build
-        env:
-          OVERLORD_URL: http://vectr.tail255939.ts.net:4000
         run: npm run build
 
   deploy:
@@ -62,8 +60,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            OVERLORD_URL=${{ vars.OVERLORD_URL }}
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -100,11 +96,12 @@ jobs:
           script: |
             set -eu
             export DOCKER_HOST=unix:///run/user/1001/docker.sock
+            docker network create vectr 2>/dev/null || true
             docker stop fleet-manager || true
             docker rm fleet-manager || true
             docker run -d \
               --name fleet-manager \
               --restart unless-stopped \
-              --env-file ~/fm/.env \
+              --network vectr \
               -p 3001:3000 \
               ghcr.io/vectr-ch/fleet-manager:latest

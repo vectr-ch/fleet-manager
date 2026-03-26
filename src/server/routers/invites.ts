@@ -1,13 +1,14 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
-import { overlordFetch } from "@/lib/overlord";
+import { fmsFetch } from "@/lib/fms";
 import type { Invite, CreateInviteResponse } from "@/lib/types";
 
 export const invitesRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return overlordFetch<Invite[]>(`/orgs/${ctx.orgSlug}/invites`, {
+    const res = await fmsFetch<{ invites: Invite[] }>(`/orgs/${ctx.orgSlug}/invites`, {
       accessToken: ctx.accessToken,
     });
+    return res.invites;
   }),
 
   create: protectedProcedure
@@ -18,7 +19,7 @@ export const invitesRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return overlordFetch<CreateInviteResponse>(
+      return fmsFetch<CreateInviteResponse>(
         `/orgs/${ctx.orgSlug}/invites`,
         {
           method: "POST",
@@ -31,7 +32,7 @@ export const invitesRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return overlordFetch(`/orgs/${ctx.orgSlug}/invites/${input.id}`, {
+      return fmsFetch(`/orgs/${ctx.orgSlug}/invites/${input.id}`, {
         method: "DELETE",
         accessToken: ctx.accessToken,
       });
@@ -53,7 +54,7 @@ export const invitesRouter = router({
       if (input.password) {
         body.password = input.password;
       }
-      return overlordFetch<{ message: string }>("/invites/accept", {
+      return fmsFetch<{ message: string }>("/invites/accept", {
         method: "POST",
         body,
       });

@@ -19,10 +19,11 @@ const navItems = [
 
 interface TopbarProps {
   currentOrg: string | null;
+  currentOrgName: string | null;
   userInitials: string;
 }
 
-export function Topbar({ currentOrg, userInitials }: TopbarProps) {
+export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps) {
   const pathname = usePathname();
   const t = useTranslations("topbar");
   const tc = useTranslations("common");
@@ -67,7 +68,7 @@ export function Topbar({ currentOrg, userInitials }: TopbarProps) {
         {/* Org badge with switcher */}
         {currentOrg && (
           <div onClick={() => setUserDropdownOpen(false)}>
-            <OrgSwitcher currentOrg={currentOrg} />
+            <OrgSwitcher currentOrg={currentOrg} currentOrgName={currentOrgName} />
           </div>
         )}
 

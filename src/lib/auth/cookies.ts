@@ -36,7 +36,7 @@ export async function setAuthCookies(loginResult: {
   }
 }
 
-export async function setCurrentOrg(slug: string) {
+export async function setCurrentOrg(slug: string, name?: string) {
   const cookieStore = await cookies();
   cookieStore.set("current_org", slug, {
     httpOnly: false,
@@ -45,6 +45,15 @@ export async function setCurrentOrg(slug: string) {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,  // 7 days, aligned with refresh_token TTL
   });
+  if (name) {
+    cookieStore.set("current_org_name", name, {
+      httpOnly: false,
+      secure: SECURE,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+  }
 }
 
 export async function setChallengeCookie(token: string) {
@@ -92,6 +101,7 @@ export async function clearAuthCookies() {
   cookieStore.delete("access_token");
   cookieStore.delete("refresh_token");
   cookieStore.delete("current_org");
+  cookieStore.delete("current_org_name");
   cookieStore.delete("mfa_challenge");
   cookieStore.delete("user_info");
 }

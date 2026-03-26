@@ -145,11 +145,13 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
 
         // Once completed, never go back to static trace-in
         if (!completed[i] && lineEased < 1) {
-          // FIRST TRACE IN: static path (time=0), dashoffset reveal
-          path.style.strokeDasharray = `${len}`;
-          path.style.strokeDashoffset = `${len * (1 - lineEased)}`;
+          // FIRST TRACE IN: wave path + dashoffset reveal
+          path.setAttribute("d", buildWavePath(configs[i], waveTime));
+          const currentLen = path.getTotalLength();
+          path.style.strokeDasharray = `${currentLen}`;
+          path.style.strokeDashoffset = `${currentLen * (1 - lineEased)}`;
           transitions[i] = -1;
-          lastT[i] = 0;
+          lastT[i] = waveTime;
         } else if (exitProgress > 0 || (completed[i] && lineEased < 1)) {
           // TRACE OUT (or reverse-trace on scroll up after completion)
           // Use lineEased for reverse-trace visibility, exitProgress for forward trace-out
@@ -195,7 +197,7 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
         {Array.from({ length: LINE_COUNT }, (_, i) => (
           <path
             key={i}
-            stroke="rgba(255,255,255,0.045)"
+            stroke="rgba(255,255,255,0.09)"
             strokeWidth={0.8}
             fill="none"
             strokeLinecap="round"

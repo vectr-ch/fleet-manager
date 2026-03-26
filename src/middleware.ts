@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/invites/accept", "/forgot-password", "/reset-password"];
+const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password"];
+// Always accessible regardless of auth state (no redirect for logged-in users).
+const ALWAYS_PUBLIC_PATHS = ["/invites/accept"];
 const ADMIN_PUBLIC_PATHS = ["/admin/login"];
 // Require access_token but NOT current_org (cross-org pages).
 const SEMI_PUBLIC_PATHS = ["/select-org"];
@@ -44,6 +46,11 @@ export function middleware(request: NextRequest) {
   // ─── Org routes ─────────────────────────────────────────────
   const hasAccessToken = request.cookies.has("access_token");
   const hasCurrentOrg = request.cookies.has("current_org");
+
+  // Always-public pages (invites) — accessible regardless of auth state
+  if (isPublicPath(pathname, ALWAYS_PUBLIC_PATHS)) {
+    return NextResponse.next();
+  }
 
   // Public pages (login, reset-password, etc.)
   if (isPublicPath(pathname, PUBLIC_PATHS)) {

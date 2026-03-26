@@ -1,19 +1,20 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "@/server/trpc";
-import { overlordFetch } from "@/lib/overlord";
+import { fmsFetch } from "@/lib/fms";
 import type { User } from "@/lib/types";
 
 export const usersRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return overlordFetch<User[]>(`/orgs/${ctx.orgSlug}/users`, {
+    const res = await fmsFetch<{ users: User[] }>(`/orgs/${ctx.orgSlug}/users`, {
       accessToken: ctx.accessToken,
     });
+    return res.users;
   }),
 
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      return overlordFetch<User>(`/orgs/${ctx.orgSlug}/users/${input.id}`, {
+      return fmsFetch<User>(`/orgs/${ctx.orgSlug}/users/${input.id}`, {
         accessToken: ctx.accessToken,
       });
     }),
@@ -27,7 +28,7 @@ export const usersRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const { id, ...body } = input;
-      return overlordFetch<User>(`/orgs/${ctx.orgSlug}/users/${id}`, {
+      return fmsFetch<User>(`/orgs/${ctx.orgSlug}/users/${id}`, {
         method: "PATCH",
         body,
         accessToken: ctx.accessToken,

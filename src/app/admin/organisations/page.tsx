@@ -228,7 +228,7 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
 
   return (
     <tr>
-      <td colSpan={7} className="border-t border-neutral-800 bg-neutral-900/30 px-6 py-5">
+      <td colSpan={8} className="border-t border-neutral-800 bg-neutral-900/30 px-6 py-5">
         <div className="grid grid-cols-2 gap-8">
           {/* Left: Edit fields */}
           <div>
@@ -353,48 +353,60 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
             </div>
 
             {/* Deactivate */}
-            <div>
-              <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-400">
-                Danger Zone
-              </h3>
-              {!showDeactivateConfirm ? (
-                <button
-                  type="button"
-                  onClick={() => setShowDeactivateConfirm(true)}
-                  className="text-sm text-red-400 hover:text-red-300"
-                >
-                  Deactivate Organisation
-                </button>
-              ) : (
-                <div className="space-y-3 rounded-md border border-neutral-800 p-3">
-                  <p className="text-sm text-neutral-300">
-                    Are you sure you want to deactivate{" "}
-                    <span className="font-medium text-white">{org.name}</span>? This action cannot be
-                    undone.
-                  </p>
-                  {deactivateError && (
-                    <p className="text-sm text-red-400">{deactivateError}</p>
-                  )}
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => deactivateMutation.mutate({ slug: org.slug })}
-                      disabled={deactivateMutation.isPending}
-                      className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
-                    >
-                      {deactivateMutation.isPending ? "Deactivating…" : "Yes, deactivate"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowDeactivateConfirm(false)}
-                      className="text-sm text-neutral-400 hover:text-neutral-200"
-                    >
-                      Cancel
-                    </button>
+            {!org.deleted_at && (
+              <div>
+                <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-400">
+                  Danger Zone
+                </h3>
+                {!showDeactivateConfirm ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeactivateConfirm(true)}
+                    className="text-sm text-red-400 hover:text-red-300"
+                  >
+                    Deactivate Organisation
+                  </button>
+                ) : (
+                  <div className="space-y-3 rounded-md border border-neutral-800 p-3">
+                    <p className="text-sm text-neutral-300">
+                      Are you sure you want to deactivate{" "}
+                      <span className="font-medium text-white">{org.name}</span>? This action cannot be
+                      undone.
+                    </p>
+                    {deactivateError && (
+                      <p className="text-sm text-red-400">{deactivateError}</p>
+                    )}
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => deactivateMutation.mutate({ slug: org.slug })}
+                        disabled={deactivateMutation.isPending}
+                        className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
+                      >
+                        {deactivateMutation.isPending ? "Deactivating…" : "Yes, deactivate"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDeactivateConfirm(false)}
+                        className="text-sm text-neutral-400 hover:text-neutral-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
+            {org.deleted_at && (
+              <div>
+                <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-400">
+                  Status
+                </h3>
+                <p className="text-sm text-red-400">
+                  Deactivated on {new Date(org.deleted_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </td>
@@ -406,18 +418,26 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
 
 function OrgRow({ org }: { org: SysadminOrg }) {
   const [expanded, setExpanded] = useState(false);
+  const isDeactivated = !!org.deleted_at;
 
   return (
     <>
       <tr
-        className="cursor-pointer border-t border-neutral-800 text-sm text-neutral-200 hover:bg-neutral-900/50"
+        className={`cursor-pointer border-t border-neutral-800 text-sm hover:bg-neutral-900/50 ${isDeactivated ? "text-neutral-500 opacity-60" : "text-neutral-200"}`}
         onClick={() => setExpanded((v) => !v)}
       >
-        <td className="px-4 py-3 font-medium text-white">{org.name}</td>
+        <td className={`px-4 py-3 font-medium ${isDeactivated ? "text-neutral-500" : "text-white"}`}>{org.name}</td>
         <td className="px-4 py-3">
           <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-300">
             {org.slug}
           </span>
+        </td>
+        <td className="px-4 py-3">
+          {isDeactivated ? (
+            <span className="rounded border border-red-400/20 bg-red-900/30 px-2 py-0.5 text-xs text-red-400">Deactivated</span>
+          ) : (
+            <span className="rounded border border-emerald-400/20 bg-emerald-900/30 px-2 py-0.5 text-xs text-emerald-400">Active</span>
+          )}
         </td>
         <td className="px-4 py-3 text-neutral-400">{org.plan || "—"}</td>
         <td className="px-4 py-3 tabular-nums text-neutral-300">{org.max_nodes ?? "—"}</td>
@@ -477,6 +497,9 @@ export default function OrganisationsPage() {
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-400">
                   Slug
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-400">
+                  Status
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-400">
                   Plan
