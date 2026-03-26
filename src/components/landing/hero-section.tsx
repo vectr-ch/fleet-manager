@@ -40,7 +40,7 @@ export function HeroSection({ scrollY }: HeroSectionProps) {
           opacity: gridOpacity,
           willChange: "transform, opacity",
           backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)",
+            "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
           backgroundSize: "80px 80px",
         }}
       />
@@ -55,7 +55,7 @@ export function HeroSection({ scrollY }: HeroSectionProps) {
           height: "1px",
           opacity: voidLineOpacity,
           background:
-            "linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.035) 50%, transparent 95%)",
+            "linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.07) 50%, transparent 95%)",
         }}
       />
 
