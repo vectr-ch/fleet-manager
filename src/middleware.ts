@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password"];
 // Always accessible regardless of auth state (no redirect for logged-in users).
 const ALWAYS_PUBLIC_PATHS = ["/invites/accept"];
-const ADMIN_PUBLIC_PATHS = ["/admin/login"];
+const ADMIN_PUBLIC_PATHS = ["/admin/login", "/admin/accept-invite", "/admin/reset-password"];
 // Require access_token but NOT current_org (cross-org pages).
 const SEMI_PUBLIC_PATHS = ["/select-org"];
 

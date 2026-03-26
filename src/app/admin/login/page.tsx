@@ -178,6 +178,12 @@ export default function AdminLoginPage() {
             >
               {loading ? "Signing in…" : "Sign in"}
             </button>
+            <a
+              href="/admin/reset-password"
+              className="block text-center text-sm text-neutral-500 hover:text-neutral-300"
+            >
+              Forgot password?
+            </a>
           </form>
         )}
 

@@ -14,6 +14,7 @@ import { overviewRouter } from "./overview";
 import { sysadminAuthRouter } from "./sysadmin-auth";
 import { sysadminOrgsRouter } from "./sysadmin-orgs";
 import { sysadminAdminsRouter } from "./sysadmin-admins";
+import { sysadminResetPasswordRouter } from "./sysadmin-reset-password";
 import { initRouter } from "./init";
 
 export const appRouter = router({
@@ -33,6 +34,7 @@ export const appRouter = router({
   sysadminAuth: sysadminAuthRouter,
   sysadminOrgs: sysadminOrgsRouter,
   sysadminAdmins: sysadminAdminsRouter,
+  sysadminResetPassword: sysadminResetPasswordRouter,
 });
 
 export type AppRouter = typeof appRouter;

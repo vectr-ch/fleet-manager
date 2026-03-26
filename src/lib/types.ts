@@ -205,3 +205,26 @@ export const sysadminSchema = z.object({
   created_by: z.string().optional(),
 });
 export type Sysadmin = z.infer<typeof sysadminSchema>;
+
+// ─── Sysadmin Invite / Reset ─────────────────────────────────
+export const sysadminInviteResponseSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  invite_url: z.string(),
+});
+export type SysadminInviteResponse = z.infer<typeof sysadminInviteResponseSchema>;
+
+export const sysadminResetUrlResponseSchema = z.object({
+  reset_url: z.string(),
+});
+export type SysadminResetUrlResponse = z.infer<typeof sysadminResetUrlResponseSchema>;
+
+export const sysadminTokenRedeemResponseSchema = z.object({
+  email: z.string(),
+});
+export type SysadminTokenRedeemResponse = z.infer<typeof sysadminTokenRedeemResponseSchema>;
+
+export const sysadminResetVerifyResponseSchema = z.object({
+  reset_token: z.string(),
+});
+export type SysadminResetVerifyResponse = z.infer<typeof sysadminResetVerifyResponseSchema>;
