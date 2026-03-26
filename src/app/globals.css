@@ -139,8 +139,6 @@
     @apply bg-background text-foreground;
     font-size: 13px;
     line-height: 1.5;
-    height: 100vh;
-    overflow: hidden;
   }
   html {
     @apply font-sans;
@@ -214,22 +212,18 @@
   /* Text */
   --lp-text-primary: #fafafa;
   --lp-text-secondary: #a1a1aa;
-  --lp-text-muted: #52525b;
-  --lp-text-faint: #3f3f46;
+  --lp-text-muted: #a1a1aa;
+  --lp-text-faint: #71717a;
 
   /* Borders */
-  --lp-border: rgba(255, 255, 255, 0.04);
-  --lp-border-subtle: rgba(255, 255, 255, 0.03);
+  --lp-border: rgba(255, 255, 255, 0.12);
+  --lp-border-subtle: rgba(255, 255, 255, 0.08);
 
   /* Fonts */
   --lp-font-body: "Inter", system-ui, -apple-system, sans-serif;
   --lp-font-mono: ui-monospace, "SF Mono", "Fira Code", monospace;
 }
 
-body:has(.landing-page) {
-  overflow-y: auto;
-  height: auto;
-}
 
 @keyframes lp-pulse-line {
   0%, 100% { opacity: 0.3; }
