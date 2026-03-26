@@ -214,12 +214,12 @@
   /* Text */
   --lp-text-primary: #fafafa;
   --lp-text-secondary: #a1a1aa;
-  --lp-text-muted: #71717a;
-  --lp-text-faint: #52525b;
+  --lp-text-muted: #a1a1aa;
+  --lp-text-faint: #71717a;
 
   /* Borders */
-  --lp-border: rgba(255, 255, 255, 0.08);
-  --lp-border-subtle: rgba(255, 255, 255, 0.06);
+  --lp-border: rgba(255, 255, 255, 0.12);
+  --lp-border-subtle: rgba(255, 255, 255, 0.08);
 
   /* Fonts */
   --lp-font-body: "Inter", system-ui, -apple-system, sans-serif;
