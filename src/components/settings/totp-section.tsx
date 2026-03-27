@@ -5,7 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { trpc } from "@/lib/trpc/client";
 import { StepUpDialog } from "./step-up-dialog";
 
-type Action = "disable" | "regenerate" | null;
+type Action = "disable" | "regenerate" | "change-device" | null;
 
 function formatDate(iso: string) {
   try {
@@ -62,8 +62,15 @@ export function TOTPSection() {
 
   const handleStartSetup = async () => {
     setActionError(null);
-    setShowSetup(true);
-    setupMutation.mutate();
+    if (status?.totp_enabled) {
+      // Re-enrollment: need current code first
+      setActiveAction("change-device");
+    } else {
+      // First-time setup: no step-up needed
+      setShowSetup(true);
+      setSetupCode("");
+      setupMutation.mutate();
+    }
   };
 
   const handleConfirmSetup = (e: React.FormEvent) => {
@@ -78,6 +85,12 @@ export function TOTPSection() {
       disableMutation.mutate({ code });
     } else if (activeAction === "regenerate") {
       regenerateMutation.mutate({ code });
+    } else if (activeAction === "change-device") {
+      // Step-up passed — now request new QR with current_code
+      setActiveAction(null);
+      setShowSetup(true);
+      setSetupCode("");
+      setupMutation.mutate({ current_code: code });
     }
   };
 
@@ -257,6 +270,17 @@ export function TOTPSection() {
             onSubmit={handleStepUp}
             onCancel={() => { setActiveAction(null); setActionError(null); }}
             isLoading={regenerateMutation.isPending}
+            error={actionError}
+          />
+        )}
+
+        {activeAction === "change-device" && (
+          <StepUpDialog
+            title="Change Authenticator Device"
+            description="Enter your current authenticator code or a backup code to set up a new device."
+            onSubmit={handleStepUp}
+            onCancel={() => { setActiveAction(null); setActionError(null); }}
+            isLoading={setupMutation.isPending}
             error={actionError}
           />
         )}
