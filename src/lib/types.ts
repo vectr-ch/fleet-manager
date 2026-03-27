@@ -64,15 +64,6 @@ export const orgSchema = z.object({
 });
 export type Org = z.infer<typeof orgSchema>;
 
-// ─── User ────────────────────────────────────────────────────
-export const userSchema = z.object({
-  id: z.string(),
-  email: z.string(),
-  mfa_enabled: z.boolean(),
-  created_at: z.string(),
-});
-export type User = z.infer<typeof userSchema>;
-
 // ─── Base ────────────────────────────────────────────────────
 export const baseSchema = z.object({
   id: z.string(),

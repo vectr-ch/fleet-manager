@@ -65,6 +65,11 @@ export async function setSysadminChallengeCookie(token: string) {
   });
 }
 
+export async function clearSysadminChallengeCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete("sysadmin_mfa_challenge");
+}
+
 export async function getSysadminChallengeToken(): Promise<string | null> {
   const cookieStore = await cookies();
   return cookieStore.get("sysadmin_mfa_challenge")?.value ?? null;

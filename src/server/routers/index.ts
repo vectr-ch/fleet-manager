@@ -1,7 +1,7 @@
 import { router } from "@/server/trpc";
 import { authRouter } from "./auth";
 import { orgRouter } from "./org";
-import { usersRouter } from "./users";
+import { membersRouter } from "./members";
 import { basesRouter } from "./bases";
 import { nodesRouter } from "./nodes";
 import { invitesRouter } from "./invites";
@@ -21,7 +21,7 @@ export const appRouter = router({
   init: initRouter,
   auth: authRouter,
   org: orgRouter,
-  users: usersRouter,
+  members: membersRouter,
   bases: basesRouter,
   nodes: nodesRouter,
   invites: invitesRouter,

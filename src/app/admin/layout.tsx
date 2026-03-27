@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
+import { shouldShowAdminShell } from "@/lib/routing/app-access";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,8 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     },
   });
 
-  // Don't show nav on login page
-  if (pathname === "/admin/login") {
+  if (!shouldShowAdminShell(pathname)) {
     return <>{children}</>;
   }
 

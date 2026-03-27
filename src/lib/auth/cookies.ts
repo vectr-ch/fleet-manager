@@ -67,6 +67,11 @@ export async function setChallengeCookie(token: string) {
   });
 }
 
+export async function clearChallengeCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete("mfa_challenge");
+}
+
 function deriveInitials(email: string): string {
   const local = email.split("@")[0];
   const lastDot = local.lastIndexOf(".");

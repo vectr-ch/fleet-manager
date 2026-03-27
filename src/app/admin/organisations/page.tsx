@@ -4,6 +4,13 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import type { SysadminOrg, OrgMember } from "@/lib/types";
 
+function buildAdminInviteLink(token: string) {
+  if (typeof window === "undefined") {
+    return `/admin/accept-invite?token=${encodeURIComponent(token)}`;
+  }
+  return `${window.location.origin}/admin/accept-invite?token=${encodeURIComponent(token)}`;
+}
+
 // ─── Create Form ─────────────────────────────────────────────
 
 function CreateOrgForm({ onClose }: { onClose: () => void }) {
@@ -13,7 +20,7 @@ function CreateOrgForm({ onClose }: { onClose: () => void }) {
   const [slug, setSlug] = useState("");
   const [plan, setPlan] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
-  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +28,7 @@ function CreateOrgForm({ onClose }: { onClose: () => void }) {
     onSuccess: (data) => {
       utils.sysadminOrgs.list.invalidate();
       if (data.invite_token) {
-        setInviteToken(data.invite_token);
+        setInviteLink(buildAdminInviteLink(data.invite_token));
       } else {
         onClose();
       }
@@ -43,22 +50,22 @@ function CreateOrgForm({ onClose }: { onClose: () => void }) {
   };
 
   const handleCopy = async () => {
-    if (!inviteToken) return;
-    await navigator.clipboard.writeText(inviteToken);
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (inviteToken) {
+  if (inviteLink) {
     return (
       <div className="mb-6 rounded-lg border border-neutral-800 bg-neutral-900 p-5">
         <h2 className="mb-4 text-sm font-medium text-white">Organisation created</h2>
         <p className="mb-3 text-sm text-neutral-400">
-          Share this invite token with the admin. It can only be used once.
+          Share this invite link with the admin. It can only be used once.
         </p>
         <div className="flex items-center gap-2">
           <div className="flex-1 rounded border border-neutral-700 bg-neutral-900 p-3 font-mono text-xs text-neutral-200">
-            {inviteToken}
+            {inviteLink}
           </div>
           <button
             type="button"
@@ -247,7 +254,7 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
 
   // Invite admin
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
 
@@ -265,7 +272,7 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
 
   const inviteMutation = trpc.sysadminOrgs.inviteAdmin.useMutation({
     onSuccess: (data) => {
-      setInviteToken(data.invite_token);
+      setInviteLink(buildAdminInviteLink(data.invite_token));
       setInviteError(null);
       setInviteEmail("");
     },
@@ -301,8 +308,8 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
   };
 
   const handleCopyInvite = async () => {
-    if (!inviteToken) return;
-    await navigator.clipboard.writeText(inviteToken);
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
     setInviteCopied(true);
     setTimeout(() => setInviteCopied(false), 2000);
   };
@@ -414,12 +421,12 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
                 </button>
               </form>
               {inviteError && <p className="mt-2 text-sm text-red-400">{inviteError}</p>}
-              {inviteToken && (
+              {inviteLink && (
                 <div className="mt-3">
-                  <p className="mb-2 text-xs text-neutral-500">Invite token — share with the admin:</p>
+                  <p className="mb-2 text-xs text-neutral-500">Invite link — share with the admin:</p>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 rounded border border-neutral-700 bg-neutral-900 p-3 font-mono text-xs text-neutral-200">
-                      {inviteToken}
+                      {inviteLink}
                     </div>
                     <button
                       type="button"

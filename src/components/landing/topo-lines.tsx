@@ -126,7 +126,6 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
   useImperativeHandle(ref, () => ({
     update(enterProgress: number, waveTime: number, exitProgress: number = 0) {
       const paths = pathRefs.current;
-      const lengths = pathLengths.current;
       const configs = lineConfigs.current;
       const transitions = transitionTimes.current;
       const lastT = lastWaveT.current;
@@ -134,7 +133,6 @@ export const TopoLines = forwardRef<TopoLinesHandle>(function TopoLines(
 
       for (let i = 0; i < paths.length; i++) {
         const path = paths[i];
-        const len = lengths[i];
 
         const staggerDelay = i * 0.06;
         const lineProgress = Math.max(

@@ -143,24 +143,24 @@ function OrgTab() {
   );
 }
 
-// ── Users Tab ─────────────────────────────────────────────────────────────────
+// ── Members Tab ───────────────────────────────────────────────────────────────
 
-function UsersTab() {
-  const { data: users, isLoading } = trpc.users.list.useQuery();
+function MembersTab() {
+  const { data: members, isLoading } = trpc.members.list.useQuery();
 
   return (
     <div className="max-w-2xl">
       <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-800">
           <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">
-            {isLoading ? "Loading…" : `${users?.length ?? 0} member${(users?.length ?? 0) === 1 ? "" : "s"}`}
+            {isLoading ? "Loading…" : `${members?.length ?? 0} member${(members?.length ?? 0) === 1 ? "" : "s"}`}
           </div>
         </div>
 
         {isLoading ? (
-          <div className="py-12 text-center font-mono text-[11px] text-neutral-500">Loading users…</div>
-        ) : !users || users.length === 0 ? (
-          <div className="py-12 text-center font-mono text-[11px] text-neutral-500">No users found</div>
+          <div className="py-12 text-center font-mono text-[11px] text-neutral-500">Loading members…</div>
+        ) : !members || members.length === 0 ? (
+          <div className="py-12 text-center font-mono text-[11px] text-neutral-500">No members found</div>
         ) : (
           <table className="w-full border-collapse">
             <thead>
@@ -169,29 +169,51 @@ function UsersTab() {
                   <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Email</span>
                 </th>
                 <th className="px-3 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Role</span>
+                </th>
+                <th className="px-3 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Status</span>
+                </th>
+                <th className="px-3 py-2.5 text-left">
                   <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">MFA</span>
                 </th>
                 <th className="px-4 py-2.5 text-left">
-                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Joined</span>
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Added</span>
                 </th>
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="border-b border-neutral-800 last:border-0">
-                  <td className="px-4 py-3 font-mono text-[12px] text-foreground">{user.email}</td>
+              {members.map((member) => (
+                <tr key={member.id} className="border-b border-neutral-800 last:border-0">
+                  <td className="px-4 py-3 font-mono text-[12px] text-foreground">{member.email}</td>
                   <td className="px-3 py-3">
-                    {user.mfa_enabled ? (
+                    <span className="font-mono text-[11px] text-neutral-400">{member.role || "—"}</span>
+                  </td>
+                  <td className="px-3 py-3">
+                    {member.status === "active" ? (
                       <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-emerald-900/30 text-emerald-400 border-emerald-400/20">
-                        Enabled
+                        Active
                       </span>
                     ) : (
-                      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-neutral-800 text-neutral-500 border-neutral-700">
-                        Disabled
+                      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-amber-900/30 text-amber-400 border-amber-400/20">
+                        Pending
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 font-mono text-[11px] text-neutral-500">{formatDate(user.created_at)}</td>
+                  <td className="px-3 py-3">
+                    {member.status === "active" && member.mfa_enabled ? (
+                      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-emerald-900/30 text-emerald-400 border-emerald-400/20">
+                        Enabled
+                      </span>
+                    ) : member.status === "active" ? (
+                      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-neutral-800 text-neutral-500 border-neutral-700">
+                        Disabled
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[11px] text-neutral-600">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-[11px] text-neutral-500">{formatDate(member.created_at)}</td>
                 </tr>
               ))}
             </tbody>
@@ -375,12 +397,6 @@ function SecurityTab() {
       <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-5">
         <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-4">Change Password</div>
 
-        <div className="mb-3 px-3 py-2.5 bg-amber-900/20 border border-amber-700/30 rounded-[5px]">
-          <div className="font-mono text-[10px] text-amber-400">
-            Note: Password change requires a current user endpoint which is not yet available. This form will be fully functional once the backend provides /users/me.
-          </div>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="font-mono text-[10px] text-neutral-500 block mb-1">Current Password</label>
@@ -449,7 +465,7 @@ export default function SettingsPage() {
         <Tabs defaultValue="org">
           <TabsList variant="line" className="mb-6">
             <TabsTrigger value="org">Organisation</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="invites">Invites</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
@@ -458,8 +474,8 @@ export default function SettingsPage() {
             <OrgTab />
           </TabsContent>
 
-          <TabsContent value="users">
-            <UsersTab />
+          <TabsContent value="members">
+            <MembersTab />
           </TabsContent>
 
           <TabsContent value="invites">

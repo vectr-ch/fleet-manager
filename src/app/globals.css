@@ -58,8 +58,8 @@
   --color-fleet-blue: #3b82f6;
   --color-fleet-blue-dim: #3b82f615;
 
-  --font-mono: 'Geist Mono', monospace;
-  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: var(--font-mono-runtime), monospace;
+  --font-sans: var(--font-sans-runtime), sans-serif;
 }
 
 :root {
@@ -220,7 +220,7 @@
   --lp-border-subtle: rgba(255, 255, 255, 0.08);
 
   /* Fonts */
-  --lp-font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --lp-font-body: var(--lp-font-body-runtime), system-ui, -apple-system, sans-serif;
   --lp-font-mono: ui-monospace, "SF Mono", "Fira Code", monospace;
 }
 

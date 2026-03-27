@@ -5,6 +5,7 @@ import {
   setAuthCookies,
   setChallengeCookie,
   clearAuthCookies,
+  clearChallengeCookie,
   getTokens,
   getChallengeToken,
   setUserInfo,
@@ -107,6 +108,7 @@ export const authRouter = router({
 
       if (result.access_token) {
         await setAuthCookies(result);
+        await clearChallengeCookie();
         const { orgs } = await handleLoginEnrichment(result);
         return { backup_codes: result.backup_codes, orgs };
       }
@@ -131,6 +133,7 @@ export const authRouter = router({
 
       if (result.access_token) {
         await setAuthCookies(result);
+        await clearChallengeCookie();
         const { orgs } = await handleLoginEnrichment(result);
         return { success: true, orgs };
       }
