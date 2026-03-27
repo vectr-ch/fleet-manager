@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
+import { PasskeyLogin } from "@/components/auth/passkey-login";
 import { MfaSetup } from "@/components/auth/mfa-setup";
 import { MfaVerify } from "@/components/auth/mfa-verify";
 import type { OrgFromLogin } from "@/lib/types";
@@ -35,7 +36,10 @@ export default function LoginPage() {
         </div>
 
         {step === "credentials" && (
-          <LoginForm onMfaRequired={handleMfaRequired} onSuccess={handleAuthComplete} />
+          <>
+            <LoginForm onMfaRequired={handleMfaRequired} onSuccess={handleAuthComplete} />
+            <PasskeyLogin onSuccess={handleAuthComplete} />
+          </>
         )}
         {step === "mfa-setup" && (
           <MfaSetup onSuccess={handleAuthComplete} />

@@ -4,7 +4,7 @@ import { router, protectedProcedure, authOnlyProcedure } from "@/server/trpc";
 import { fmsFetch } from "@/lib/fms";
 import { setCurrentOrg } from "@/lib/auth/cookies";
 import { validatePassword } from "@/lib/password";
-import type { Org } from "@/lib/types";
+import type { Org, MFAStatus, PasskeyInfo } from "@/lib/types";
 
 const userPasswordSchema = z.string().superRefine((password, ctx) => {
   const error = validatePassword(password);
@@ -61,6 +61,80 @@ export const userAccountRouter = router({
         body: input,
         accessToken: ctx.accessToken,
       });
+    }),
+
+  // TOTP management
+  mfaStatus: protectedProcedure.query(async ({ ctx }) => {
+    return fmsFetch<MFAStatus>(`/users/${ctx.userId}/mfa/status`, {
+      accessToken: ctx.accessToken,
+    });
+  }),
+
+  disableMFA: protectedProcedure
+    .input(z.object({ code: z.string().min(6) }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch(`/users/${ctx.userId}/mfa/disable`, {
+        method: "POST",
+        body: { code: input.code },
+        accessToken: ctx.accessToken,
+      });
+    }),
+
+  regenerateBackupCodes: protectedProcedure
+    .input(z.object({ code: z.string().min(6) }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch<{ backup_codes: string[] }>(
+        `/users/${ctx.userId}/mfa/regenerate-backup-codes`,
+        { method: "POST", body: { code: input.code }, accessToken: ctx.accessToken },
+      );
+    }),
+
+  // Passkey management
+  listPasskeys: protectedProcedure.query(async ({ ctx }) => {
+    return fmsFetch<{ passkeys: PasskeyInfo[] }>(
+      `/users/${ctx.userId}/passkeys`,
+      { accessToken: ctx.accessToken },
+    );
+  }),
+
+  passkeyRegisterOptions: protectedProcedure.mutation(async ({ ctx }) => {
+    return fmsFetch<{ publicKey: unknown; session_id: string }>(
+      `/users/${ctx.userId}/passkeys/register/options`,
+      { method: "POST", accessToken: ctx.accessToken },
+    );
+  }),
+
+  passkeyRegisterVerify: protectedProcedure
+    .input(z.object({
+      label: z.string().min(1).max(100),
+      credential: z.any(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch<PasskeyInfo>(
+        `/users/${ctx.userId}/passkeys/register/verify`,
+        { method: "POST", body: input, accessToken: ctx.accessToken },
+      );
+    }),
+
+  renamePasskey: protectedProcedure
+    .input(z.object({
+      passkey_id: z.string().uuid(),
+      label: z.string().min(1).max(100),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch(
+        `/users/${ctx.userId}/passkeys/${input.passkey_id}`,
+        { method: "PATCH", body: { label: input.label }, accessToken: ctx.accessToken },
+      );
+    }),
+
+  deletePasskey: protectedProcedure
+    .input(z.object({ passkey_id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch(
+        `/users/${ctx.userId}/passkeys/${input.passkey_id}`,
+        { method: "DELETE", accessToken: ctx.accessToken },
+      );
     }),
 
   // Fallback for /select-org when sessionStorage is absent (new tab, browser restore).
