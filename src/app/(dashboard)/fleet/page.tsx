@@ -60,6 +60,124 @@ function TokenModal({ token, onClose }: { token: string; onClose: () => void }) 
   );
 }
 
+// ── Credential Bundle Modal ──────────────────────────────────────────────────
+
+function downloadPemFile(filename: string, content: string) {
+  const blob = new Blob([content], { type: "application/x-pem-file" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function CertBundleModal({
+  entityName,
+  certificate,
+  privateKey,
+  caCert,
+  onClose,
+}: {
+  entityName: string;
+  certificate: string;
+  privateKey: string;
+  caCert: string;
+  onClose: () => void;
+}) {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const handleCopy = async (field: string, content: string) => {
+    await navigator.clipboard.writeText(content);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const toggleExpand = (field: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(field) ? next.delete(field) : next.add(field);
+      return next;
+    });
+  };
+
+  const slug = entityName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const handleDownloadAll = () => {
+    downloadPemFile(`${slug}-cert.pem`, certificate);
+    setTimeout(() => downloadPemFile(`${slug}-key.pem`, privateKey), 100);
+    setTimeout(() => downloadPemFile(`${slug}-ca.pem`, caCert), 200);
+  };
+
+  const pemBlocks = [
+    { key: "cert", label: "Certificate", content: certificate },
+    { key: "key", label: "Private Key", content: privateKey },
+    { key: "ca", label: "CA Certificate", content: caCert },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-neutral-900 border border-neutral-700 rounded-[5px] p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="font-mono text-[10px] tracking-wider text-amber-400 uppercase mb-1">Credential Bundle</div>
+        <div className="bg-red-900/20 border border-red-700/30 rounded-[5px] px-3 py-2 mb-4">
+          <div className="font-mono text-[10px] text-red-400">
+            The private key is shown once. Download the bundle now.
+          </div>
+        </div>
+        <div className="font-mono text-[12px] text-foreground font-semibold mb-4">{entityName}</div>
+
+        {pemBlocks.map(({ key, label, content }) => (
+          <div key={key} className="mb-3">
+            <div className="flex items-center justify-between mb-1">
+              <button
+                onClick={() => toggleExpand(key)}
+                className="font-mono text-[10px] tracking-wider text-neutral-400 uppercase hover:text-neutral-200 transition-colors"
+              >
+                {expanded.has(key) ? "\u25BC" : "\u25B6"} {label}
+              </button>
+              <button
+                onClick={() => handleCopy(key, content)}
+                className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+              >
+                {copiedField === key ? "Copied" : "Copy"}
+              </button>
+            </div>
+            {expanded.has(key) && (
+              <pre className="bg-neutral-950 border border-neutral-700 rounded-[5px] p-3 overflow-x-auto max-h-32 overflow-y-auto">
+                <code className="font-mono text-[10px] text-emerald-400 whitespace-pre select-all">{content}</code>
+              </pre>
+            )}
+          </div>
+        ))}
+
+        <div className="flex items-center gap-2 mt-4">
+          <button
+            onClick={handleDownloadAll}
+            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+          >
+            Download All
+          </button>
+          <button
+            onClick={onClose}
+            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Credential State Type ────────────────────────────────────────────────────
+
+type PendingCredential =
+  | { type: "token"; token: string }
+  | { type: "cert"; certificate: string; private_key: string; ca_cert: string; entityName: string }
+  | null;
+
 // ── Revoke Confirmation Modal ────────────────────────────────────────────────
 
 function RevokeModal({
@@ -261,9 +379,10 @@ interface NodeRowProps {
   };
   bases: { id: string; name: string }[];
   onTokenReceived: (token: string) => void;
+  onCertIssued: (cert: { certificate: string; private_key: string; ca_cert: string }) => void;
 }
 
-function NodeRow({ node, bases, onTokenReceived }: NodeRowProps) {
+function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
   const utils = trpc.useUtils();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(node.name);
@@ -295,6 +414,16 @@ function NodeRow({ node, bases, onTokenReceived }: NodeRowProps) {
   const regenerateMutation = trpc.nodes.regenerateToken.useMutation({
     onSuccess: (data) => {
       onTokenReceived(data.provisioning_token);
+    },
+    onError: (e) => setError(e.message),
+  });
+
+  const issueCertMutation = trpc.nodes.issueCert.useMutation({
+    onSuccess: (data) => {
+      utils.nodes.list.invalidate();
+      onCertIssued(data);
+      // Clear private key from mutation cache immediately after capture
+      setTimeout(() => issueCertMutation.reset(), 0);
     },
     onError: (e) => setError(e.message),
   });
@@ -403,13 +532,22 @@ function NodeRow({ node, bases, onTokenReceived }: NodeRowProps) {
               Edit
             </button>
             {isPending && (
-              <button
-                onClick={() => regenerateMutation.mutate({ id: node.id })}
-                disabled={regenerateMutation.isPending}
-                className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-amber-700/50 text-amber-400 hover:text-amber-300 hover:border-amber-600 disabled:opacity-50 transition-colors"
-              >
-                {regenerateMutation.isPending ? "..." : "New Token"}
-              </button>
+              <>
+                <button
+                  onClick={() => issueCertMutation.mutate({ id: node.id })}
+                  disabled={issueCertMutation.isPending}
+                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 hover:border-emerald-600 disabled:opacity-50 transition-colors"
+                >
+                  {issueCertMutation.isPending ? "Issuing..." : "Issue Cert"}
+                </button>
+                <button
+                  onClick={() => regenerateMutation.mutate({ id: node.id })}
+                  disabled={regenerateMutation.isPending}
+                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-amber-700/50 text-amber-400 hover:text-amber-300 hover:border-amber-600 disabled:opacity-50 transition-colors"
+                >
+                  {regenerateMutation.isPending ? "..." : "New Token"}
+                </button>
+              </>
             )}
             {isEnrolled && (
               <button
@@ -441,7 +579,7 @@ export default function FleetPage() {
   const { data: nodes, isLoading } = trpc.nodes.list.useQuery();
   const { data: bases = [] } = trpc.bases.list.useQuery();
   const [showCreate, setShowCreate] = useState(false);
-  const [pendingToken, setPendingToken] = useState<string | null>(null);
+  const [pendingCredential, setPendingCredential] = useState<PendingCredential>(null);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
@@ -468,7 +606,7 @@ export default function FleetPage() {
         {showCreate && (
           <CreateNodeForm
             onClose={() => setShowCreate(false)}
-            onTokenReceived={(token) => setPendingToken(token)}
+            onTokenReceived={(token) => setPendingCredential({ type: "token", token })}
           />
         )}
 
@@ -513,7 +651,8 @@ export default function FleetPage() {
                     key={node.id}
                     node={node}
                     bases={bases}
-                    onTokenReceived={(token) => setPendingToken(token)}
+                    onTokenReceived={(token) => setPendingCredential({ type: "token", token })}
+                    onCertIssued={(cert) => setPendingCredential({ type: "cert", ...cert, entityName: node.name })}
                   />
                 ))}
               </tbody>
@@ -522,8 +661,19 @@ export default function FleetPage() {
         )}
       </div>
 
-      {/* Token modal */}
-      {pendingToken && <TokenModal token={pendingToken} onClose={() => setPendingToken(null)} />}
+      {/* Credential modals */}
+      {pendingCredential?.type === "token" && (
+        <TokenModal token={pendingCredential.token} onClose={() => setPendingCredential(null)} />
+      )}
+      {pendingCredential?.type === "cert" && (
+        <CertBundleModal
+          entityName={pendingCredential.entityName}
+          certificate={pendingCredential.certificate}
+          privateKey={pendingCredential.private_key}
+          caCert={pendingCredential.ca_cert}
+          onClose={() => setPendingCredential(null)}
+        />
+      )}
     </div>
   );
 }

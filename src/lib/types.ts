@@ -129,6 +129,13 @@ export const regenerateTokenResponseSchema = z.object({
 });
 export type RegenerateTokenResponse = z.infer<typeof regenerateTokenResponseSchema>;
 
+export const issueCertResponseSchema = z.object({
+  certificate: z.string(),
+  private_key: z.string(),
+  ca_cert: z.string(),
+});
+export type IssueCertResponse = z.infer<typeof issueCertResponseSchema>;
+
 // ─── Invite ──────────────────────────────────────────────────
 export const inviteSchema = z.object({
   id: z.string(),

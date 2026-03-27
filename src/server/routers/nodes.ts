@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "@/server/trpc";
 import { fmsFetch } from "@/lib/fms";
-import type { Node, CreateNodeResponse, RegenerateTokenResponse } from "@/lib/types";
+import type { Node, CreateNodeResponse, RegenerateTokenResponse, IssueCertResponse } from "@/lib/types";
 
 export const nodesRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -73,6 +73,18 @@ export const nodesRouter = router({
     .mutation(async ({ ctx, input }) => {
       return fmsFetch<RegenerateTokenResponse>(
         `/orgs/${ctx.orgSlug}/nodes/${input.id}/regenerate-token`,
+        {
+          method: "POST",
+          accessToken: ctx.accessToken,
+        }
+      );
+    }),
+
+  issueCert: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch<IssueCertResponse>(
+        `/orgs/${ctx.orgSlug}/nodes/${input.id}/issue-cert`,
         {
           method: "POST",
           accessToken: ctx.accessToken,
