@@ -91,10 +91,18 @@ export const baseSchema = z.object({
   lng: z.number().optional(),
   status: z.string(),
   maintenance_mode: z.boolean(),
+  enrolled_at: z.string().optional(),
+  cert_expires_at: z.string().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });
 export type Base = z.infer<typeof baseSchema>;
+
+export const createBaseResponseSchema = z.object({
+  base: baseSchema,
+  provisioning_token: z.string(),
+});
+export type CreateBaseResponse = z.infer<typeof createBaseResponseSchema>;
 
 // ─── Node ────────────────────────────────────────────────────
 export const nodeSchema = z.object({
@@ -103,10 +111,23 @@ export const nodeSchema = z.object({
   serial: z.string().optional(),
   base_id: z.string().optional(),
   firmware_version: z.string().optional(),
+  enrolled_at: z.string().optional(),
+  cert_expires_at: z.string().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });
 export type Node = z.infer<typeof nodeSchema>;
+
+export const createNodeResponseSchema = z.object({
+  node: nodeSchema,
+  provisioning_token: z.string(),
+});
+export type CreateNodeResponse = z.infer<typeof createNodeResponseSchema>;
+
+export const regenerateTokenResponseSchema = z.object({
+  provisioning_token: z.string(),
+});
+export type RegenerateTokenResponse = z.infer<typeof regenerateTokenResponseSchema>;
 
 // ─── Invite ──────────────────────────────────────────────────
 export const inviteSchema = z.object({

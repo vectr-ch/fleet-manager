@@ -20,9 +20,108 @@ function formatDate(iso: string) {
 const inputClass =
   "bg-neutral-900 border border-neutral-700 rounded-[5px] px-2.5 py-1.5 font-mono text-[11px] text-foreground placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500 w-full";
 
+// ── Provisioning Token Modal ─────────────────────────────────────────────────
+
+function TokenModal({ token, onClose }: { token: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(token);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-neutral-900 border border-neutral-700 rounded-[5px] p-6 max-w-lg w-full mx-4">
+        <div className="font-mono text-[10px] tracking-wider text-amber-400 uppercase mb-1">Provisioning Token</div>
+        <div className="font-mono text-[11px] text-neutral-400 mb-4">
+          This token is shown once. Copy it now and transfer it to the device for enrollment.
+        </div>
+        <div className="bg-neutral-950 border border-neutral-700 rounded-[5px] p-3 mb-4 break-all">
+          <code className="font-mono text-[11px] text-emerald-400 select-all">{token}</code>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopy}
+            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+          >
+            {copied ? "Copied" : "Copy Token"}
+          </button>
+          <button
+            onClick={onClose}
+            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Revoke Confirmation Modal ────────────────────────────────────────────────
+
+function RevokeModal({
+  baseName,
+  onConfirm,
+  onCancel,
+  isPending,
+}: {
+  baseName: string;
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+  isPending: boolean;
+}) {
+  const [reason, setReason] = useState("");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-neutral-900 border border-neutral-700 rounded-[5px] p-6 max-w-md w-full mx-4">
+        <div className="font-mono text-[10px] tracking-wider text-red-400 uppercase mb-1">Revoke Certificate</div>
+        <div className="font-mono text-[11px] text-neutral-400 mb-4">
+          Revoke the certificate for <span className="text-foreground font-semibold">{baseName}</span>? The base will
+          return to pending status and require re-enrollment.
+        </div>
+        <div className="mb-4">
+          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Reason (optional)</label>
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="e.g. device compromised"
+            className={inputClass}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onConfirm(reason)}
+            disabled={isPending}
+            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-red-700 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+          >
+            {isPending ? "Revoking..." : "Revoke"}
+          </button>
+          <button
+            onClick={onCancel}
+            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Create Base Form ──────────────────────────────────────────────────────────
 
-function CreateBaseForm({ onClose }: { onClose: () => void }) {
+function CreateBaseForm({
+  onClose,
+  onTokenReceived,
+}: {
+  onClose: () => void;
+  onTokenReceived: (token: string) => void;
+}) {
   const utils = trpc.useUtils();
   const [name, setName] = useState("");
   const [lat, setLat] = useState("");
@@ -30,8 +129,9 @@ function CreateBaseForm({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
 
   const createMutation = trpc.bases.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       utils.bases.list.invalidate();
+      onTokenReceived(data.provisioning_token);
       onClose();
     },
     onError: (e) => setError(e.message),
@@ -92,7 +192,7 @@ function CreateBaseForm({ onClose }: { onClose: () => void }) {
           disabled={createMutation.isPending}
           className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
         >
-          {createMutation.isPending ? "Creating…" : "Create Base"}
+          {createMutation.isPending ? "Creating..." : "Create Base"}
         </button>
         <button
           type="button"
@@ -106,7 +206,7 @@ function CreateBaseForm({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Edit Base Row ─────────────────────────────────────────────────────────────
+// ── Base Table Row ────────────────────────────────────────────────────────────
 
 interface BaseRowProps {
   base: {
@@ -116,22 +216,44 @@ interface BaseRowProps {
     lat?: number;
     lng?: number;
     maintenance_mode: boolean;
+    enrolled_at?: string;
+    cert_expires_at?: string;
     created_at: string;
   };
+  onTokenReceived: (token: string) => void;
 }
 
-function BaseRow({ base }: BaseRowProps) {
+function BaseRow({ base, onTokenReceived }: BaseRowProps) {
   const utils = trpc.useUtils();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(base.name);
   const [editMaintenance, setEditMaintenance] = useState(base.maintenance_mode);
   const [error, setError] = useState<string | null>(null);
+  const [showRevoke, setShowRevoke] = useState(false);
+
+  const isEnrolled = base.status === "enrolled";
+  const isPending = base.status === "pending";
 
   const updateMutation = trpc.bases.update.useMutation({
     onSuccess: () => {
       utils.bases.list.invalidate();
       setEditing(false);
       setError(null);
+    },
+    onError: (e) => setError(e.message),
+  });
+
+  const revokeMutation = trpc.bases.revokeCert.useMutation({
+    onSuccess: () => {
+      utils.bases.list.invalidate();
+      setShowRevoke(false);
+    },
+    onError: (e) => setError(e.message),
+  });
+
+  const regenerateMutation = trpc.bases.regenerateToken.useMutation({
+    onSuccess: (data) => {
+      onTokenReceived(data.provisioning_token);
     },
     onError: (e) => setError(e.message),
   });
@@ -152,15 +274,10 @@ function BaseRow({ base }: BaseRowProps) {
     setError(null);
   };
 
-  const isOnline = base.status === "online";
-
   if (editing) {
     return (
       <tr className="border-b border-neutral-800 bg-neutral-800/50">
-        <td className="px-4 py-3 w-3">
-          <div className={`w-2 h-2 rounded-full shrink-0 ${isOnline ? "bg-emerald-400" : "bg-neutral-600"}`} />
-        </td>
-        <td className="px-3 py-2">
+        <td className="px-4 py-2">
           <input
             type="text"
             value={editName}
@@ -169,18 +286,13 @@ function BaseRow({ base }: BaseRowProps) {
           />
         </td>
         <td className="px-3 py-2">
-          <span
-            className={`font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border ${
-              isOnline
-                ? "bg-emerald-900/30 text-emerald-400 border-emerald-400/20"
-                : "bg-neutral-800 text-neutral-500 border-neutral-700"
-            }`}
-          >
-            {base.status}
-          </span>
+          <StatusBadge status={base.status} />
         </td>
         <td className="px-3 py-2 font-mono text-[11px] text-neutral-400">
-          {base.lat != null && base.lng != null ? `${base.lat.toFixed(4)}, ${base.lng.toFixed(4)}` : "—"}
+          {base.lat != null && base.lng != null ? `${base.lat.toFixed(4)}, ${base.lng.toFixed(4)}` : "\u2014"}
+        </td>
+        <td className="px-3 py-2">
+          <EnrollmentInfo base={base} />
         </td>
         <td className="px-3 py-2">
           <label className="flex items-center gap-2 cursor-pointer">
@@ -193,7 +305,6 @@ function BaseRow({ base }: BaseRowProps) {
             <span className="font-mono text-[10px] text-neutral-400">Maintenance</span>
           </label>
         </td>
-        <td className="px-3 py-2 font-mono text-[11px] text-neutral-500">{formatDate(base.created_at)}</td>
         <td className="px-4 py-2">
           <div className="flex items-center gap-2">
             {error && <span className="font-mono text-[10px] text-red-400">{error}</span>}
@@ -202,7 +313,7 @@ function BaseRow({ base }: BaseRowProps) {
               disabled={updateMutation.isPending}
               className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded bg-emerald-700 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
             >
-              {updateMutation.isPending ? "Saving…" : "Save"}
+              {updateMutation.isPending ? "Saving..." : "Save"}
             </button>
             <button
               onClick={handleCancel}
@@ -217,45 +328,101 @@ function BaseRow({ base }: BaseRowProps) {
   }
 
   return (
-    <tr className="border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors group">
-      <td className="px-4 py-3 w-3">
-        <div className={`w-2 h-2 rounded-full shrink-0 ${isOnline ? "bg-emerald-400 animate-pulse" : "bg-neutral-600"}`} />
-      </td>
-      <td className="px-3 py-3 font-mono text-[12px] font-semibold text-foreground">{base.name}</td>
-      <td className="px-3 py-3">
-        <span
-          className={`font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border ${
-            isOnline
-              ? "bg-emerald-900/30 text-emerald-400 border-emerald-400/20"
-              : "bg-neutral-800 text-neutral-500 border-neutral-700"
-          }`}
-        >
-          {base.status}
-        </span>
-      </td>
-      <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">
-        {base.lat != null && base.lng != null ? `${base.lat.toFixed(4)}, ${base.lng.toFixed(4)}` : "—"}
-      </td>
-      <td className="px-3 py-3">
-        {base.maintenance_mode ? (
-          <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-amber-900/30 text-amber-400 border-amber-400/20">
-            Maintenance
-          </span>
-        ) : (
-          <span className="font-mono text-[10px] text-neutral-500">—</span>
-        )}
-      </td>
-      <td className="px-3 py-3 font-mono text-[11px] text-neutral-500">{formatDate(base.created_at)}</td>
-      <td className="px-4 py-3">
-        <button
-          onClick={() => setEditing(true)}
-          className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 opacity-0 group-hover:opacity-100 transition-all"
-        >
-          Edit
-        </button>
-      </td>
-    </tr>
+    <>
+      <tr className="border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors group">
+        <td className="px-4 py-3 font-mono text-[12px] font-semibold text-foreground">{base.name}</td>
+        <td className="px-3 py-3">
+          <StatusBadge status={base.status} />
+        </td>
+        <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">
+          {base.lat != null && base.lng != null ? `${base.lat.toFixed(4)}, ${base.lng.toFixed(4)}` : "\u2014"}
+        </td>
+        <td className="px-3 py-3">
+          <EnrollmentInfo base={base} />
+        </td>
+        <td className="px-3 py-3">
+          {base.maintenance_mode ? (
+            <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-amber-900/30 text-amber-400 border-amber-400/20">
+              Maintenance
+            </span>
+          ) : (
+            <span className="font-mono text-[10px] text-neutral-500">{"\u2014"}</span>
+          )}
+        </td>
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+            <button
+              onClick={() => setEditing(true)}
+              className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 transition-colors"
+            >
+              Edit
+            </button>
+            {isPending && (
+              <button
+                onClick={() => regenerateMutation.mutate({ id: base.id })}
+                disabled={regenerateMutation.isPending}
+                className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-amber-700/50 text-amber-400 hover:text-amber-300 hover:border-amber-600 disabled:opacity-50 transition-colors"
+              >
+                {regenerateMutation.isPending ? "..." : "New Token"}
+              </button>
+            )}
+            {isEnrolled && (
+              <button
+                onClick={() => setShowRevoke(true)}
+                className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-red-700/50 text-red-400 hover:text-red-300 hover:border-red-600 transition-colors"
+              >
+                Revoke
+              </button>
+            )}
+          </div>
+          {error && <div className="font-mono text-[10px] text-red-400 mt-1">{error}</div>}
+        </td>
+      </tr>
+      {showRevoke && (
+        <RevokeModal
+          baseName={base.name}
+          onConfirm={(reason) => revokeMutation.mutate({ id: base.id, reason: reason || undefined })}
+          onCancel={() => setShowRevoke(false)}
+          isPending={revokeMutation.isPending}
+        />
+      )}
+    </>
   );
+}
+
+// ── Status Badge ─────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "enrolled") {
+    return (
+      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-emerald-900/30 text-emerald-400 border-emerald-400/20">
+        Enrolled
+      </span>
+    );
+  }
+  return (
+    <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-amber-900/30 text-amber-400 border-amber-400/20">
+      Pending
+    </span>
+  );
+}
+
+// ── Enrollment Info ──────────────────────────────────────────────────────────
+
+function EnrollmentInfo({ base }: { base: { enrolled_at?: string; cert_expires_at?: string; status: string } }) {
+  if (base.status === "enrolled" && base.enrolled_at) {
+    return (
+      <div className="font-mono text-[11px]">
+        <div className="text-neutral-400">{formatDate(base.enrolled_at)}</div>
+        {base.cert_expires_at && (
+          <div className="text-[10px] text-neutral-500">
+            cert expires {formatDate(base.cert_expires_at)}
+          </div>
+        )}
+      </div>
+    );
+  }
+  return <span className="font-mono text-[10px] text-neutral-500">Awaiting enrollment</span>;
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -263,6 +430,7 @@ function BaseRow({ base }: BaseRowProps) {
 export default function BasesPage() {
   const { data: bases, isLoading } = trpc.bases.list.useQuery();
   const [showCreate, setShowCreate] = useState(false);
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
@@ -271,7 +439,7 @@ export default function BasesPage() {
         <div>
           <div className="text-[15px] font-semibold text-foreground tracking-tight">Bases</div>
           <div className="text-[11px] text-neutral-500 font-mono mt-0.5">
-            {isLoading ? "Loading…" : `${bases?.length ?? 0} base${(bases?.length ?? 0) === 1 ? "" : "s"} registered`}
+            {isLoading ? "Loading..." : `${bases?.length ?? 0} base${(bases?.length ?? 0) === 1 ? "" : "s"} registered`}
           </div>
         </div>
         <button
@@ -284,11 +452,16 @@ export default function BasesPage() {
 
       {/* Content area */}
       <div className="flex-1 p-5">
-        {showCreate && <CreateBaseForm onClose={() => setShowCreate(false)} />}
+        {showCreate && (
+          <CreateBaseForm
+            onClose={() => setShowCreate(false)}
+            onTokenReceived={(token) => setPendingToken(token)}
+          />
+        )}
 
         {isLoading ? (
           <div className="flex items-center justify-center py-24 font-mono text-[12px] text-neutral-500">
-            Loading bases…
+            Loading bases...
           </div>
         ) : !bases || bases.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-2">
@@ -300,8 +473,7 @@ export default function BasesPage() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-neutral-800 bg-neutral-950">
-                  <th className="px-4 py-2.5 w-3" />
-                  <th className="px-3 py-2.5 text-left">
+                  <th className="px-4 py-2.5 text-left">
                     <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Name</span>
                   </th>
                   <th className="px-3 py-2.5 text-left">
@@ -311,23 +483,30 @@ export default function BasesPage() {
                     <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Lat / Lng</span>
                   </th>
                   <th className="px-3 py-2.5 text-left">
-                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Maintenance</span>
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Enrollment</span>
                   </th>
                   <th className="px-3 py-2.5 text-left">
-                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Created</span>
+                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Maintenance</span>
                   </th>
                   <th className="px-4 py-2.5" />
                 </tr>
               </thead>
               <tbody>
                 {bases.map((base) => (
-                  <BaseRow key={base.id} base={base} />
+                  <BaseRow
+                    key={base.id}
+                    base={base}
+                    onTokenReceived={(token) => setPendingToken(token)}
+                  />
                 ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* Token modal */}
+      {pendingToken && <TokenModal token={pendingToken} onClose={() => setPendingToken(null)} />}
     </div>
   );
 }

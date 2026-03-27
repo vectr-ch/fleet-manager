@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "@/server/trpc";
 import { fmsFetch } from "@/lib/fms";
-import type { Base } from "@/lib/types";
+import type { Base, CreateBaseResponse, RegenerateTokenResponse } from "@/lib/types";
 
 export const basesRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -28,7 +28,7 @@ export const basesRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return fmsFetch<Base>(`/orgs/${ctx.orgSlug}/bases`, {
+      return fmsFetch<CreateBaseResponse>(`/orgs/${ctx.orgSlug}/bases`, {
         method: "POST",
         body: input,
         accessToken: ctx.accessToken,
@@ -52,5 +52,32 @@ export const basesRouter = router({
         body,
         accessToken: ctx.accessToken,
       });
+    }),
+
+  revokeCert: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch(`/orgs/${ctx.orgSlug}/bases/${input.id}/revoke-cert`, {
+        method: "POST",
+        body: input.reason ? { reason: input.reason } : {},
+        accessToken: ctx.accessToken,
+      });
+    }),
+
+  regenerateToken: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch<RegenerateTokenResponse>(
+        `/orgs/${ctx.orgSlug}/bases/${input.id}/regenerate-token`,
+        {
+          method: "POST",
+          accessToken: ctx.accessToken,
+        }
+      );
     }),
 });
