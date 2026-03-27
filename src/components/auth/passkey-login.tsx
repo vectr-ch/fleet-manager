@@ -23,7 +23,8 @@ export function PasskeyLogin({ onSuccess }: PasskeyLoginProps) {
     setLoading(true);
     try {
       const options = await optionsMutation.mutateAsync();
-      const publicKeyOptions = toRequestOptions(options.publicKey as Record<string, unknown>);
+      const pkWrapper = options.publicKey as Record<string, unknown>;
+      const publicKeyOptions = toRequestOptions(pkWrapper.publicKey as Record<string, unknown>);
       const credential = await navigator.credentials.get({ publicKey: publicKeyOptions });
       if (!credential) { setLoading(false); return; }
       const serialized = serializeAuthentication(credential as PublicKeyCredential);

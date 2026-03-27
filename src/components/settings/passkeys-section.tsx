@@ -186,7 +186,8 @@ export function PasskeysSection() {
 
     try {
       const options = await registerOptionsMutation.mutateAsync();
-      const publicKeyOptions = toCreationOptions(options.publicKey as Record<string, unknown>);
+      const pkWrapper = options.publicKey as Record<string, unknown>;
+      const publicKeyOptions = toCreationOptions(pkWrapper.publicKey as Record<string, unknown>);
       const credential = await navigator.credentials.create({ publicKey: publicKeyOptions });
       if (!credential) {
         setAddLoading(false);
