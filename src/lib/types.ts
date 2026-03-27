@@ -44,6 +44,25 @@ export const mfaConfirmResponseSchema = z.object({
 });
 export type MFAConfirmResponse = z.infer<typeof mfaConfirmResponseSchema>;
 
+// ─── MFA / Passkey ──────────────────────────────────────────
+export const mfaStatusSchema = z.object({
+  totp_enabled: z.boolean(),
+  totp_created_at: z.string().nullable(),
+  backup_codes_remaining: z.number(),
+  passkey_count: z.number(),
+});
+export type MFAStatus = z.infer<typeof mfaStatusSchema>;
+
+export const passkeyInfoSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  device_type: z.string(),
+  backed_up: z.boolean(),
+  created_at: z.string(),
+  last_used_at: z.string().nullable(),
+});
+export type PasskeyInfo = z.infer<typeof passkeyInfoSchema>;
+
 // ─── Error ───────────────────────────────────────────────────
 export const errorResponseSchema = z.object({
   error: z.string(),

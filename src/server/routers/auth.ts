@@ -140,6 +140,31 @@ export const authRouter = router({
       return { success: true };
     }),
 
+  passkeyLoginOptions: publicProcedure.mutation(async () => {
+    return fmsFetch<{ publicKey: unknown; session_id: string }>(
+      "/auth/passkey/login/options",
+      { method: "POST" },
+    );
+  }),
+
+  passkeyLoginVerify: publicProcedure
+    .input(z.object({
+      session_id: z.string(),
+      credential: z.any(),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await fmsFetch<LoginResponse>(
+        "/auth/passkey/login/verify",
+        { method: "POST", body: input },
+      );
+      if (result.access_token) {
+        await setAuthCookies(result);
+        const { orgs } = await handleLoginEnrichment(result);
+        return { success: true as const, orgs };
+      }
+      return { success: true as const };
+    }),
+
   refresh: publicProcedure.mutation(async () => {
     const { refreshToken } = await getTokens();
     if (!refreshToken) {
