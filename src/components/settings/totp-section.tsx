@@ -47,9 +47,9 @@ export function TOTPSection() {
     onError: (e) => setActionError(e.message),
   });
 
-  // MFA setup flow (reuses the auth mfaSetup/mfaConfirm flow)
-  const setupMutation = trpc.auth.mfaSetup.useMutation();
-  const confirmMutation = trpc.auth.mfaConfirm.useMutation({
+  // MFA setup flow (uses JWT-authenticated procedures, not the login challenge flow)
+  const setupMutation = trpc.userAccount.mfaSetup.useMutation();
+  const confirmMutation = trpc.userAccount.mfaConfirm.useMutation({
     onSuccess: (data) => {
       setNewBackupCodes(data.backup_codes);
       setShowSetup(false);

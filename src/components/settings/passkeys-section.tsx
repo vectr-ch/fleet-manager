@@ -194,7 +194,7 @@ export function PasskeysSection() {
         return;
       }
       const serialized = serializeRegistration(credential as PublicKeyCredential);
-      await registerVerifyMutation.mutateAsync({ label, credential: serialized });
+      await registerVerifyMutation.mutateAsync({ session_id: options.session_id, label, credential: serialized });
       utils.userAccount.listPasskeys.invalidate();
       utils.userAccount.mfaStatus.invalidate();
       setShowAdd(false);

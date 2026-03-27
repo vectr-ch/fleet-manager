@@ -4,7 +4,7 @@ import { router, protectedProcedure, authOnlyProcedure } from "@/server/trpc";
 import { fmsFetch } from "@/lib/fms";
 import { setCurrentOrg } from "@/lib/auth/cookies";
 import { validatePassword } from "@/lib/password";
-import type { Org, MFAStatus, PasskeyInfo } from "@/lib/types";
+import type { Org, MFAStatus, MFASetupResponse, MFAConfirmResponse, PasskeyInfo } from "@/lib/types";
 
 const userPasswordSchema = z.string().superRefine((password, ctx) => {
   const error = validatePassword(password);
@@ -63,7 +63,28 @@ export const userAccountRouter = router({
       });
     }),
 
-  // TOTP management
+  // TOTP management (authenticated — for settings page, not login flow)
+  mfaSetup: protectedProcedure
+    .input(z.object({ current_code: z.string().optional() }).optional())
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch<MFASetupResponse>("/auth/mfa/setup", {
+        method: "POST",
+        body: input?.current_code ? { current_code: input.current_code } : {},
+        accessToken: ctx.accessToken,
+      });
+    }),
+
+  mfaConfirm: protectedProcedure
+    .input(z.object({ code: z.string().length(6) }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await fmsFetch<MFAConfirmResponse>("/auth/mfa/confirm", {
+        method: "POST",
+        body: { code: input.code },
+        accessToken: ctx.accessToken,
+      });
+      return { backup_codes: result.backup_codes };
+    }),
+
   mfaStatus: protectedProcedure.query(async ({ ctx }) => {
     return fmsFetch<MFAStatus>(`/users/${ctx.userId}/mfa/status`, {
       accessToken: ctx.accessToken,
@@ -106,6 +127,7 @@ export const userAccountRouter = router({
 
   passkeyRegisterVerify: protectedProcedure
     .input(z.object({
+      session_id: z.string(),
       label: z.string().min(1).max(100),
       credential: z.any(),
     }))
