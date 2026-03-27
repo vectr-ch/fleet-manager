@@ -20,12 +20,12 @@ export function OrgSwitcher({ currentOrg, currentOrgName }: OrgSwitcherProps) {
     },
   });
 
-  const handleSwitch = (slug: string, name: string) => {
-    if (slug === currentOrg) {
+  const handleSwitch = (org: { id: string; slug: string; name: string }) => {
+    if (org.slug === currentOrg) {
       setIsOpen(false);
       return;
     }
-    switchOrgMutation.mutate({ orgSlug: slug, orgName: name });
+    switchOrgMutation.mutate({ orgId: org.id, orgSlug: org.slug, orgName: org.name });
     setIsOpen(false);
   };
 
@@ -45,7 +45,7 @@ export function OrgSwitcher({ currentOrg, currentOrgName }: OrgSwitcherProps) {
           {orgsQuery.data.map((org) => (
             <button
               key={org.id}
-              onClick={() => handleSwitch(org.slug, org.name)}
+              onClick={() => handleSwitch(org)}
               className={`block w-full px-3 py-2 text-left text-sm hover:bg-neutral-700 ${
                 org.slug === currentOrg ? "text-emerald-400" : "text-neutral-200"
               }`}

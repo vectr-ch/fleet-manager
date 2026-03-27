@@ -3,16 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
-
-function validatePassword(pw: string): string[] {
-  const errors: string[] = [];
-  if (pw.length < 12) errors.push("At least 12 characters");
-  if (!/[A-Z]/.test(pw)) errors.push("At least one uppercase letter");
-  if (!/[a-z]/.test(pw)) errors.push("At least one lowercase letter");
-  if (!/[0-9]/.test(pw)) errors.push("At least one number");
-  if (!/[^A-Za-z0-9\s]/.test(pw)) errors.push("At least one special character");
-  return errors;
-}
+import { validateSysadminPassword } from "@/lib/password";
 
 type Step = "verify" | "reset";
 
@@ -60,9 +51,9 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError(null);
 
-    const pwErrors = validatePassword(password);
-    setPasswordErrors(pwErrors);
-    if (pwErrors.length > 0) return;
+    const passwordError = validateSysadminPassword(password);
+    setPasswordErrors(passwordError ? [passwordError] : []);
+    if (passwordError) return;
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -192,7 +183,8 @@ export default function ResetPasswordPage() {
                 onChange={(e) => {
                   setPassword(e.target.value);
                   if (passwordErrors.length > 0) {
-                    setPasswordErrors(validatePassword(e.target.value));
+                    const error = validateSysadminPassword(e.target.value);
+                    setPasswordErrors(error ? [error] : []);
                   }
                 }}
                 className="w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder-neutral-600 focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-500"

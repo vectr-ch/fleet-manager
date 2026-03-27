@@ -1,10 +1,18 @@
 import { z } from "zod";
 import { router, publicProcedure } from "@/server/trpc";
 import { fmsFetch } from "@/lib/fms";
+import { validateSysadminPassword } from "@/lib/password";
 import type {
   SysadminResetVerifyResponse,
   SysadminTokenRedeemResponse,
 } from "@/lib/types";
+
+const sysadminPasswordSchema = z.string().superRefine((password, ctx) => {
+  const error = validateSysadminPassword(password);
+  if (error) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+  }
+});
 
 export const sysadminResetPasswordRouter = router({
   verify: publicProcedure
@@ -20,7 +28,7 @@ export const sysadminResetPasswordRouter = router({
     }),
 
   confirm: publicProcedure
-    .input(z.object({ token: z.string().min(1), password: z.string().min(1) }))
+    .input(z.object({ token: z.string().min(1), password: sysadminPasswordSchema }))
     .mutation(async ({ input }) => {
       return fmsFetch<SysadminTokenRedeemResponse>(
         "/sysadmin/reset-password/confirm",
@@ -32,7 +40,7 @@ export const sysadminResetPasswordRouter = router({
     }),
 
   acceptInvite: publicProcedure
-    .input(z.object({ token: z.string().min(1), password: z.string().min(1) }))
+    .input(z.object({ token: z.string().min(1), password: sysadminPasswordSchema }))
     .mutation(async ({ input }) => {
       return fmsFetch<SysadminTokenRedeemResponse>(
         "/sysadmin/admins/accept-invite",

@@ -3,7 +3,7 @@
 import { trpc } from "@/lib/trpc/client";
 
 export default function OverviewPage() {
-  const { isLoading: statsLoading } = trpc.overview.stats.useQuery();
+  const { data: stats, isLoading: statsLoading } = trpc.overview.stats.useQuery();
   const { data: activity, isLoading: activityLoading } = trpc.overview.recentActivity.useQuery();
 
   return (
@@ -15,16 +15,26 @@ export default function OverviewPage() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-4 gap-3">
-        {["Total Nodes", "Active Bases", "Open Alerts", "Missions"].map((label) => (
-          <div key={label} className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-4">
-            <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-2">{label}</div>
-            <div className="font-mono text-2xl font-semibold text-neutral-300">
-              {statsLoading ? "—" : "0"}
-            </div>
+      {statsLoading ? (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-4">
+          <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-2">Overview Metrics</div>
+          <div className="font-mono text-[12px] text-neutral-400">Loading…</div>
+        </div>
+      ) : stats ? (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-4">
+          <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-2">Overview Metrics</div>
+          <pre className="overflow-auto font-mono text-[11px] text-neutral-300">
+            {JSON.stringify(stats, null, 2)}
+          </pre>
+        </div>
+      ) : (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-4">
+          <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-2">Overview Metrics</div>
+          <div className="font-mono text-[12px] text-neutral-400">
+            Live overview metrics are not wired yet.
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Recent activity */}
       <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] flex flex-col flex-1 min-h-0 overflow-hidden">

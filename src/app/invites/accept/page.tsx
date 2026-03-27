@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { validatePassword } from "@/lib/password";
+import { getInviteAcceptContinuePath } from "@/lib/routing/app-access";
 
 export default function InviteAcceptPage() {
   return (
@@ -87,10 +88,10 @@ function InviteAcceptForm() {
               : "Your account has been created successfully."}
           </p>
           <button
-            onClick={() => router.push(isLoggedIn ? "/select-org" : "/login")}
+            onClick={() => router.push(getInviteAcceptContinuePath(isLoggedIn))}
             className="w-full rounded-md bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200"
           >
-            {isLoggedIn ? "Continue" : "Go to login"}
+            {isLoggedIn ? "Choose organisation" : "Go to login"}
           </button>
         </div>
       </div>

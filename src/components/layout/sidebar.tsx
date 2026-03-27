@@ -38,16 +38,6 @@ export function Sidebar() {
           ),
         },
         {
-          label: t("liveMission"),
-          href: "/missions",
-          icon: (
-            <svg viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M7 4.5v3l1.5 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
-          ),
-        },
-        {
           label: t("map"),
           href: "/map",
           icon: (
@@ -81,40 +71,11 @@ export function Sidebar() {
             </svg>
           ),
         },
-        {
-          label: t("missionPlans"),
-          href: "/missions",
-          icon: (
-            <svg viewBox="0 0 14 14" fill="none">
-              <rect x="1.5" y="3" width="11" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M4.5 6.5h5M4.5 8.5h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
-          ),
-        },
       ],
     },
     {
       label: t("system"),
       items: [
-        {
-          label: t("alerts"),
-          href: "/alerts",
-          icon: (
-            <svg viewBox="0 0 14 14" fill="none">
-              <path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.93 2.93l1.41 1.41M9.66 9.66l1.41 1.41M2.93 11.07l1.41-1.41M9.66 4.34l1.41-1.41" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              <circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
-          ),
-        },
-        {
-          label: t("auditLog"),
-          href: "/audit",
-          icon: (
-            <svg viewBox="0 0 14 14" fill="none">
-              <path d="M2 4h10M2 7h10M2 10h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
-          ),
-        },
         {
           label: t("settings"),
           href: "/settings",

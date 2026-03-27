@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useTranslations } from "next-intl";
 import { trpc } from "@/lib/trpc/client";
+import { SYSADMIN_MIN_LENGTH } from "@/lib/password";
 
 type Step = "account" | "mfa" | "organisation" | "complete";
 
@@ -107,7 +108,7 @@ export default function SetupPage() {
   // server policy changes.
   function validatePassword(pw: string): string[] {
     const errors: string[] = [];
-    if (pw.length < 12) errors.push(t("errors.passwordMinLength", { minLength: 12 }));
+    if (pw.length < SYSADMIN_MIN_LENGTH) errors.push(t("errors.passwordMinLength", { minLength: SYSADMIN_MIN_LENGTH }));
     if (!/[A-Z]/.test(pw)) errors.push(t("errors.passwordUppercase"));
     if (!/[a-z]/.test(pw)) errors.push(t("errors.passwordLowercase"));
     if (!/[0-9]/.test(pw)) errors.push(t("errors.passwordDigit"));

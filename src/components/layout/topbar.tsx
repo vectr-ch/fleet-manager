@@ -10,11 +10,8 @@ import { OrgSwitcher } from "@/components/layout/org-switcher";
 
 const navItems = [
   { href: "/overview", key: "overview" },
-  { href: "/missions", key: "missions" },
   { href: "/fleet", key: "fleet" },
   { href: "/bases", key: "bases" },
-  { href: "/telemetry", key: "telemetry" },
-  { href: "/audit", key: "audit" },
 ] as const;
 
 interface TopbarProps {

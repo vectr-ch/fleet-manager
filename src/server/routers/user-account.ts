@@ -3,7 +3,15 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, authOnlyProcedure } from "@/server/trpc";
 import { fmsFetch } from "@/lib/fms";
 import { setCurrentOrg } from "@/lib/auth/cookies";
+import { validatePassword } from "@/lib/password";
 import type { Org } from "@/lib/types";
+
+const userPasswordSchema = z.string().superRefine((password, ctx) => {
+  const error = validatePassword(password);
+  if (error) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+  }
+});
 
 export const userAccountRouter = router({
   // Identity derived from JWT ctx.userId — no client-supplied userId.
@@ -16,11 +24,26 @@ export const userAccountRouter = router({
     }),
 
   updateDefaultOrg: protectedProcedure
-    .input(z.object({ orgSlug: z.string(), orgName: z.string().optional() }))
+    .input(
+      z.object({
+        orgId: z.string().uuid(),
+        orgSlug: z.string(),
+        orgName: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      const result = await fmsFetch(`/users/${ctx.userId}/default-org`, {
+      // Verify the user is a member of the target org before patching.
+      const res = await fmsFetch<{ orgs: Org[] }>(`/users/${ctx.userId}/orgs`, {
+        accessToken: ctx.accessToken,
+      });
+      const matchedOrg = res.orgs.find((o) => o.id === input.orgId);
+      if (!matchedOrg) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "not_member_of_org" });
+      }
+
+      const result = await fmsFetch(`/users/${ctx.userId}`, {
         method: "PATCH",
-        body: { slug: input.orgSlug },
+        body: { default_org_id: input.orgId },
         accessToken: ctx.accessToken,
       });
       await setCurrentOrg(input.orgSlug, input.orgName);
@@ -30,7 +53,7 @@ export const userAccountRouter = router({
   changePassword: protectedProcedure
     .input(z.object({
       current_password: z.string(),
-      new_password: z.string().min(8),
+      new_password: userPasswordSchema,
     }))
     .mutation(async ({ ctx, input }) => {
       return fmsFetch(`/users/${ctx.userId}/change-password`, {

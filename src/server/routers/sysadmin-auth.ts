@@ -4,6 +4,7 @@ import { fmsFetch } from "@/lib/fms";
 import {
   setSysadminAuthCookies,
   clearSysadminAuthCookies,
+  clearSysadminChallengeCookie,
   getSysadminTokens,
   setSysadminChallengeCookie,
   getSysadminChallengeToken,
@@ -29,6 +30,7 @@ export const sysadminAuthRouter = router({
 
       if (result.access_token) {
         await setSysadminAuthCookies(result);
+        await clearSysadminChallengeCookie();
       }
 
       return { mfa_required: false, setup_required: false };
@@ -61,6 +63,7 @@ export const sysadminAuthRouter = router({
 
       if (result.access_token) {
         await setSysadminAuthCookies(result);
+        await clearSysadminChallengeCookie();
       }
 
       return { backup_codes: result.backup_codes };
@@ -79,6 +82,7 @@ export const sysadminAuthRouter = router({
 
       if (result.access_token) {
         await setSysadminAuthCookies(result);
+        await clearSysadminChallengeCookie();
       }
 
       return { success: true };
