@@ -233,7 +233,14 @@ function RevokeModal({
 
 // ── Status Badge ─────────────────────────────────────────────────────────────
 
-function StatusBadge({ enrolled_at }: { enrolled_at?: string }) {
+function StatusBadge({ enrolled_at, decommissioned_at }: { enrolled_at?: string; decommissioned_at?: string }) {
+  if (decommissioned_at) {
+    return (
+      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-neutral-900/30 text-neutral-500 border-neutral-500/20">
+        Decommissioned
+      </span>
+    );
+  }
   if (enrolled_at) {
     return (
       <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-emerald-900/30 text-emerald-400 border-emerald-400/20">
@@ -375,6 +382,7 @@ interface NodeRowProps {
     firmware_version?: string;
     enrolled_at?: string;
     cert_expires_at?: string;
+    decommissioned_at?: string;
     created_at: string;
   };
   bases: { id: string; name: string }[];
@@ -393,6 +401,7 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
 
   const isEnrolled = !!node.enrolled_at;
   const isPending = !node.enrolled_at;
+  const isDecommissioned = !!node.decommissioned_at;
 
   const updateMutation = trpc.nodes.update.useMutation({
     onSuccess: () => {
@@ -408,6 +417,15 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
       utils.nodes.list.invalidate();
       setShowRevoke(false);
     },
+    onError: (e) => setError(e.message),
+  });
+
+  const decommissionMutation = trpc.nodes.decommission.useMutation({
+    onSuccess: () => { utils.nodes.list.invalidate(); },
+    onError: (e) => setError(e.message),
+  });
+  const recommissionMutation = trpc.nodes.recommission.useMutation({
+    onSuccess: () => { utils.nodes.list.invalidate(); },
     onError: (e) => setError(e.message),
   });
 
@@ -482,7 +500,7 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
           </select>
         </td>
         <td className="px-3 py-2">
-          <StatusBadge enrolled_at={node.enrolled_at} />
+          <StatusBadge enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} />
         </td>
         <td className="px-3 py-2">
           <EnrollmentInfo node={node} />
@@ -512,12 +530,12 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
 
   return (
     <>
-      <tr className="border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors group">
+      <tr className={`border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors group${isDecommissioned ? " opacity-50" : ""}`}>
         <td className="px-4 py-3 font-mono text-[12px] font-semibold text-foreground">{node.name}</td>
         <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">{node.serial ?? "\u2014"}</td>
         <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">{baseName}</td>
         <td className="px-3 py-3">
-          <StatusBadge enrolled_at={node.enrolled_at} />
+          <StatusBadge enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} />
         </td>
         <td className="px-3 py-3">
           <EnrollmentInfo node={node} />
@@ -525,36 +543,56 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
         <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">{node.firmware_version ?? "\u2014"}</td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-            <button
-              onClick={() => setEditing(true)}
-              className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 transition-colors"
-            >
-              Edit
-            </button>
-            {isPending && (
+            {!isDecommissioned && (
               <>
                 <button
-                  onClick={() => issueCertMutation.mutate({ id: node.id })}
-                  disabled={issueCertMutation.isPending}
-                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 hover:border-emerald-600 disabled:opacity-50 transition-colors"
+                  onClick={() => setEditing(true)}
+                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 transition-colors"
                 >
-                  {issueCertMutation.isPending ? "Issuing..." : "Issue Cert"}
+                  Edit
                 </button>
+                {isPending && (
+                  <>
+                    <button
+                      onClick={() => issueCertMutation.mutate({ id: node.id })}
+                      disabled={issueCertMutation.isPending}
+                      className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 hover:border-emerald-600 disabled:opacity-50 transition-colors"
+                    >
+                      {issueCertMutation.isPending ? "Issuing..." : "Issue Cert"}
+                    </button>
+                    <button
+                      onClick={() => regenerateMutation.mutate({ id: node.id })}
+                      disabled={regenerateMutation.isPending}
+                      className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-amber-700/50 text-amber-400 hover:text-amber-300 hover:border-amber-600 disabled:opacity-50 transition-colors"
+                    >
+                      {regenerateMutation.isPending ? "..." : "New Token"}
+                    </button>
+                  </>
+                )}
+                {isEnrolled && (
+                  <button
+                    onClick={() => setShowRevoke(true)}
+                    className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-red-700/50 text-red-400 hover:text-red-300 hover:border-red-600 transition-colors"
+                  >
+                    Revoke
+                  </button>
+                )}
                 <button
-                  onClick={() => regenerateMutation.mutate({ id: node.id })}
-                  disabled={regenerateMutation.isPending}
-                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-amber-700/50 text-amber-400 hover:text-amber-300 hover:border-amber-600 disabled:opacity-50 transition-colors"
+                  onClick={() => decommissionMutation.mutate({ id: node.id })}
+                  disabled={decommissionMutation.isPending}
+                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-red-700/50 text-red-400 hover:text-red-300 hover:border-red-600 disabled:opacity-50 transition-colors"
                 >
-                  {regenerateMutation.isPending ? "..." : "New Token"}
+                  {decommissionMutation.isPending ? "..." : "Decommission"}
                 </button>
               </>
             )}
-            {isEnrolled && (
+            {isDecommissioned && (
               <button
-                onClick={() => setShowRevoke(true)}
-                className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-red-700/50 text-red-400 hover:text-red-300 hover:border-red-600 transition-colors"
+                onClick={() => recommissionMutation.mutate({ id: node.id })}
+                disabled={recommissionMutation.isPending}
+                className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 hover:border-emerald-600 disabled:opacity-50 transition-colors"
               >
-                Revoke
+                {recommissionMutation.isPending ? "..." : "Recommission"}
               </button>
             )}
           </div>
@@ -576,7 +614,8 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function FleetPage() {
-  const { data: nodes, isLoading } = trpc.nodes.list.useQuery();
+  const [showDecommissioned, setShowDecommissioned] = useState(false);
+  const { data: nodes, isLoading } = trpc.nodes.list.useQuery({ includeDecommissioned: showDecommissioned });
   const { data: bases = [] } = trpc.bases.list.useQuery();
   const [showCreate, setShowCreate] = useState(false);
   const [pendingCredential, setPendingCredential] = useState<PendingCredential>(null);
@@ -593,12 +632,18 @@ export default function FleetPage() {
               : `${nodes?.length ?? 0} node${(nodes?.length ?? 0) === 1 ? "" : "s"} registered`}
           </div>
         </div>
-        <button
-          onClick={() => setShowCreate((v) => !v)}
-          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
-        >
-          {showCreate ? "Cancel" : "+ Register Node"}
-        </button>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" checked={showDecommissioned} onChange={(e) => setShowDecommissioned(e.target.checked)} className="accent-neutral-400" />
+            <span className="font-mono text-[10px] text-neutral-500">Show decommissioned</span>
+          </label>
+          <button
+            onClick={() => setShowCreate((v) => !v)}
+            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+          >
+            {showCreate ? "Cancel" : "+ Register Node"}
+          </button>
+        </div>
       </div>
 
       {/* Content area */}

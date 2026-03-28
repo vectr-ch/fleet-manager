@@ -93,6 +93,7 @@ export const baseSchema = z.object({
   maintenance_mode: z.boolean(),
   enrolled_at: z.string().optional(),
   cert_expires_at: z.string().optional(),
+  decommissioned_at: z.string().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });
@@ -113,6 +114,7 @@ export const nodeSchema = z.object({
   firmware_version: z.string().optional(),
   enrolled_at: z.string().optional(),
   cert_expires_at: z.string().optional(),
+  decommissioned_at: z.string().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });

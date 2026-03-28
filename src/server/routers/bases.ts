@@ -4,12 +4,15 @@ import { fmsFetch } from "@/lib/fms";
 import type { Base, CreateBaseResponse, RegenerateTokenResponse, IssueCertResponse } from "@/lib/types";
 
 export const basesRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
-    const res = await fmsFetch<{ bases: Base[] }>(`/orgs/${ctx.orgSlug}/bases`, {
-      accessToken: ctx.accessToken,
-    });
-    return res.bases;
-  }),
+  list: protectedProcedure
+    .input(z.object({ includeDecommissioned: z.boolean().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const params = input?.includeDecommissioned ? "?include_decommissioned=true" : "";
+      const res = await fmsFetch<{ bases: Base[] }>(`/orgs/${ctx.orgSlug}/bases${params}`, {
+        accessToken: ctx.accessToken,
+      });
+      return res.bases;
+    }),
 
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
@@ -91,5 +94,23 @@ export const basesRouter = router({
           accessToken: ctx.accessToken,
         }
       );
+    }),
+
+  decommission: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch(`/orgs/${ctx.orgSlug}/bases/${input.id}/decommission`, {
+        method: "POST",
+        accessToken: ctx.accessToken,
+      });
+    }),
+
+  recommission: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch(`/orgs/${ctx.orgSlug}/bases/${input.id}/recommission`, {
+        method: "POST",
+        accessToken: ctx.accessToken,
+      });
     }),
 });

@@ -336,6 +336,7 @@ interface BaseRowProps {
     maintenance_mode: boolean;
     enrolled_at?: string;
     cert_expires_at?: string;
+    decommissioned_at?: string;
     created_at: string;
   };
   onTokenReceived: (token: string) => void;
@@ -352,6 +353,7 @@ function BaseRow({ base, onTokenReceived, onCertIssued }: BaseRowProps) {
 
   const isEnrolled = base.status === "enrolled";
   const isPending = base.status === "pending";
+  const isDecommissioned = !!base.decommissioned_at;
 
   const updateMutation = trpc.bases.update.useMutation({
     onSuccess: () => {
@@ -367,6 +369,15 @@ function BaseRow({ base, onTokenReceived, onCertIssued }: BaseRowProps) {
       utils.bases.list.invalidate();
       setShowRevoke(false);
     },
+    onError: (e) => setError(e.message),
+  });
+
+  const decommissionMutation = trpc.bases.decommission.useMutation({
+    onSuccess: () => { utils.bases.list.invalidate(); },
+    onError: (e) => setError(e.message),
+  });
+  const recommissionMutation = trpc.bases.recommission.useMutation({
+    onSuccess: () => { utils.bases.list.invalidate(); },
     onError: (e) => setError(e.message),
   });
 
@@ -458,7 +469,7 @@ function BaseRow({ base, onTokenReceived, onCertIssued }: BaseRowProps) {
 
   return (
     <>
-      <tr className="border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors group">
+      <tr className={`border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors group${isDecommissioned ? " opacity-50" : ""}`}>
         <td className="px-4 py-3 font-mono text-[12px] font-semibold text-foreground">{base.name}</td>
         <td className="px-3 py-3">
           <StatusBadge status={base.status} />
@@ -480,36 +491,56 @@ function BaseRow({ base, onTokenReceived, onCertIssued }: BaseRowProps) {
         </td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-            <button
-              onClick={() => setEditing(true)}
-              className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 transition-colors"
-            >
-              Edit
-            </button>
-            {isPending && (
+            {!isDecommissioned && (
               <>
                 <button
-                  onClick={() => issueCertMutation.mutate({ id: base.id })}
-                  disabled={issueCertMutation.isPending}
-                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 hover:border-emerald-600 disabled:opacity-50 transition-colors"
+                  onClick={() => setEditing(true)}
+                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 transition-colors"
                 >
-                  {issueCertMutation.isPending ? "Issuing..." : "Issue Cert"}
+                  Edit
                 </button>
+                {isPending && (
+                  <>
+                    <button
+                      onClick={() => issueCertMutation.mutate({ id: base.id })}
+                      disabled={issueCertMutation.isPending}
+                      className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 hover:border-emerald-600 disabled:opacity-50 transition-colors"
+                    >
+                      {issueCertMutation.isPending ? "Issuing..." : "Issue Cert"}
+                    </button>
+                    <button
+                      onClick={() => regenerateMutation.mutate({ id: base.id })}
+                      disabled={regenerateMutation.isPending}
+                      className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-amber-700/50 text-amber-400 hover:text-amber-300 hover:border-amber-600 disabled:opacity-50 transition-colors"
+                    >
+                      {regenerateMutation.isPending ? "..." : "New Token"}
+                    </button>
+                  </>
+                )}
+                {isEnrolled && (
+                  <button
+                    onClick={() => setShowRevoke(true)}
+                    className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-red-700/50 text-red-400 hover:text-red-300 hover:border-red-600 transition-colors"
+                  >
+                    Revoke
+                  </button>
+                )}
                 <button
-                  onClick={() => regenerateMutation.mutate({ id: base.id })}
-                  disabled={regenerateMutation.isPending}
-                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-amber-700/50 text-amber-400 hover:text-amber-300 hover:border-amber-600 disabled:opacity-50 transition-colors"
+                  onClick={() => decommissionMutation.mutate({ id: base.id })}
+                  disabled={decommissionMutation.isPending}
+                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-red-700/50 text-red-400 hover:text-red-300 hover:border-red-600 disabled:opacity-50 transition-colors"
                 >
-                  {regenerateMutation.isPending ? "..." : "New Token"}
+                  {decommissionMutation.isPending ? "..." : "Decommission"}
                 </button>
               </>
             )}
-            {isEnrolled && (
+            {isDecommissioned && (
               <button
-                onClick={() => setShowRevoke(true)}
-                className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-red-700/50 text-red-400 hover:text-red-300 hover:border-red-600 transition-colors"
+                onClick={() => recommissionMutation.mutate({ id: base.id })}
+                disabled={recommissionMutation.isPending}
+                className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 hover:border-emerald-600 disabled:opacity-50 transition-colors"
               >
-                Revoke
+                {recommissionMutation.isPending ? "..." : "Recommission"}
               </button>
             )}
           </div>
@@ -531,6 +562,13 @@ function BaseRow({ base, onTokenReceived, onCertIssued }: BaseRowProps) {
 // ── Status Badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
+  if (status === "decommissioned") {
+    return (
+      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-neutral-900/30 text-neutral-500 border-neutral-500/20">
+        Decommissioned
+      </span>
+    );
+  }
   if (status === "enrolled") {
     return (
       <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-emerald-900/30 text-emerald-400 border-emerald-400/20">
@@ -566,7 +604,8 @@ function EnrollmentInfo({ base }: { base: { enrolled_at?: string; cert_expires_a
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BasesPage() {
-  const { data: bases, isLoading } = trpc.bases.list.useQuery();
+  const [showDecommissioned, setShowDecommissioned] = useState(false);
+  const { data: bases, isLoading } = trpc.bases.list.useQuery({ includeDecommissioned: showDecommissioned });
   const [showCreate, setShowCreate] = useState(false);
   const [pendingCredential, setPendingCredential] = useState<PendingCredential>(null);
 
@@ -580,12 +619,18 @@ export default function BasesPage() {
             {isLoading ? "Loading..." : `${bases?.length ?? 0} base${(bases?.length ?? 0) === 1 ? "" : "s"} registered`}
           </div>
         </div>
-        <button
-          onClick={() => setShowCreate((v) => !v)}
-          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
-        >
-          {showCreate ? "Cancel" : "+ Create Base"}
-        </button>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" checked={showDecommissioned} onChange={(e) => setShowDecommissioned(e.target.checked)} className="accent-neutral-400" />
+            <span className="font-mono text-[10px] text-neutral-500">Show decommissioned</span>
+          </label>
+          <button
+            onClick={() => setShowCreate((v) => !v)}
+            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+          >
+            {showCreate ? "Cancel" : "+ Create Base"}
+          </button>
+        </div>
       </div>
 
       {/* Content area */}
