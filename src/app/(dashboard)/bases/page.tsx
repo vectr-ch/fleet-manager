@@ -1,7 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc/client";
+import {
+  MapPin,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Clock,
+  Wrench,
+  Plus,
+  RotateCcw,
+  KeyRound,
+  FileKey,
+  FileLock2,
+  Power,
+  PowerOff,
+  Pencil,
+  X,
+  Check,
+  Copy,
+  Download,
+  ChevronDown,
+  ChevronRight,
+  AlertTriangle,
+  Search,
+} from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -17,8 +41,12 @@ function formatDate(iso: string) {
   }
 }
 
-const inputClass =
-  "bg-neutral-900 border border-neutral-700 rounded-[5px] px-2.5 py-1.5 font-mono text-[11px] text-foreground placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500 w-full";
+function formatCoords(lat?: number, lng?: number) {
+  if (lat == null || lng == null) return null;
+  const latDir = lat >= 0 ? "N" : "S";
+  const lngDir = lng >= 0 ? "E" : "W";
+  return `${Math.abs(lat).toFixed(4)}\u00B0${latDir}, ${Math.abs(lng).toFixed(4)}\u00B0${lngDir}`;
+}
 
 // ── Provisioning Token Modal ─────────────────────────────────────────────────
 
@@ -32,25 +60,29 @@ function TokenModal({ token, onClose }: { token: string; onClose: () => void }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-neutral-900 border border-neutral-700 rounded-[5px] p-6 max-w-lg w-full mx-4">
-        <div className="font-mono text-[10px] tracking-wider text-amber-400 uppercase mb-1">Provisioning Token</div>
-        <div className="font-mono text-[11px] text-neutral-400 mb-4">
-          This token is shown once. Copy it now and transfer it to the device for enrollment.
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-lg w-full mx-4 shadow-2xl">
+        <div className="flex items-center gap-2 mb-1">
+          <KeyRound className="size-3.5 text-amber-400" />
+          <span className="font-mono text-[10px] tracking-[.08em] text-amber-400 uppercase font-medium">Provisioning Token</span>
         </div>
-        <div className="bg-neutral-950 border border-neutral-700 rounded-[5px] p-3 mb-4 break-all">
-          <code className="font-mono text-[11px] text-emerald-400 select-all">{token}</code>
+        <p className="text-[12px] text-[#888] mb-4 leading-relaxed">
+          This token is shown <span className="text-foreground font-medium">once</span>. Copy it now and transfer it to the device for enrollment.
+        </p>
+        <div className="bg-[#080808] border border-[#1a1a1a] rounded-md p-3.5 mb-4 break-all">
+          <code className="font-mono text-[11px] text-emerald-400 select-all leading-relaxed">{token}</code>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
-            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 transition-colors"
           >
+            {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
             {copied ? "Copied" : "Copy Token"}
           </button>
           <button
             onClick={onClose}
-            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md border border-[#252525] text-[#888] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
           >
             Dismiss
           </button>
@@ -118,50 +150,55 @@ function CertBundleModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-neutral-900 border border-neutral-700 rounded-[5px] p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="font-mono text-[10px] tracking-wider text-amber-400 uppercase mb-1">Credential Bundle</div>
-        <div className="bg-red-900/20 border border-red-700/30 rounded-[5px] px-3 py-2 mb-4">
-          <div className="font-mono text-[10px] text-red-400">
-            The private key is shown once. Download the bundle now.
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="flex items-center gap-2 mb-1">
+          <FileLock2 className="size-3.5 text-amber-400" />
+          <span className="font-mono text-[10px] tracking-[.08em] text-amber-400 uppercase font-medium">Credential Bundle</span>
         </div>
-        <div className="font-mono text-[12px] text-foreground font-semibold mb-4">{entityName}</div>
+        <div className="flex items-center gap-2 bg-red-500/8 border border-red-500/15 rounded-md px-3 py-2.5 mb-4 mt-3">
+          <AlertTriangle className="size-3.5 text-red-400 shrink-0" />
+          <span className="text-[11px] text-red-400">The private key is shown once. Download the bundle now.</span>
+        </div>
+        <div className="font-mono text-[13px] text-foreground font-semibold mb-4">{entityName}</div>
 
         {pemBlocks.map(({ key, label, content }) => (
           <div key={key} className="mb-3">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1.5">
               <button
                 onClick={() => toggleExpand(key)}
-                className="font-mono text-[10px] tracking-wider text-neutral-400 uppercase hover:text-neutral-200 transition-colors"
+                className="flex items-center gap-1.5 font-mono text-[11px] text-[#888] hover:text-foreground transition-colors"
               >
-                {expanded.has(key) ? "\u25BC" : "\u25B6"} {label}
+                {expanded.has(key) ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+                {label}
               </button>
               <button
                 onClick={() => handleCopy(key, content)}
-                className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+                className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2 py-1 rounded border border-[#252525] text-[#666] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
               >
+                {copiedField === key ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                 {copiedField === key ? "Copied" : "Copy"}
               </button>
             </div>
             {expanded.has(key) && (
-              <pre className="bg-neutral-950 border border-neutral-700 rounded-[5px] p-3 overflow-x-auto max-h-32 overflow-y-auto">
+              <pre className="bg-[#080808] border border-[#1a1a1a] rounded-md p-3 overflow-x-auto max-h-32 overflow-y-auto">
                 <code className="font-mono text-[10px] text-emerald-400 whitespace-pre select-all">{content}</code>
               </pre>
             )}
           </div>
         ))}
 
-        <div className="flex items-center gap-2 mt-4">
+        <div className="flex items-center gap-2 mt-5">
           <button
             onClick={handleDownloadAll}
-            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 transition-colors"
           >
+            <Download className="size-3" />
             Download All
           </button>
           <button
             onClick={onClose}
-            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md border border-[#252525] text-[#888] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
           >
             Dismiss
           </button>
@@ -194,34 +231,37 @@ function RevokeModal({
   const [reason, setReason] = useState("");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-neutral-900 border border-neutral-700 rounded-[5px] p-6 max-w-md w-full mx-4">
-        <div className="font-mono text-[10px] tracking-wider text-red-400 uppercase mb-1">Revoke Certificate</div>
-        <div className="font-mono text-[11px] text-neutral-400 mb-4">
-          Revoke the certificate for <span className="text-foreground font-semibold">{baseName}</span>? The base will
-          return to pending status and require re-enrollment.
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldAlert className="size-3.5 text-red-400" />
+          <span className="font-mono text-[10px] tracking-[.08em] text-red-400 uppercase font-medium">Revoke Certificate</span>
         </div>
+        <p className="text-[12px] text-[#888] mb-4 mt-2 leading-relaxed">
+          Revoke the certificate for <span className="text-foreground font-medium">{baseName}</span>?
+          The base will return to pending status and require re-enrollment.
+        </p>
         <div className="mb-4">
-          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Reason (optional)</label>
+          <label className="font-mono text-[10px] text-[#555] block mb-1.5">Reason (optional)</label>
           <input
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. device compromised"
-            className={inputClass}
+            className="w-full bg-[#080808] border border-[#252525] rounded-md px-3 py-2 font-mono text-[11px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
           />
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => onConfirm(reason)}
             disabled={isPending}
-            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-red-700 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-red-500/15 text-red-400 border border-red-500/20 hover:bg-red-500/25 hover:border-red-500/35 disabled:opacity-50 transition-colors"
           >
-            {isPending ? "Revoking..." : "Revoke"}
+            {isPending ? "Revoking\u2026" : "Revoke Certificate"}
           </button>
           <button
             onClick={onCancel}
-            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md border border-[#252525] text-[#888] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
           >
             Cancel
           </button>
@@ -231,9 +271,9 @@ function RevokeModal({
   );
 }
 
-// ── Create Base Form ──────────────────────────────────────────────────────────
+// ── Create Base Modal ────────────────────────────────────────────────────────
 
-function CreateBaseForm({
+function CreateBaseModal({
   onClose,
   onTokenReceived,
 }: {
@@ -266,67 +306,125 @@ function CreateBaseForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-neutral-800 border border-neutral-700 rounded-[5px] p-4 mb-4">
-      <div className="font-mono text-[10px] tracking-wider text-neutral-400 uppercase mb-3">Create Base</div>
-      <div className="grid grid-cols-3 gap-3 mb-3">
-        <div>
-          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Name *</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Base Alpha"
-            required
-            className={inputClass}
-          />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <form onSubmit={handleSubmit} className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Plus className="size-3.5 text-foreground" />
+            <span className="font-mono text-[10px] tracking-[.08em] text-foreground uppercase font-medium">Create Base</span>
+          </div>
+          <button type="button" onClick={onClose} className="text-[#555] hover:text-foreground transition-colors">
+            <X className="size-4" />
+          </button>
         </div>
-        <div>
-          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Latitude</label>
-          <input
-            type="number"
-            step="any"
-            value={lat}
-            onChange={(e) => setLat(e.target.value)}
-            placeholder="47.3769"
-            className={inputClass}
-          />
+
+        <div className="space-y-3">
+          <div>
+            <label className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase block mb-1.5">Name *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Base Alpha"
+              required
+              className="w-full bg-[#080808] border border-[#252525] rounded-md px-3 py-2 font-mono text-[12px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase block mb-1.5">Latitude</label>
+              <input
+                type="number"
+                step="any"
+                value={lat}
+                onChange={(e) => setLat(e.target.value)}
+                placeholder="47.3769"
+                className="w-full bg-[#080808] border border-[#252525] rounded-md px-3 py-2 font-mono text-[12px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase block mb-1.5">Longitude</label>
+              <input
+                type="number"
+                step="any"
+                value={lng}
+                onChange={(e) => setLng(e.target.value)}
+                placeholder="8.5417"
+                className="w-full bg-[#080808] border border-[#252525] rounded-md px-3 py-2 font-mono text-[12px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
+              />
+            </div>
+          </div>
         </div>
-        <div>
-          <label className="font-mono text-[10px] text-neutral-500 block mb-1">Longitude</label>
-          <input
-            type="number"
-            step="any"
-            value={lng}
-            onChange={(e) => setLng(e.target.value)}
-            placeholder="8.5417"
-            className={inputClass}
-          />
+
+        {error && (
+          <div className="flex items-center gap-2 mt-3 text-[11px] text-red-400">
+            <AlertTriangle className="size-3 shrink-0" />
+            {error}
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-[#1a1a1a]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md border border-[#252525] text-[#888] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={createMutation.isPending}
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
+          >
+            {createMutation.isPending ? "Creating\u2026" : "Create Base"}
+          </button>
         </div>
-      </div>
-      {error && <div className="font-mono text-[10px] text-red-400 mb-3">{error}</div>}
-      <div className="flex items-center gap-2">
-        <button
-          type="submit"
-          disabled={createMutation.isPending}
-          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
-        >
-          {createMutation.isPending ? "Creating..." : "Create Base"}
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }
 
-// ── Base Table Row ────────────────────────────────────────────────────────────
+// ── Status Chip ──────────────────────────────────────────────────────────────
 
-interface BaseRowProps {
+function StatusChip({ status }: { status: string }) {
+  if (status === "decommissioned") {
+    return (
+      <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full bg-[#252525] text-[#555]">
+        <span className="size-1.5 rounded-full bg-[#555]" />
+        Decommissioned
+      </span>
+    );
+  }
+  if (status === "enrolled") {
+    return (
+      <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full bg-fleet-green-dim text-fleet-green border border-fleet-green/15">
+        <span className="size-1.5 rounded-full bg-fleet-green animate-status-pulse" />
+        Enrolled
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full bg-fleet-amber-dim text-fleet-amber border border-fleet-amber/15">
+      <span className="size-1.5 rounded-full bg-fleet-amber animate-status-pulse-fast" />
+      Pending
+    </span>
+  );
+}
+
+// ── Stat Cell ────────────────────────────────────────────────────────────────
+
+function StatCell({ label, value, color }: { label: string; value: number; color?: string }) {
+  return (
+    <div className="bg-[#0f0f0f] px-4 py-3 flex flex-col gap-1">
+      <span className="font-mono text-[9px] tracking-[.08em] text-[#555] uppercase">{label}</span>
+      <span className={`font-mono text-[20px] font-semibold tracking-tight leading-none ${color ?? "text-foreground"}`}>{value}</span>
+    </div>
+  );
+}
+
+// ── Base Card ────────────────────────────────────────────────────────────────
+
+interface BaseCardProps {
   base: {
     id: string;
     name: string;
@@ -343,7 +441,7 @@ interface BaseRowProps {
   onCertIssued: (cert: { certificate: string; private_key: string; ca_cert: string }) => void;
 }
 
-function BaseRow({ base, onTokenReceived, onCertIssued }: BaseRowProps) {
+function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
   const utils = trpc.useUtils();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(base.name);
@@ -354,6 +452,7 @@ function BaseRow({ base, onTokenReceived, onCertIssued }: BaseRowProps) {
   const isEnrolled = base.status === "enrolled";
   const isPending = base.status === "pending";
   const isDecommissioned = !!base.decommissioned_at;
+  const coords = formatCoords(base.lat, base.lng);
 
   const updateMutation = trpc.bases.update.useMutation({
     onSuccess: () => {
@@ -392,7 +491,6 @@ function BaseRow({ base, onTokenReceived, onCertIssued }: BaseRowProps) {
     onSuccess: (data) => {
       utils.bases.list.invalidate();
       onCertIssued(data);
-      // Clear private key from mutation cache immediately after capture
       setTimeout(() => issueCertMutation.reset(), 0);
     },
     onError: (e) => setError(e.message),
@@ -414,139 +512,182 @@ function BaseRow({ base, onTokenReceived, onCertIssued }: BaseRowProps) {
     setError(null);
   };
 
-  if (editing) {
-    return (
-      <tr className="border-b border-neutral-800 bg-neutral-800/50">
-        <td className="px-4 py-2">
-          <input
-            type="text"
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-            className="bg-neutral-900 border border-neutral-600 rounded px-2 py-1 font-mono text-[11px] text-foreground focus:outline-none focus:border-neutral-400 w-40"
-          />
-        </td>
-        <td className="px-3 py-2">
-          <StatusBadge status={base.status} />
-        </td>
-        <td className="px-3 py-2 font-mono text-[11px] text-neutral-400">
-          {base.lat != null && base.lng != null ? `${base.lat.toFixed(4)}, ${base.lng.toFixed(4)}` : "\u2014"}
-        </td>
-        <td className="px-3 py-2">
-          <EnrollmentInfo base={base} />
-        </td>
-        <td className="px-3 py-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={editMaintenance}
-              onChange={(e) => setEditMaintenance(e.target.checked)}
-              className="accent-amber-400"
-            />
-            <span className="font-mono text-[10px] text-neutral-400">Maintenance</span>
-          </label>
-        </td>
-        <td className="px-4 py-2">
-          <div className="flex items-center gap-2">
-            {error && <span className="font-mono text-[10px] text-red-400">{error}</span>}
-            <button
-              onClick={handleSave}
-              disabled={updateMutation.isPending}
-              className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded bg-emerald-700 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
-            >
-              {updateMutation.isPending ? "Saving..." : "Save"}
-            </button>
-            <button
-              onClick={handleCancel}
-              className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </td>
-      </tr>
-    );
-  }
-
   return (
     <>
-      <tr className={`border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors group${isDecommissioned ? " opacity-50" : ""}`}>
-        <td className="px-4 py-3 font-mono text-[12px] font-semibold text-foreground">{base.name}</td>
-        <td className="px-3 py-3">
-          <StatusBadge status={base.status} />
-        </td>
-        <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">
-          {base.lat != null && base.lng != null ? `${base.lat.toFixed(4)}, ${base.lng.toFixed(4)}` : "\u2014"}
-        </td>
-        <td className="px-3 py-3">
-          <EnrollmentInfo base={base} />
-        </td>
-        <td className="px-3 py-3">
-          {base.maintenance_mode ? (
-            <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-amber-900/30 text-amber-400 border-amber-400/20">
-              Maintenance
-            </span>
-          ) : (
-            <span className="font-mono text-[10px] text-neutral-500">{"\u2014"}</span>
-          )}
-        </td>
-        <td className="px-4 py-3">
-          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-            {!isDecommissioned && (
-              <>
-                <button
-                  onClick={() => setEditing(true)}
-                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 transition-colors"
-                >
-                  Edit
-                </button>
-                {isPending && (
-                  <>
-                    <button
-                      onClick={() => issueCertMutation.mutate({ id: base.id })}
-                      disabled={issueCertMutation.isPending}
-                      className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 hover:border-emerald-600 disabled:opacity-50 transition-colors"
-                    >
-                      {issueCertMutation.isPending ? "Issuing..." : "Issue Cert"}
-                    </button>
-                    <button
-                      onClick={() => regenerateMutation.mutate({ id: base.id })}
-                      disabled={regenerateMutation.isPending}
-                      className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-amber-700/50 text-amber-400 hover:text-amber-300 hover:border-amber-600 disabled:opacity-50 transition-colors"
-                    >
-                      {regenerateMutation.isPending ? "..." : "New Token"}
-                    </button>
-                  </>
-                )}
-                {isEnrolled && (
-                  <button
-                    onClick={() => setShowRevoke(true)}
-                    className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-red-700/50 text-red-400 hover:text-red-300 hover:border-red-600 transition-colors"
-                  >
-                    Revoke
-                  </button>
-                )}
-                <button
-                  onClick={() => decommissionMutation.mutate({ id: base.id })}
-                  disabled={decommissionMutation.isPending}
-                  className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-red-700/50 text-red-400 hover:text-red-300 hover:border-red-600 disabled:opacity-50 transition-colors"
-                >
-                  {decommissionMutation.isPending ? "..." : "Decommission"}
-                </button>
-              </>
+      <div className={`bg-[#0f0f0f] border border-[#1a1a1a] rounded-lg overflow-hidden transition-all hover:border-[#252525] ${isDecommissioned ? "opacity-50" : ""}`}>
+        {/* Card header */}
+        <div className="px-5 pt-4 pb-3 flex items-start justify-between">
+          <div className="min-w-0">
+            {editing ? (
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="bg-[#080808] border border-[#252525] rounded-md px-2.5 py-1 font-sans text-[14px] font-semibold text-foreground focus:outline-none focus:border-[#3a3a3a] w-48 -ml-1 transition-colors"
+              />
+            ) : (
+              <h3 className="text-[14px] font-semibold text-foreground tracking-[-0.01em]">{base.name}</h3>
             )}
-            {isDecommissioned && (
-              <button
-                onClick={() => recommissionMutation.mutate({ id: base.id })}
-                disabled={recommissionMutation.isPending}
-                className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 hover:border-emerald-600 disabled:opacity-50 transition-colors"
-              >
-                {recommissionMutation.isPending ? "..." : "Recommission"}
-              </button>
+            {coords && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <MapPin className="size-3 text-[#3a3a3a]" />
+                <span className="font-mono text-[11px] text-[#555]">{coords}</span>
+              </div>
             )}
           </div>
-          {error && <div className="font-mono text-[10px] text-red-400 mt-1">{error}</div>}
-        </td>
-      </tr>
+          <StatusChip status={base.status} />
+        </div>
+
+        {/* Info rows */}
+        <div className="px-5 pb-3 space-y-2">
+          {/* Enrollment info */}
+          <div className="flex items-center justify-between py-2 border-t border-[#1a1a1a]">
+            <div className="flex items-center gap-2">
+              <Shield className="size-3 text-[#3a3a3a]" />
+              <span className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase">Enrollment</span>
+            </div>
+            {isEnrolled && base.enrolled_at ? (
+              <div className="text-right">
+                <div className="font-mono text-[11px] text-[#888]">{formatDate(base.enrolled_at)}</div>
+                {base.cert_expires_at && (
+                  <div className="font-mono text-[10px] text-[#555]">expires {formatDate(base.cert_expires_at)}</div>
+                )}
+              </div>
+            ) : (
+              <span className="font-mono text-[10px] text-[#3a3a3a]">Awaiting enrollment</span>
+            )}
+          </div>
+
+          {/* Maintenance */}
+          <div className="flex items-center justify-between py-2 border-t border-[#1a1a1a]">
+            <div className="flex items-center gap-2">
+              <Wrench className="size-3 text-[#3a3a3a]" />
+              <span className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase">Maintenance</span>
+            </div>
+            {editing ? (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editMaintenance}
+                  onChange={(e) => setEditMaintenance(e.target.checked)}
+                  className="accent-amber-400"
+                />
+                <span className="font-mono text-[10px] text-[#888]">{editMaintenance ? "On" : "Off"}</span>
+              </label>
+            ) : base.maintenance_mode ? (
+              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full bg-fleet-amber-dim text-fleet-amber border border-fleet-amber/15">
+                Active
+              </span>
+            ) : (
+              <span className="font-mono text-[10px] text-[#3a3a3a]">{"\u2014"}</span>
+            )}
+          </div>
+
+          {/* Created */}
+          <div className="flex items-center justify-between py-2 border-t border-[#1a1a1a]">
+            <div className="flex items-center gap-2">
+              <Clock className="size-3 text-[#3a3a3a]" />
+              <span className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase">Created</span>
+            </div>
+            <span className="font-mono text-[11px] text-[#555]">{formatDate(base.created_at)}</span>
+          </div>
+        </div>
+
+        {/* Error display */}
+        {error && (
+          <div className="px-5 pb-2">
+            <div className="flex items-center gap-2 text-[11px] text-red-400">
+              <AlertTriangle className="size-3 shrink-0" />
+              {error}
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="px-4 py-3 border-t border-[#1a1a1a] bg-[#0a0a0a] flex flex-wrap items-center gap-1.5">
+          {editing ? (
+            <>
+              <button
+                onClick={handleSave}
+                disabled={updateMutation.isPending}
+                className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
+              >
+                <Check className="size-3" />
+                {updateMutation.isPending ? "Saving\u2026" : "Save"}
+              </button>
+              <button
+                onClick={handleCancel}
+                className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-[#252525] text-[#888] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
+              >
+                <X className="size-3" />
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              {!isDecommissioned && (
+                <>
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-[#252525] text-[#666] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
+                  >
+                    <Pencil className="size-3" />
+                    Edit
+                  </button>
+                  {isPending && (
+                    <>
+                      <button
+                        onClick={() => issueCertMutation.mutate({ id: base.id })}
+                        disabled={issueCertMutation.isPending}
+                        className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-fleet-green-dim text-fleet-green border border-fleet-green/15 hover:bg-fleet-green/15 hover:border-fleet-green/25 disabled:opacity-50 transition-colors"
+                      >
+                        <FileKey className="size-3" />
+                        {issueCertMutation.isPending ? "Issuing\u2026" : "Issue Cert"}
+                      </button>
+                      <button
+                        onClick={() => regenerateMutation.mutate({ id: base.id })}
+                        disabled={regenerateMutation.isPending}
+                        className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-fleet-amber-dim text-fleet-amber border border-fleet-amber/15 hover:bg-fleet-amber/15 hover:border-fleet-amber/25 disabled:opacity-50 transition-colors"
+                      >
+                        <RotateCcw className="size-3" />
+                        {regenerateMutation.isPending ? "\u2026" : "New Token"}
+                      </button>
+                    </>
+                  )}
+                  {isEnrolled && (
+                    <button
+                      onClick={() => setShowRevoke(true)}
+                      className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors"
+                    >
+                      <ShieldAlert className="size-3" />
+                      Revoke
+                    </button>
+                  )}
+                  <button
+                    onClick={() => decommissionMutation.mutate({ id: base.id })}
+                    disabled={decommissionMutation.isPending}
+                    className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-50 transition-colors ml-auto"
+                  >
+                    <PowerOff className="size-3" />
+                    {decommissionMutation.isPending ? "\u2026" : "Decommission"}
+                  </button>
+                </>
+              )}
+              {isDecommissioned && (
+                <button
+                  onClick={() => recommissionMutation.mutate({ id: base.id })}
+                  disabled={recommissionMutation.isPending}
+                  className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-fleet-green-dim text-fleet-green border border-fleet-green/15 hover:bg-fleet-green/15 hover:border-fleet-green/25 disabled:opacity-50 transition-colors"
+                >
+                  <Power className="size-3" />
+                  {recommissionMutation.isPending ? "\u2026" : "Recommission"}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
       {showRevoke && (
         <RevokeModal
           baseName={base.name}
@@ -559,137 +700,125 @@ function BaseRow({ base, onTokenReceived, onCertIssued }: BaseRowProps) {
   );
 }
 
-// ── Status Badge ─────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string }) {
-  if (status === "decommissioned") {
-    return (
-      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-neutral-900/30 text-neutral-500 border-neutral-500/20">
-        Decommissioned
-      </span>
-    );
-  }
-  if (status === "enrolled") {
-    return (
-      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-emerald-900/30 text-emerald-400 border-emerald-400/20">
-        Enrolled
-      </span>
-    );
-  }
-  return (
-    <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-amber-900/30 text-amber-400 border-amber-400/20">
-      Pending
-    </span>
-  );
-}
-
-// ── Enrollment Info ──────────────────────────────────────────────────────────
-
-function EnrollmentInfo({ base }: { base: { enrolled_at?: string; cert_expires_at?: string; status: string } }) {
-  if (base.status === "enrolled" && base.enrolled_at) {
-    return (
-      <div className="font-mono text-[11px]">
-        <div className="text-neutral-400">{formatDate(base.enrolled_at)}</div>
-        {base.cert_expires_at && (
-          <div className="text-[10px] text-neutral-500">
-            cert expires {formatDate(base.cert_expires_at)}
-          </div>
-        )}
-      </div>
-    );
-  }
-  return <span className="font-mono text-[10px] text-neutral-500">Awaiting enrollment</span>;
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BasesPage() {
   const [showDecommissioned, setShowDecommissioned] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: bases, isLoading } = trpc.bases.list.useQuery({ includeDecommissioned: showDecommissioned });
   const [showCreate, setShowCreate] = useState(false);
   const [pendingCredential, setPendingCredential] = useState<PendingCredential>(null);
 
+  const stats = useMemo(() => {
+    if (!bases) return { total: 0, enrolled: 0, pending: 0, maintenance: 0 };
+    return {
+      total: bases.length,
+      enrolled: bases.filter((b) => b.status === "enrolled").length,
+      pending: bases.filter((b) => b.status === "pending").length,
+      maintenance: bases.filter((b) => b.maintenance_mode).length,
+    };
+  }, [bases]);
+
+  const filteredBases = useMemo(() => {
+    if (!bases || !searchQuery.trim()) return bases;
+    const q = searchQuery.toLowerCase();
+    return bases.filter((b) => b.name.toLowerCase().includes(q));
+  }, [bases, searchQuery]);
+
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Page header */}
-      <div className="px-5 pt-4 pb-3 shrink-0 flex items-center justify-between border-b border-neutral-800">
-        <div>
-          <div className="text-[15px] font-semibold text-foreground tracking-tight">Bases</div>
-          <div className="text-[11px] text-neutral-500 font-mono mt-0.5">
-            {isLoading ? "Loading..." : `${bases?.length ?? 0} base${(bases?.length ?? 0) === 1 ? "" : "s"} registered`}
+      <div className="px-5 pt-4 pb-0 shrink-0">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-[15px] font-semibold text-foreground tracking-[-0.01em]">Base Stations</h1>
+            <p className="text-[11px] text-[#555] font-mono mt-0.5">
+              {isLoading ? "Loading\u2026" : `${bases?.length ?? 0} base${(bases?.length ?? 0) === 1 ? "" : "s"} registered`}
+            </p>
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input type="checkbox" checked={showDecommissioned} onChange={(e) => setShowDecommissioned(e.target.checked)} className="accent-neutral-400" />
-            <span className="font-mono text-[10px] text-neutral-500">Show decommissioned</span>
-          </label>
           <button
-            onClick={() => setShowCreate((v) => !v)}
-            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+            onClick={() => setShowCreate(true)}
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 transition-colors"
           >
-            {showCreate ? "Cancel" : "+ Create Base"}
+            <Plus className="size-3.5" />
+            Create Base
           </button>
         </div>
       </div>
 
-      {/* Content area */}
-      <div className="flex-1 p-5">
-        {showCreate && (
-          <CreateBaseForm
-            onClose={() => setShowCreate(false)}
-            onTokenReceived={(token) => setPendingCredential({ type: "token", token })}
-          />
-        )}
+      {/* Stats row */}
+      <div className="shrink-0 grid grid-cols-4 gap-px bg-[#1a1a1a] border-y border-[#1a1a1a]">
+        <StatCell label="Total" value={stats.total} />
+        <StatCell label="Enrolled" value={stats.enrolled} color="text-fleet-green" />
+        <StatCell label="Pending" value={stats.pending} color={stats.pending > 0 ? "text-fleet-amber" : "text-foreground"} />
+        <StatCell label="Maintenance" value={stats.maintenance} color={stats.maintenance > 0 ? "text-fleet-amber" : "text-foreground"} />
+      </div>
 
+      {/* Filter bar */}
+      <div className="shrink-0 px-5 py-3 border-b border-[#1a1a1a] flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-[#3a3a3a]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search bases\u2026"
+            className="w-full bg-[#080808] border border-[#1a1a1a] rounded-md pl-8 pr-3 py-1.5 font-mono text-[11px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#252525] transition-colors"
+          />
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer ml-auto">
+          <input
+            type="checkbox"
+            checked={showDecommissioned}
+            onChange={(e) => setShowDecommissioned(e.target.checked)}
+            className="accent-[#555] size-3"
+          />
+          <span className="font-mono text-[10px] text-[#555]">Show decommissioned</span>
+        </label>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-5">
         {isLoading ? (
-          <div className="flex items-center justify-center py-24 font-mono text-[12px] text-neutral-500">
-            Loading bases...
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <div className="size-5 border-2 border-[#252525] border-t-[#666] rounded-full animate-spin" />
+            <span className="font-mono text-[11px] text-[#555]">Loading bases\u2026</span>
           </div>
-        ) : !bases || bases.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-2">
-            <div className="font-mono text-[12px] text-neutral-500">No bases yet</div>
-            <div className="font-mono text-[10px] text-neutral-600">Create a base to get started</div>
+        ) : !filteredBases || filteredBases.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <div className="size-10 rounded-full bg-[#0f0f0f] border border-[#1a1a1a] flex items-center justify-center">
+              <Shield className="size-4 text-[#3a3a3a]" />
+            </div>
+            <div className="text-center">
+              <div className="font-mono text-[12px] text-[#555]">
+                {searchQuery ? "No bases match your search" : "No bases yet"}
+              </div>
+              <div className="font-mono text-[10px] text-[#3a3a3a] mt-1">
+                {searchQuery ? "Try a different search term" : "Create a base to get started"}
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] overflow-hidden">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-neutral-800 bg-neutral-950">
-                  <th className="px-4 py-2.5 text-left">
-                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Name</span>
-                  </th>
-                  <th className="px-3 py-2.5 text-left">
-                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Status</span>
-                  </th>
-                  <th className="px-3 py-2.5 text-left">
-                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Lat / Lng</span>
-                  </th>
-                  <th className="px-3 py-2.5 text-left">
-                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Enrollment</span>
-                  </th>
-                  <th className="px-3 py-2.5 text-left">
-                    <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Maintenance</span>
-                  </th>
-                  <th className="px-4 py-2.5" />
-                </tr>
-              </thead>
-              <tbody>
-                {bases.map((base) => (
-                  <BaseRow
-                    key={base.id}
-                    base={base}
-                    onTokenReceived={(token) => setPendingCredential({ type: "token", token })}
-                    onCertIssued={(cert) => setPendingCredential({ type: "cert", ...cert, entityName: base.name })}
-                  />
-                ))}
-              </tbody>
-            </table>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            {filteredBases.map((base) => (
+              <BaseCard
+                key={base.id}
+                base={base}
+                onTokenReceived={(token) => setPendingCredential({ type: "token", token })}
+                onCertIssued={(cert) => setPendingCredential({ type: "cert", ...cert, entityName: base.name })}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* Credential modals */}
+      {/* Modals */}
+      {showCreate && (
+        <CreateBaseModal
+          onClose={() => setShowCreate(false)}
+          onTokenReceived={(token) => setPendingCredential({ type: "token", token })}
+        />
+      )}
       {pendingCredential?.type === "token" && (
         <TokenModal token={pendingCredential.token} onClose={() => setPendingCredential(null)} />
       )}
