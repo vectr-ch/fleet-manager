@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   Search,
 } from "lucide-react";
+import { ActionButton, ConfirmModal, FieldInput, Toggle } from "@/components/dashboard";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -271,52 +272,7 @@ function RevokeModal({
   );
 }
 
-// ── Issue Cert Confirmation Modal ─────────────────────────────────────────────
-
-function IssueCertModal({
-  baseName,
-  onConfirm,
-  onCancel,
-  isPending,
-}: {
-  baseName: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isPending: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
-        <div className="flex items-center gap-2 mb-1">
-          <ShieldCheck className="size-3.5 text-fleet-green" />
-          <span className="font-mono text-[10px] tracking-[.08em] text-fleet-green uppercase font-medium">Issue Certificate</span>
-        </div>
-        <p className="text-[12px] text-[#888] mb-2 mt-2 leading-relaxed">
-          Issue a certificate for <span className="text-foreground font-medium">{baseName}</span>?
-        </p>
-        <p className="text-[11px] text-[#555] mb-4 leading-relaxed">
-          This will mark the base as enrolled and generate a TLS certificate bundle. Only proceed if the base has completed provisioning and is ready to authenticate.
-        </p>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onConfirm}
-            disabled={isPending}
-            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
-          >
-            <FileKey className="size-3" />
-            {isPending ? "Issuing..." : "Issue Certificate"}
-          </button>
-          <button
-            onClick={onCancel}
-            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md border border-[#252525] text-[#888] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// ── (Confirmation modals use ConfirmModal from @/components/dashboard) ────────
 
 // ── Create Base Modal ────────────────────────────────────────────────────────
 
@@ -498,6 +454,7 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [showRevoke, setShowRevoke] = useState(false);
   const [showIssueCert, setShowIssueCert] = useState(false);
+  const [showDecommission, setShowDecommission] = useState(false);
 
   const isEnrolled = base.status === "enrolled";
   const isPending = base.status === "pending";
@@ -522,8 +479,8 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
   });
 
   const decommissionMutation = trpc.bases.decommission.useMutation({
-    onSuccess: () => { utils.bases.list.invalidate(); },
-    onError: (e) => setError(e.message),
+    onSuccess: () => { utils.bases.list.invalidate(); setShowDecommission(false); },
+    onError: (e) => { setShowDecommission(false); setError(e.message); },
   });
   const recommissionMutation = trpc.bases.recommission.useMutation({
     onSuccess: () => { utils.bases.list.invalidate(); },
@@ -574,34 +531,20 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
         <div className="px-5 pt-4 pb-3 flex items-start justify-between">
           <div className="min-w-0">
             {editing ? (
-              <input
-                type="text"
+              <FieldInput
                 value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="bg-[#080808] border border-[#252525] rounded-md px-2.5 py-1 font-sans text-[14px] font-semibold text-foreground focus:outline-none focus:border-[#3a3a3a] w-48 -ml-1 transition-colors"
+                onChange={(e) => setEditName(e.currentTarget.value)}
+                className="w-48 -ml-1 !font-sans !text-[14px] !font-semibold"
+                size="sm"
               />
             ) : (
               <h3 className="text-[14px] font-semibold text-foreground tracking-[-0.01em]">{base.name}</h3>
             )}
             {editing ? (
               <div className="flex items-center gap-1.5 mt-1.5">
-                <MapPin className="size-3 text-[#3a3a3a] shrink-0" />
-                <input
-                  type="number"
-                  step="any"
-                  value={editLat}
-                  onChange={(e) => setEditLat(e.target.value)}
-                  placeholder="Lat"
-                  className="bg-[#080808] border border-[#252525] rounded-md px-2 py-1 font-mono text-[11px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] w-24 transition-colors"
-                />
-                <input
-                  type="number"
-                  step="any"
-                  value={editLng}
-                  onChange={(e) => setEditLng(e.target.value)}
-                  placeholder="Lng"
-                  className="bg-[#080808] border border-[#252525] rounded-md px-2 py-1 font-mono text-[11px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] w-24 transition-colors"
-                />
+                <MapPin className="size-3 text-[#3a3a3a] shrink-0 mt-0.5" />
+                <FieldInput type="number" step="any" value={editLat} onChange={(e) => setEditLat(e.currentTarget.value)} placeholder="Lat" size="sm" className="w-24" />
+                <FieldInput type="number" step="any" value={editLng} onChange={(e) => setEditLng(e.currentTarget.value)} placeholder="Lng" size="sm" className="w-24" />
               </div>
             ) : coords ? (
               <div className="flex items-center gap-1.5 mt-1">
@@ -640,15 +583,7 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
               <span className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase">Maintenance</span>
             </div>
             {editing ? (
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editMaintenance}
-                  onChange={(e) => setEditMaintenance(e.target.checked)}
-                  className="accent-amber-400"
-                />
-                <span className="font-mono text-[10px] text-[#888]">{editMaintenance ? "On" : "Off"}</span>
-              </label>
+              <Toggle checked={editMaintenance} onChange={setEditMaintenance} label={editMaintenance ? "On" : "Off"} />
             ) : base.maintenance_mode ? (
               <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full bg-fleet-amber-dim text-fleet-amber border border-fleet-amber/15">
                 Active
@@ -682,80 +617,34 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
         <div className="px-4 py-3 border-t border-[#1a1a1a] bg-[#0a0a0a] flex flex-wrap items-center gap-1.5">
           {editing ? (
             <>
-              <button
-                onClick={handleSave}
-                disabled={updateMutation.isPending}
-                className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
-              >
-                <Check className="size-3" />
+              <ActionButton variant="primary" icon={<Check className="size-3" />} onClick={handleSave} disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? "Saving..." : "Save"}
-              </button>
-              <button
-                onClick={handleCancel}
-                className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-[#252525] text-[#888] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
-              >
-                <X className="size-3" />
-                Cancel
-              </button>
+              </ActionButton>
+              <ActionButton icon={<X className="size-3" />} onClick={handleCancel}>Cancel</ActionButton>
             </>
           ) : (
             <>
               {!isDecommissioned && (
                 <>
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-[#252525] text-[#666] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
-                  >
-                    <Pencil className="size-3" />
-                    Edit
-                  </button>
+                  <ActionButton icon={<Pencil className="size-3" />} onClick={() => setEditing(true)}>Edit</ActionButton>
                   {isPending && (
                     <>
-                      <button
-                        onClick={() => regenerateMutation.mutate({ id: base.id })}
-                        disabled={regenerateMutation.isPending}
-                        className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-fleet-amber-dim text-fleet-amber border border-fleet-amber/15 hover:bg-fleet-amber/15 hover:border-fleet-amber/25 disabled:opacity-50 transition-colors"
-                      >
-                        <RotateCcw className="size-3" />
+                      <ActionButton variant="amber" icon={<RotateCcw className="size-3" />} onClick={() => regenerateMutation.mutate({ id: base.id })} disabled={regenerateMutation.isPending}>
                         {regenerateMutation.isPending ? "..." : "New Token"}
-                      </button>
-                      <button
-                        onClick={() => setShowIssueCert(true)}
-                        className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-[#252525] text-[#666] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
-                      >
-                        <FileKey className="size-3" />
-                        Issue Cert
-                      </button>
+                      </ActionButton>
+                      <ActionButton icon={<FileKey className="size-3" />} onClick={() => setShowIssueCert(true)}>Issue Cert</ActionButton>
                     </>
                   )}
                   {isEnrolled && (
-                    <button
-                      onClick={() => setShowRevoke(true)}
-                      className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors"
-                    >
-                      <ShieldAlert className="size-3" />
-                      Revoke
-                    </button>
+                    <ActionButton variant="danger" icon={<ShieldAlert className="size-3" />} onClick={() => setShowRevoke(true)}>Revoke</ActionButton>
                   )}
-                  <button
-                    onClick={() => decommissionMutation.mutate({ id: base.id })}
-                    disabled={decommissionMutation.isPending}
-                    className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-50 transition-colors ml-auto"
-                  >
-                    <PowerOff className="size-3" />
-                    {decommissionMutation.isPending ? "..." : "Decommission"}
-                  </button>
+                  <ActionButton variant="danger" icon={<PowerOff className="size-3" />} onClick={() => setShowDecommission(true)} className="ml-auto">Decommission</ActionButton>
                 </>
               )}
               {isDecommissioned && (
-                <button
-                  onClick={() => recommissionMutation.mutate({ id: base.id })}
-                  disabled={recommissionMutation.isPending}
-                  className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-fleet-green-dim text-fleet-green border border-fleet-green/15 hover:bg-fleet-green/15 hover:border-fleet-green/25 disabled:opacity-50 transition-colors"
-                >
-                  <Power className="size-3" />
+                <ActionButton variant="green" icon={<Power className="size-3" />} onClick={() => recommissionMutation.mutate({ id: base.id })} disabled={recommissionMutation.isPending}>
                   {recommissionMutation.isPending ? "..." : "Recommission"}
-                </button>
+                </ActionButton>
               )}
             </>
           )}
@@ -771,12 +660,44 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
         />
       )}
       {showIssueCert && (
-        <IssueCertModal
-          baseName={base.name}
+        <ConfirmModal
+          icon={<ShieldCheck className="size-3.5 text-fleet-green" />}
+          title="Issue Certificate"
+          confirmVariant="green"
+          confirmLabel="Issue Certificate"
+          confirmingLabel="Issuing..."
+          confirmIcon={<FileKey className="size-3" />}
           onConfirm={() => issueCertMutation.mutate({ id: base.id })}
           onCancel={() => setShowIssueCert(false)}
           isPending={issueCertMutation.isPending}
-        />
+        >
+          <p className="text-[12px] text-[#888] mb-2 leading-relaxed">
+            Issue a certificate for <span className="text-foreground font-medium">{base.name}</span>?
+          </p>
+          <p className="text-[11px] text-[#555] leading-relaxed">
+            This will mark the base as enrolled and generate a TLS certificate bundle. Only proceed if the base has completed provisioning and is ready to authenticate.
+          </p>
+        </ConfirmModal>
+      )}
+      {showDecommission && (
+        <ConfirmModal
+          icon={<PowerOff className="size-3.5 text-red-400" />}
+          title="Decommission Base"
+          confirmVariant="danger"
+          confirmLabel="Decommission"
+          confirmingLabel="Decommissioning..."
+          confirmIcon={<PowerOff className="size-3" />}
+          onConfirm={() => decommissionMutation.mutate({ id: base.id })}
+          onCancel={() => setShowDecommission(false)}
+          isPending={decommissionMutation.isPending}
+        >
+          <p className="text-[12px] text-[#888] mb-2 leading-relaxed">
+            Decommission <span className="text-foreground font-medium">{base.name}</span>?
+          </p>
+          <p className="text-[11px] text-[#555] leading-relaxed">
+            This will take the base offline and revoke its certificate if one is active. The base can be recommissioned later, but will require re-enrollment.
+          </p>
+        </ConfirmModal>
       )}
     </>
   );
