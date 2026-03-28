@@ -257,7 +257,54 @@ function RevokeModal({
             disabled={isPending}
             className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-red-500/15 text-red-400 border border-red-500/20 hover:bg-red-500/25 hover:border-red-500/35 disabled:opacity-50 transition-colors"
           >
-            {isPending ? "Revoking\u2026" : "Revoke Certificate"}
+            {isPending ? "Revoking..." : "Revoke Certificate"}
+          </button>
+          <button
+            onClick={onCancel}
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md border border-[#252525] text-[#888] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Issue Cert Confirmation Modal ─────────────────────────────────────────────
+
+function IssueCertModal({
+  baseName,
+  onConfirm,
+  onCancel,
+  isPending,
+}: {
+  baseName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldCheck className="size-3.5 text-fleet-green" />
+          <span className="font-mono text-[10px] tracking-[.08em] text-fleet-green uppercase font-medium">Issue Certificate</span>
+        </div>
+        <p className="text-[12px] text-[#888] mb-2 mt-2 leading-relaxed">
+          Issue a certificate for <span className="text-foreground font-medium">{baseName}</span>?
+        </p>
+        <p className="text-[11px] text-[#555] mb-4 leading-relaxed">
+          This will mark the base as enrolled and generate a TLS certificate bundle. Only proceed if the base has completed provisioning and is ready to authenticate.
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onConfirm}
+            disabled={isPending}
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
+          >
+            <FileKey className="size-3" />
+            {isPending ? "Issuing..." : "Issue Certificate"}
           </button>
           <button
             onClick={onCancel}
@@ -376,7 +423,7 @@ function CreateBaseModal({
             disabled={createMutation.isPending}
             className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
           >
-            {createMutation.isPending ? "Creating\u2026" : "Create Base"}
+            {createMutation.isPending ? "Creating..." : "Create Base"}
           </button>
         </div>
       </form>
@@ -445,9 +492,12 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
   const utils = trpc.useUtils();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(base.name);
+  const [editLat, setEditLat] = useState(base.lat?.toString() ?? "");
+  const [editLng, setEditLng] = useState(base.lng?.toString() ?? "");
   const [editMaintenance, setEditMaintenance] = useState(base.maintenance_mode);
   const [error, setError] = useState<string | null>(null);
   const [showRevoke, setShowRevoke] = useState(false);
+  const [showIssueCert, setShowIssueCert] = useState(false);
 
   const isEnrolled = base.status === "enrolled";
   const isPending = base.status === "pending";
@@ -490,10 +540,11 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
   const issueCertMutation = trpc.bases.issueCert.useMutation({
     onSuccess: (data) => {
       utils.bases.list.invalidate();
+      setShowIssueCert(false);
       onCertIssued(data);
       setTimeout(() => issueCertMutation.reset(), 0);
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => { setShowIssueCert(false); setError(e.message); },
   });
 
   const handleSave = () => {
@@ -501,12 +552,16 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
     updateMutation.mutate({
       id: base.id,
       name: editName.trim() || undefined,
+      lat: editLat !== "" ? parseFloat(editLat) : undefined,
+      lng: editLng !== "" ? parseFloat(editLng) : undefined,
       maintenance_mode: editMaintenance,
     });
   };
 
   const handleCancel = () => {
     setEditName(base.name);
+    setEditLat(base.lat?.toString() ?? "");
+    setEditLng(base.lng?.toString() ?? "");
     setEditMaintenance(base.maintenance_mode);
     setEditing(false);
     setError(null);
@@ -528,12 +583,32 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
             ) : (
               <h3 className="text-[14px] font-semibold text-foreground tracking-[-0.01em]">{base.name}</h3>
             )}
-            {coords && (
+            {editing ? (
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <MapPin className="size-3 text-[#3a3a3a] shrink-0" />
+                <input
+                  type="number"
+                  step="any"
+                  value={editLat}
+                  onChange={(e) => setEditLat(e.target.value)}
+                  placeholder="Lat"
+                  className="bg-[#080808] border border-[#252525] rounded-md px-2 py-1 font-mono text-[11px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] w-24 transition-colors"
+                />
+                <input
+                  type="number"
+                  step="any"
+                  value={editLng}
+                  onChange={(e) => setEditLng(e.target.value)}
+                  placeholder="Lng"
+                  className="bg-[#080808] border border-[#252525] rounded-md px-2 py-1 font-mono text-[11px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] w-24 transition-colors"
+                />
+              </div>
+            ) : coords ? (
               <div className="flex items-center gap-1.5 mt-1">
                 <MapPin className="size-3 text-[#3a3a3a]" />
                 <span className="font-mono text-[11px] text-[#555]">{coords}</span>
               </div>
-            )}
+            ) : null}
           </div>
           <StatusChip status={base.status} />
         </div>
@@ -579,7 +654,7 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
                 Active
               </span>
             ) : (
-              <span className="font-mono text-[10px] text-[#3a3a3a]">{"\u2014"}</span>
+              <span className="font-mono text-[10px] text-[#3a3a3a]">{"—"}</span>
             )}
           </div>
 
@@ -613,7 +688,7 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
                 className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
               >
                 <Check className="size-3" />
-                {updateMutation.isPending ? "Saving\u2026" : "Save"}
+                {updateMutation.isPending ? "Saving..." : "Save"}
               </button>
               <button
                 onClick={handleCancel}
@@ -637,20 +712,19 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
                   {isPending && (
                     <>
                       <button
-                        onClick={() => issueCertMutation.mutate({ id: base.id })}
-                        disabled={issueCertMutation.isPending}
-                        className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-fleet-green-dim text-fleet-green border border-fleet-green/15 hover:bg-fleet-green/15 hover:border-fleet-green/25 disabled:opacity-50 transition-colors"
-                      >
-                        <FileKey className="size-3" />
-                        {issueCertMutation.isPending ? "Issuing\u2026" : "Issue Cert"}
-                      </button>
-                      <button
                         onClick={() => regenerateMutation.mutate({ id: base.id })}
                         disabled={regenerateMutation.isPending}
                         className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-fleet-amber-dim text-fleet-amber border border-fleet-amber/15 hover:bg-fleet-amber/15 hover:border-fleet-amber/25 disabled:opacity-50 transition-colors"
                       >
                         <RotateCcw className="size-3" />
-                        {regenerateMutation.isPending ? "\u2026" : "New Token"}
+                        {regenerateMutation.isPending ? "..." : "New Token"}
+                      </button>
+                      <button
+                        onClick={() => setShowIssueCert(true)}
+                        className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-[#252525] text-[#666] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
+                      >
+                        <FileKey className="size-3" />
+                        Issue Cert
                       </button>
                     </>
                   )}
@@ -669,7 +743,7 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
                     className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md border border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-50 transition-colors ml-auto"
                   >
                     <PowerOff className="size-3" />
-                    {decommissionMutation.isPending ? "\u2026" : "Decommission"}
+                    {decommissionMutation.isPending ? "..." : "Decommission"}
                   </button>
                 </>
               )}
@@ -680,7 +754,7 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
                   className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-fleet-green-dim text-fleet-green border border-fleet-green/15 hover:bg-fleet-green/15 hover:border-fleet-green/25 disabled:opacity-50 transition-colors"
                 >
                   <Power className="size-3" />
-                  {recommissionMutation.isPending ? "\u2026" : "Recommission"}
+                  {recommissionMutation.isPending ? "..." : "Recommission"}
                 </button>
               )}
             </>
@@ -694,6 +768,14 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
           onConfirm={(reason) => revokeMutation.mutate({ id: base.id, reason: reason || undefined })}
           onCancel={() => setShowRevoke(false)}
           isPending={revokeMutation.isPending}
+        />
+      )}
+      {showIssueCert && (
+        <IssueCertModal
+          baseName={base.name}
+          onConfirm={() => issueCertMutation.mutate({ id: base.id })}
+          onCancel={() => setShowIssueCert(false)}
+          isPending={issueCertMutation.isPending}
         />
       )}
     </>
@@ -733,7 +815,7 @@ export default function BasesPage() {
           <div>
             <h1 className="text-[15px] font-semibold text-foreground tracking-[-0.01em]">Base Stations</h1>
             <p className="text-[11px] text-[#555] font-mono mt-0.5">
-              {isLoading ? "Loading\u2026" : `${bases?.length ?? 0} base${(bases?.length ?? 0) === 1 ? "" : "s"} registered`}
+              {isLoading ? "Loading..." : `${bases?.length ?? 0} base${(bases?.length ?? 0) === 1 ? "" : "s"} registered`}
             </p>
           </div>
           <button
@@ -762,7 +844,7 @@ export default function BasesPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search bases\u2026"
+            placeholder="Search bases..."
             className="w-full bg-[#080808] border border-[#1a1a1a] rounded-md pl-8 pr-3 py-1.5 font-mono text-[11px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#252525] transition-colors"
           />
         </div>
@@ -782,7 +864,7 @@ export default function BasesPage() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <div className="size-5 border-2 border-[#252525] border-t-[#666] rounded-full animate-spin" />
-            <span className="font-mono text-[11px] text-[#555]">Loading bases\u2026</span>
+            <span className="font-mono text-[11px] text-[#555]">Loading bases...</span>
           </div>
         ) : !filteredBases || filteredBases.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">

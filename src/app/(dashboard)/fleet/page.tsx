@@ -250,7 +250,7 @@ function RevokeModal({
             disabled={isPending}
             className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-red-500/15 text-red-400 border border-red-500/20 hover:bg-red-500/25 hover:border-red-500/35 disabled:opacity-50 transition-colors"
           >
-            {isPending ? "Revoking\u2026" : "Revoke Certificate"}
+            {isPending ? "Revoking..." : "Revoke Certificate"}
           </button>
           <button
             onClick={onCancel}
@@ -361,7 +361,7 @@ function CreateNodeModal({
             <div>
               <label className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase block mb-1.5">Base</label>
               <select value={baseId} onChange={(e) => setBaseId(e.target.value)} className={inputClass}>
-                <option value="">{"\u2014"} None {"\u2014"}</option>
+                <option value="">{"—"} None {"—"}</option>
                 {bases?.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
@@ -390,7 +390,7 @@ function CreateNodeModal({
             disabled={createMutation.isPending}
             className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
           >
-            {createMutation.isPending ? "Creating\u2026" : "Register Node"}
+            {createMutation.isPending ? "Creating..." : "Register Node"}
           </button>
         </div>
       </form>
@@ -502,16 +502,16 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
           <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={`${editInputClass} w-32`} />
         </td>
         <td className="px-3 py-2.5">
-          <input type="text" value={editSerial} onChange={(e) => setEditSerial(e.target.value)} placeholder="\u2014" className={`${editInputClass} w-28`} />
+          <input type="text" value={editSerial} onChange={(e) => setEditSerial(e.target.value)} placeholder="—" className={`${editInputClass} w-28`} />
         </td>
         <td className="px-3 py-2.5">
           <select value={editBaseId} onChange={(e) => setEditBaseId(e.target.value)} className={`${editInputClass} w-32`}>
-            <option value="">{"\u2014"}</option>
+            <option value="">{"—"}</option>
             {bases.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}
           </select>
         </td>
         <td className="px-3 py-2.5"><StatusLabel enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} /></td>
-        <td className="px-3 py-2.5 font-mono text-[11px] text-[#555]">{node.firmware_version ?? "\u2014"}</td>
+        <td className="px-3 py-2.5 font-mono text-[11px] text-[#555]">{node.firmware_version ?? "—"}</td>
         <td className="px-4 py-2.5">
           <div className="flex items-center gap-1.5">
             {error && <span className="text-[10px] text-red-400 mr-1">{error}</span>}
@@ -521,7 +521,7 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
               className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2 py-1 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
             >
               <Check className="size-3" />
-              {updateMutation.isPending ? "Saving\u2026" : "Save"}
+              {updateMutation.isPending ? "Saving..." : "Save"}
             </button>
             <button
               onClick={handleCancel}
@@ -549,7 +549,7 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
             )}
           </div>
         </td>
-        <td className="px-3 py-3 font-mono text-[11px] text-[#555]">{node.serial ?? "\u2014"}</td>
+        <td className="px-3 py-3 font-mono text-[11px] text-[#555]">{node.serial ?? "—"}</td>
         <td className="px-3 py-3">
           {baseName ? (
             <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#888]">
@@ -557,13 +557,13 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
               {baseName}
             </span>
           ) : (
-            <span className="font-mono text-[11px] text-[#3a3a3a]">{"\u2014"}</span>
+            <span className="font-mono text-[11px] text-[#3a3a3a]">{"—"}</span>
           )}
         </td>
         <td className="px-3 py-3">
           <StatusLabel enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} />
         </td>
-        <td className="px-3 py-3 font-mono text-[11px] text-[#555]">{node.firmware_version ?? "\u2014"}</td>
+        <td className="px-3 py-3 font-mono text-[11px] text-[#555]">{node.firmware_version ?? "—"}</td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             {!isDecommissioned && (
@@ -685,7 +685,7 @@ export default function FleetPage() {
           <div>
             <h1 className="text-[15px] font-semibold text-foreground tracking-[-0.01em]">Fleet</h1>
             <p className="text-[11px] text-[#555] font-mono mt-0.5">
-              {isLoading ? "Loading\u2026" : `${nodes?.length ?? 0} node${(nodes?.length ?? 0) === 1 ? "" : "s"} registered`}
+              {isLoading ? "Loading..." : `${nodes?.length ?? 0} node${(nodes?.length ?? 0) === 1 ? "" : "s"} registered`}
             </p>
           </div>
           <button
@@ -714,7 +714,7 @@ export default function FleetPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name or serial\u2026"
+            placeholder="Search by name or serial..."
             className="w-full bg-[#080808] border border-[#1a1a1a] rounded-md pl-8 pr-3 py-1.5 font-mono text-[11px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#252525] transition-colors"
           />
         </div>
@@ -746,7 +746,7 @@ export default function FleetPage() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <div className="size-5 border-2 border-[#252525] border-t-[#666] rounded-full animate-spin" />
-            <span className="font-mono text-[11px] text-[#555]">Loading nodes\u2026</span>
+            <span className="font-mono text-[11px] text-[#555]">Loading nodes...</span>
           </div>
         ) : !filteredNodes || filteredNodes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
