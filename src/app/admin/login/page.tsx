@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { trpc } from "@/lib/trpc/client";
 
+import { friendlyError } from "@/lib/error-messages";
+
 type Step = "credentials" | "mfa-setup" | "mfa-verify";
 
 interface MfaSetupData {
@@ -51,10 +53,8 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const result = await loginMutation.mutateAsync({ email, password });
-      // MFA is always required for sysadmins
       if (result.mfa_required) {
         if (result.setup_required) {
-          // First-time sysadmin: trigger MFA setup
           const setupResult = await mfaSetupMutation.mutateAsync();
           setMfaSetupData({
             qrCodeUrl: setupResult.qr_uri,
@@ -64,9 +64,12 @@ export default function AdminLoginPage() {
         } else {
           setStep("mfa-verify");
         }
+      } else {
+        // MFA not required (local dev) — tokens issued directly
+        router.push("/admin/organisations");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Invalid credentials");
+      setError(friendlyError(err));
     } finally {
       setLoading(false);
     }
@@ -86,7 +89,7 @@ export default function AdminLoginPage() {
         router.push("/admin/organisations");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Invalid verification code");
+      setError(friendlyError(err));
     } finally {
       setLoading(false);
     }
@@ -113,7 +116,7 @@ export default function AdminLoginPage() {
       await mfaVerifyMutation.mutateAsync({ code: totpCode });
       router.push("/admin/organisations");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Invalid code");
+      setError(friendlyError(err));
     } finally {
       setLoading(false);
     }

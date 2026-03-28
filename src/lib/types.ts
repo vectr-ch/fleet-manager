@@ -222,6 +222,7 @@ export const sysadminOrgSchema = z.object({
   max_bases: z.number(),
   max_users: z.number(),
   max_concurrent_missions: z.number(),
+  mfa_required: z.boolean(),
   deleted_at: z.string().nullable(),
 });
 export type SysadminOrg = z.infer<typeof sysadminOrgSchema>;

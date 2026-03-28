@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { trpc } from "@/lib/trpc/client";
+import { friendlyError } from "@/lib/error-messages";
 import type { OrgFromLogin } from "@/lib/types";
 
 interface MfaSetupProps {
@@ -26,7 +27,7 @@ export function MfaSetup({ onSuccess }: MfaSetupProps) {
       setStep("backup");
       setPendingOrgs(data.orgs);
     },
-    onError: (err) => setError(err.message === "invalid_code" ? "Invalid code. Please try again." : err.message),
+    onError: (err) => setError(friendlyError(err)),
   });
 
   useEffect(() => {

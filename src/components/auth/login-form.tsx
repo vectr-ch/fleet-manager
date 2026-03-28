@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
+import { friendlyError } from "@/lib/error-messages";
 import type { OrgFromLogin } from "@/lib/types";
 
 interface LoginFormProps {
@@ -28,7 +29,7 @@ export function LoginForm({ onMfaRequired, onSuccess }: LoginFormProps) {
       if (retryAfter) {
         setError(`Too many attempts. Try again in ${retryAfter} seconds.`);
       } else {
-        setError(err.message === "invalid_credentials" ? "Invalid email or password" : err.message);
+        setError(friendlyError(err));
       }
     },
   });

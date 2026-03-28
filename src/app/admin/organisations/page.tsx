@@ -4,11 +4,11 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import type { SysadminOrg, OrgMember } from "@/lib/types";
 
-function buildAdminInviteLink(token: string) {
+function buildOrgInviteLink(token: string) {
   if (typeof window === "undefined") {
-    return `/admin/accept-invite?token=${encodeURIComponent(token)}`;
+    return `/invites/accept?token=${encodeURIComponent(token)}`;
   }
-  return `${window.location.origin}/admin/accept-invite?token=${encodeURIComponent(token)}`;
+  return `${window.location.origin}/invites/accept?token=${encodeURIComponent(token)}`;
 }
 
 // ─── Create Form ─────────────────────────────────────────────
@@ -20,6 +20,7 @@ function CreateOrgForm({ onClose }: { onClose: () => void }) {
   const [slug, setSlug] = useState("");
   const [plan, setPlan] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
+  const [mfaRequired, setMfaRequired] = useState(true);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +29,7 @@ function CreateOrgForm({ onClose }: { onClose: () => void }) {
     onSuccess: (data) => {
       utils.sysadminOrgs.list.invalidate();
       if (data.invite_token) {
-        setInviteLink(buildAdminInviteLink(data.invite_token));
+        setInviteLink(buildOrgInviteLink(data.invite_token));
       } else {
         onClose();
       }
@@ -45,6 +46,7 @@ function CreateOrgForm({ onClose }: { onClose: () => void }) {
       name,
       slug,
       plan: plan || undefined,
+      mfa_required: mfaRequired,
       admin: adminEmail ? { email: adminEmail } : undefined,
     });
   };
@@ -132,6 +134,31 @@ function CreateOrgForm({ onClose }: { onClose: () => void }) {
             className="w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder-neutral-600 focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-500"
             placeholder="admin@example.com"
           />
+        </div>
+        <div className="col-span-2 flex items-center justify-between rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2.5">
+          <div>
+            <p className="text-sm text-neutral-300">Require MFA</p>
+            <p className="text-xs text-neutral-500">Members must set up two-factor authentication</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={mfaRequired}
+            onClick={() => setMfaRequired(!mfaRequired)}
+            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors ${
+              mfaRequired
+                ? "bg-white/20 border-white/30"
+                : "bg-neutral-800 border-neutral-700"
+            }`}
+          >
+            <span
+              className={`pointer-events-none block size-3.5 rounded-full transition-transform ${
+                mfaRequired
+                  ? "translate-x-4 bg-white"
+                  : "translate-x-0.5 bg-neutral-500"
+              }`}
+            />
+          </button>
         </div>
         {error && (
           <p className="col-span-2 text-sm text-red-400">{error}</p>
@@ -272,7 +299,7 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
 
   const inviteMutation = trpc.sysadminOrgs.inviteAdmin.useMutation({
     onSuccess: (data) => {
-      setInviteLink(buildAdminInviteLink(data.invite_token));
+      setInviteLink(buildOrgInviteLink(data.invite_token));
       setInviteError(null);
       setInviteEmail("");
     },

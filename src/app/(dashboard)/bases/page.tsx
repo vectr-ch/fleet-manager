@@ -26,7 +26,7 @@ import {
   AlertTriangle,
   Search,
 } from "lucide-react";
-import { ActionButton, ConfirmModal, FieldInput, Toggle } from "@/components/dashboard";
+import { ActionButton, ConfirmModal, FieldInput, LocationPickerModal, Toggle } from "@/components/dashboard";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -288,6 +288,7 @@ function CreateBaseModal({
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   const createMutation = trpc.bases.create.useMutation({
     onSuccess: (data) => {
@@ -333,28 +334,21 @@ function CreateBaseModal({
               className="w-full bg-[#080808] border border-[#252525] rounded-md px-3 py-2 font-mono text-[12px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase block mb-1.5">Latitude</label>
-              <input
-                type="number"
-                step="any"
-                value={lat}
-                onChange={(e) => setLat(e.target.value)}
-                placeholder="47.3769"
-                className="w-full bg-[#080808] border border-[#252525] rounded-md px-3 py-2 font-mono text-[12px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
-              />
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase">Location</label>
+              <button
+                type="button"
+                onClick={() => setShowMapPicker(true)}
+                className="inline-flex items-center gap-1 font-mono text-[10px] text-[#555] hover:text-foreground transition-colors"
+              >
+                <MapPin className="size-3" />
+                Choose on Map
+              </button>
             </div>
-            <div>
-              <label className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase block mb-1.5">Longitude</label>
-              <input
-                type="number"
-                step="any"
-                value={lng}
-                onChange={(e) => setLng(e.target.value)}
-                placeholder="8.5417"
-                className="w-full bg-[#080808] border border-[#252525] rounded-md px-3 py-2 font-mono text-[12px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <FieldInput type="number" step="any" value={lat} onChange={(e) => setLat(e.currentTarget.value)} placeholder="Latitude" />
+              <FieldInput type="number" step="any" value={lng} onChange={(e) => setLng(e.currentTarget.value)} placeholder="Longitude" />
             </div>
           </div>
         </div>
@@ -383,6 +377,18 @@ function CreateBaseModal({
           </button>
         </div>
       </form>
+      {showMapPicker && (
+        <LocationPickerModal
+          initialLat={lat !== "" ? parseFloat(lat) : undefined}
+          initialLng={lng !== "" ? parseFloat(lng) : undefined}
+          onConfirm={(newLat, newLng) => {
+            setLat(newLat.toFixed(6));
+            setLng(newLng.toFixed(6));
+            setShowMapPicker(false);
+          }}
+          onCancel={() => setShowMapPicker(false)}
+        />
+      )}
     </div>
   );
 }
@@ -455,6 +461,7 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
   const [showRevoke, setShowRevoke] = useState(false);
   const [showIssueCert, setShowIssueCert] = useState(false);
   const [showDecommission, setShowDecommission] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   const isEnrolled = base.status === "enrolled";
   const isPending = base.status === "pending";
@@ -545,6 +552,14 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
                 <MapPin className="size-3 text-[#3a3a3a] shrink-0 mt-0.5" />
                 <FieldInput type="number" step="any" value={editLat} onChange={(e) => setEditLat(e.currentTarget.value)} placeholder="Lat" size="sm" className="w-24" />
                 <FieldInput type="number" step="any" value={editLng} onChange={(e) => setEditLng(e.currentTarget.value)} placeholder="Lng" size="sm" className="w-24" />
+                <button
+                  type="button"
+                  onClick={() => setShowMapPicker(true)}
+                  className="inline-flex items-center justify-center size-7 rounded-md border border-[#252525] text-[#555] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
+                  title="Choose on Map"
+                >
+                  <MapPin className="size-3" />
+                </button>
               </div>
             ) : coords ? (
               <div className="flex items-center gap-1.5 mt-1">
@@ -698,6 +713,18 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
             This will take the base offline and revoke its certificate if one is active. The base can be recommissioned later, but will require re-enrollment.
           </p>
         </ConfirmModal>
+      )}
+      {showMapPicker && (
+        <LocationPickerModal
+          initialLat={editLat !== "" ? parseFloat(editLat) : base.lat}
+          initialLng={editLng !== "" ? parseFloat(editLng) : base.lng}
+          onConfirm={(newLat, newLng) => {
+            setEditLat(newLat.toFixed(6));
+            setEditLng(newLng.toFixed(6));
+            setShowMapPicker(false);
+          }}
+          onCancel={() => setShowMapPicker(false)}
+        />
       )}
     </>
   );

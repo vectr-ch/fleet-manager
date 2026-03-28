@@ -25,6 +25,7 @@ export const sysadminOrgsRouter = router({
         slug: z.string().min(1),
         name: z.string().min(1),
         plan: z.string().optional(),
+        mfa_required: z.boolean().optional(),
         admin: z.object({ email: z.string().email() }).optional(),
       })
     )
@@ -46,6 +47,7 @@ export const sysadminOrgsRouter = router({
         max_bases: z.number().optional(),
         max_users: z.number().optional(),
         max_concurrent_missions: z.number().optional(),
+        mfa_required: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

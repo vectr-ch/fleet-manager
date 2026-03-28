@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
+import { friendlyError } from "@/lib/error-messages";
 import type { OrgFromLogin } from "@/lib/types";
 
 interface MfaVerifyProps {
@@ -14,7 +15,7 @@ export function MfaVerify({ onSuccess }: MfaVerifyProps) {
 
   const verifyMutation = trpc.auth.mfaVerify.useMutation({
     onSuccess: (data) => onSuccess(data.orgs),
-    onError: (err) => setError(err.message === "invalid_code" ? "Invalid code. Please try again." : err.message),
+    onError: (err) => setError(friendlyError(err)),
   });
 
   const handleSubmit = (e: React.FormEvent) => {

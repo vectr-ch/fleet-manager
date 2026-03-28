@@ -1,0 +1,29 @@
+<h2>Coordinate Picker — Where does the map live?</h2>
+<p class="subtitle">The picker needs enough space for a usable map + search. Three options for how it integrates with the base card.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Full Modal (Recommended)</h3>
+      <p>A dedicated modal opens with a large map, search bar at top, and live coordinate readout. User clicks to place a pin, or types an address to geocode. Confirm button saves coords back to the form.</p>
+      <p style="color:#888;font-size:13px;margin-top:8px;">Pros: maximum map space, clean focus, matches existing modal patterns (create base, issue cert). Cons: takes user out of card context momentarily.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Inline Expandable (in card)</h3>
+      <p>A "Choose on Map" button below the lat/lng inputs expands a small map inline within the card. Search bar sits above the map. Collapsible.</p>
+      <p style="color:#888;font-size:13px;margin-top:8px;">Pros: stays in context, no modal. Cons: very constrained space inside a card, map would be ~300px tall, awkward on mobile.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Slide-out Panel</h3>
+      <p>A right-side panel (like fleet detail in the mock) slides out with the map. Stays visible alongside the card grid.</p>
+      <p style="color:#888;font-size:13px;margin-top:8px;">Pros: keeps card visible, good for comparing. Cons: complex layout shift, only works on wide screens, heavy for a simple coord pick.</p>
+    </div>
+  </div>
+</div>
