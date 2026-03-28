@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VECTR Fleet Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --bg:       #080808;
+  --surface:  #0f0f0f;
+  --surface2: #121212;
+  --border:   #1a1a1a;
+  --border2:  #252525;
+  --muted:    #3a3a3a;
+  --subtle:   #555;
+  --dim:      #888;
+  --text:     #e8e8e8;
+  --green:    #22c55e;
+  --green-bg: #16a34a1a;
+  --amber:    #f59e0b;
+  --amber-bg: #f59e0b18;
+  --red:      #ef4444;
+  --red-bg:   #ef444418;
+  --blue:     #3b82f6;
+  --blue-bg:  #3b82f614;
+  --mono: 'Geist Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.5;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* ── TOPBAR ── */
+.topbar{height:44px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:0;flex-shrink:0;background:var(--surface);}
+.logo{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.12em;color:var(--text);text-transform:uppercase;padding-right:20px;border-right:1px solid var(--border2);margin-right:20px;}
+.logo span{color:var(--subtle);font-weight:300;}
+.org-btn{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);padding:4px 10px;border:1px solid var(--border2);border-radius:5px;cursor:pointer;font-family:var(--mono);background:none;transition:all .1s;position:relative;}
+.org-btn:hover{border-color:var(--muted);color:var(--text);}
+.org-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);}
+.topbar-nav{display:flex;gap:2px;margin-left:16px;}
+.topbar-nav button{font-size:12px;color:var(--dim);background:none;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;transition:all .1s;}
+.topbar-nav button:hover{color:var(--text);background:var(--border);}
+.topbar-nav button.active{color:var(--text);background:var(--border2);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.status-pill{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;color:var(--green);padding:3px 8px;background:var(--green-bg);border:1px solid #22c55e22;border-radius:20px;}
+.status-pill .dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#1e3a5f,#3b82f6);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:white;cursor:pointer;}
+
+/* ── LAYOUT ── */
+.main{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:200px;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;background:var(--surface);padding:12px 0;}
+.sidebar-section{padding:0 8px;margin-bottom:20px;}
+.sidebar-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--subtle);text-transform:uppercase;padding:0 8px;margin-bottom:4px;}
+.sidebar-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:5px;cursor:pointer;color:var(--dim);font-size:12.5px;transition:all .1s;position:relative;background:none;border:none;width:100%;text-align:left;font-family:var(--sans);}
+.sidebar-item:hover{background:var(--border);color:var(--text);}
+.sidebar-item.active{background:var(--border2);color:var(--text);}
+.sidebar-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:2px;background:var(--text);border-radius:0 2px 2px 0;}
+.s-icon{width:14px;height:14px;opacity:.6;flex-shrink:0;}
+.sidebar-item.active .s-icon{opacity:1;}
+.badge{margin-left:auto;font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:3px;font-weight:500;}
+.bg{background:var(--green-bg);color:var(--green);border:1px solid #22c55e22;}
+.ba{background:var(--amber-bg);color:var(--amber);border:1px solid #f59e0b22;}
+.br{background:var(--red-bg);color:var(--red);border:1px solid #ef444422;}
+.bm{background:var(--border2);color:var(--subtle);}
+.bb{background:var(--blue-bg);color:var(--blue);border:1px solid #3b82f622;}
+.sidebar-bottom{margin-top:auto;padding:8px;border-top:1px solid var(--border);}
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── PAGES ── */
+.page{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.page.active{display:flex;}
+
+/* ── PAGE HEADER ── */
+.page-hdr{padding:16px 20px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;}
+.page-title{font-size:15px;font-weight:600;letter-spacing:-.01em;}
+.page-sub{font-size:11px;color:var(--dim);font-family:var(--mono);margin-top:2px;}
+.page-actions{display:flex;gap:8px;}
+.btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:5px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--dim);font-family:var(--sans);transition:all .1s;}
+.btn:hover{border-color:var(--muted);color:var(--text);}
+.btn-primary{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600;}
+.btn-primary:hover{background:#ccc;border-color:#ccc;}
+.btn-red{background:var(--red-bg);color:var(--red);border-color:#ef444430;}
+.btn-red:hover{background:#ef444425;border-color:#ef444460;}
+.btn-green{background:var(--green-bg);color:var(--green);border-color:#22c55e30;}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:16px;flex-shrink:0;}
+.stats-5{grid-template-columns:repeat(5,1fr);}
+.stats-4{grid-template-columns:repeat(4,1fr);}
+.stats-6{grid-template-columns:repeat(6,1fr);}
+.stat{background:var(--surface);padding:12px 16px;display:flex;flex-direction:column;gap:4px;}
+.stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--subtle);text-transform:uppercase;}
+.stat-value{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.02em;line-height:1;}
+.stat-meta{font-size:11px;color:var(--dim);display:flex;align-items:center;gap:4px;}
+.up{color:var(--green);} .warn{color:var(--amber);} .crit{color:var(--red);}
+
+/* ── TABLE ── */
+.table-wrap{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+.table-wrap::-webkit-scrollbar{width:4px;}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:8px 16px;text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--subtle);text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:2;}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+tbody tr:hover{background:var(--surface);}
+tbody tr.selected{background:var(--border);}
+td{padding:10px 16px;font-size:12.5px;color:var(--dim);}
+td.bold{color:var(--text);font-weight:500;}
+td.mono{font-family:var(--mono);font-size:11px;}
+
+/* ── BODY GRID (overview) ── */
+.body-grid{display:grid;grid-template-columns:1fr 320px;gap:1px;background:var(--border);flex:1;overflow:hidden;margin-top:1px;}
+
+/* ── MAP ── */
+.map-panel{background:var(--bg);position:relative;overflow:hidden;}
+.map-canvas{width:100%;height:100%;position:relative;}
+#leaflet-map{position:absolute;inset:0;z-index:1;}
+.leaflet-tile{filter:brightness(.55) saturate(.4) hue-rotate(190deg)!important;}
+.map-canvas::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 40% 50%,#05101f44 0%,transparent 80%);pointer-events:none;z-index:9;}
+.map-overlay-tl{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:6px;z-index:20;}
+.map-chip{display:flex;align-items:center;gap:6px;background:#0a0a0acc;border:1px solid var(--border2);border-radius:4px;padding:5px 8px;font-family:var(--mono);font-size:10px;color:var(--dim);backdrop-filter:blur(4px);}
+.map-chip .val{color:var(--text);font-weight:500;}
+.map-chip .green{color:var(--green);}
+.map-overlay-br{position:absolute;bottom:12px;right:12px;display:flex;gap:4px;z-index:20;}
+.map-btn{width:28px;height:28px;background:#0a0a0acc;border:1px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--subtle);backdrop-filter:blur(4px);}
+.map-btn:hover{color:var(--text);border-color:var(--muted);}
+.mission-bar{position:absolute;bottom:12px;left:12px;display:flex;align-items:center;gap:10px;background:#0a0a0aee;border:1px solid var(--border2);border-radius:5px;padding:7px 12px;font-family:var(--mono);font-size:10px;z-index:20;backdrop-filter:blur(8px);}
+.mission-bar .mn{color:var(--text);font-weight:500;font-size:11px;}
+.sep{color:var(--border2);}
+.progress-track{width:80px;height:3px;background:var(--border2);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--green);border-radius:2px;position:relative;overflow:hidden;}
+.progress-fill::after{content:'';position:absolute;top:0;left:-100%;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shimmer 2s infinite;}
+@keyframes shimmer{to{left:100%;}}
+
+/* ── RIGHT PANEL ── */
+.right-panel{background:var(--surface);display:flex;flex-direction:column;overflow:hidden;}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.panel-tab{flex:1;padding:10px 0;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--subtle);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .1s;text-transform:uppercase;background:none;border-top:none;border-left:none;border-right:none;}
+.panel-tab:hover{color:var(--dim);}
+.panel-tab.active{color:var(--text);border-bottom-color:var(--text);}
+.panel-body{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+.panel-body::-webkit-scrollbar{width:4px;}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* Drone list */
+.drone-row{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:10px;cursor:pointer;transition:background .1s;}
+.drone-row:hover{background:var(--bg);}
+.drone-row.sel{background:var(--border);}
+.drone-row.warn-row{border-left:2px solid var(--amber);background:#f59e0b04;}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sd-g{background:var(--green);box-shadow:0 0 4px #22c55e88;}
+.sd-a{background:var(--amber);box-shadow:0 0 4px #f59e0b88;}
+.sd-r{background:var(--red);box-shadow:0 0 4px #ef444488;}
+.sd-x{background:var(--muted);}
+.drone-info{flex:1;min-width:0;}
+.drone-id{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text);}
+.drone-role{font-size:11px;color:var(--dim);margin-top:1px;}
+.drone-metrics{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.met{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;color:var(--subtle);}
+.met .v{color:var(--dim);}
+.met .vg{color:var(--green);}
+.met .va{color:var(--amber);}
+.bat-bar{width:28px;height:4px;background:var(--border2);border-radius:2px;overflow:hidden;}
+.bat-fill{height:100%;border-radius:2px;}
+.bfg{background:var(--green);}
+.bfa{background:var(--amber);}
+.bfr{background:var(--red);}
+
+/* Alerts */
+.alert-row{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.alert-row:hover{background:var(--bg);}
+.alert-icon{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:1px;}
+.ai-w{background:var(--amber-bg);color:var(--amber);border:1px solid #f59e0b22;}
+.ai-c{background:var(--red-bg);color:var(--red);border:1px solid #ef444422;}
+.ai-i{background:var(--blue-bg);color:var(--blue);border:1px solid #3b82f622;}
+.ai-g{background:var(--green-bg);color:var(--green);border:1px solid #22c55e22;}
+.alert-content{flex:1;min-width:0;}
+.alert-title{font-size:12px;font-weight:500;color:var(--text);}
+.alert-detail{font-size:11px;color:var(--dim);margin-top:1px;}
+.alert-time{font-family:var(--mono);font-size:10px;color:var(--subtle);flex-shrink:0;}
+
+/* Commands */
+.cmd-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--subtle);text-transform:uppercase;padding:10px 14px 6px;border-bottom:1px solid var(--border);}
+.cmd-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 14px;}
+.cmd-btn{padding:8px 10px;background:var(--bg);border:1px solid var(--border2);border-radius:5px;font-family:var(--mono);font-size:10px;color:var(--dim);cursor:pointer;text-align:left;letter-spacing:.04em;transition:all .1s;display:flex;align-items:center;gap:5px;}
+.cmd-btn:hover{border-color:var(--muted);color:var(--text);background:var(--border);}
+.cmd-btn:active{transform:scale(.97);}
+.cmd-emg{border-color:#ef444430;color:var(--red);background:var(--red-bg);grid-column:span 2;justify-content:center;padding:10px;font-size:11px;font-weight:600;letter-spacing:.1em;}
+.cmd-emg:hover{background:#ef444425;border-color:#ef444460;}
+.cmd-log{padding:0 14px 10px;display:flex;flex-direction:column;gap:4px;}
+.cmd-log-item{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;padding:4px 6px;border-radius:3px;background:var(--bg);border:1px solid var(--border);}
+.cs{padding:1px 5px;border-radius:2px;font-size:9px;font-weight:600;flex-shrink:0;}
+.cs-ok{background:var(--green-bg);color:var(--green);}
+.cs-ex{background:var(--blue-bg);color:var(--blue);}
+.cs-pe{background:var(--amber-bg);color:var(--amber);}
+.cs-fa{background:var(--red-bg);color:var(--red);}
+.cmd-text{color:var(--dim);flex:1;}
+.cmd-tgt{color:var(--subtle);}
+
+/* Swarm health footer */
+.swarm-health{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-top:1px solid var(--border);flex-shrink:0;}
+.health-cell{background:var(--surface);padding:8px 14px;display:flex;flex-direction:column;gap:3px;}
+.health-label{font-family:var(--mono);font-size:9px;color:var(--subtle);text-transform:uppercase;letter-spacing:.08em;}
+.health-val{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);letter-spacing:-.01em;}
+.hg{color:var(--green);} .ha{color:var(--amber);} .hr{color:var(--red);}
+
+/* Formation bar */
+.form-section{padding:10px 14px;border-bottom:1px solid var(--border);}
+.form-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.form-title{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--subtle);text-transform:uppercase;}
+.form-score{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--green);}
+.form-track{height:4px;background:var(--border2);border-radius:2px;overflow:hidden;}
+.form-fill{height:100%;background:linear-gradient(90deg,var(--green),#86efac);border-radius:2px;}
+.telem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;}
+.telem-cell{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:7px 8px;}
+.tc-label{font-family:var(--mono);font-size:9px;color:var(--subtle);text-transform:uppercase;letter-spacing:.08em;}
+.tc-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);margin-top:2px;letter-spacing:-.02em;}
+.tc-unit{font-size:9px;color:var(--subtle);font-weight:400;}
+
+/* ── MISSIONS PAGE ── */
+.missions-layout{display:flex;flex:1;overflow:hidden;gap:1px;background:var(--border);}
+.missions-list{width:340px;display:flex;flex-direction:column;background:var(--surface);flex-shrink:0;overflow:hidden;}
+.missions-detail{flex:1;display:flex;flex-direction:column;background:var(--bg);overflow-y:auto;}
+.mission-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.mission-item:hover{background:var(--border);}
+.mission-item.active{background:var(--border2);}
+.mi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.mi-id{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);}
+.mi-type{font-size:11px;color:var(--dim);}
+.mi-meta{display:flex;gap:8px;font-family:var(--mono);font-size:10px;color:var(--subtle);}
+.mission-detail-hdr{padding:20px 24px 16px;border-bottom:1px solid var(--border);}
+.md-title{font-size:16px;font-weight:600;letter-spacing:-.01em;}
+.md-sub{font-size:11px;color:var(--dim);font-family:var(--mono);margin-top:3px;}
+.md-actions{display:flex;gap:8px;margin-top:14px;}
+.detail-section{padding:16px 24px;border-bottom:1px solid var(--border);}
+.ds-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--subtle);text-transform:uppercase;margin-bottom:10px;}
+.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.detail-cell{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:10px 12px;}
+.dc-label{font-family:var(--mono);font-size:9px;color:var(--subtle);text-transform:uppercase;letter-spacing:.08em;}
+.dc-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);margin-top:3px;}
+.timeline{display:flex;flex-direction:column;gap:0;}
+.tl-item{display:flex;gap:12px;padding:8px 0;position:relative;}
+.tl-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+.tl-line{position:absolute;left:3.5px;top:16px;bottom:-8px;width:1px;background:var(--border2);}
+.tl-content{flex:1;}
+.tl-event{font-size:12px;font-weight:500;color:var(--text);}
+.tl-time{font-family:var(--mono);font-size:10px;color:var(--subtle);margin-top:1px;}
+.state-chip{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.04em;}
+.chip-green{background:var(--green-bg);color:var(--green);border:1px solid #22c55e22;}
+.chip-blue{background:var(--blue-bg);color:var(--blue);border:1px solid #3b82f622;}
+.chip-amber{background:var(--amber-bg);color:var(--amber);border:1px solid #f59e0b22;}
+.chip-red{background:var(--red-bg);color:var(--red);border:1px solid #ef444422;}
+.chip-muted{background:var(--border2);color:var(--dim);}
+
+/* ── FLEET PAGE ── */
+.fleet-layout{display:flex;flex:1;overflow:hidden;gap:1px;background:var(--border);}
+.fleet-list-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.fleet-detail-panel{width:320px;background:var(--surface);display:flex;flex-direction:column;overflow-y:auto;border-left:1px solid var(--border);}
+.drone-card-hdr{padding:16px;border-bottom:1px solid var(--border);}
+.dc-drone-id{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);}
+.dc-drone-sub{font-size:11px;color:var(--dim);margin-top:2px;}
+.drone-detail-section{padding:12px 16px;border-bottom:1px solid var(--border);}
+.dds-title{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--subtle);text-transform:uppercase;margin-bottom:8px;}
+.kv-grid{display:flex;flex-direction:column;gap:5px;}
+.kv-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;}
+.kv-key{color:var(--dim);}
+.kv-val{font-family:var(--mono);font-size:11px;color:var(--text);}
+
+/* ── BASES PAGE ── */
+.bases-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);flex:1;overflow-y:auto;}
+.base-card{background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:12px;cursor:pointer;transition:background .1s;}
+.base-card:hover{background:var(--surface2);}
+.base-card-hdr{display:flex;align-items:center;justify-content:space-between;}
+.base-card-name{font-size:14px;font-weight:600;}
+.base-card-id{font-family:var(--mono);font-size:10px;color:var(--subtle);}
+.base-metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.bm-cell{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px;}
+.bm-label{font-family:var(--mono);font-size:9px;color:var(--subtle);text-transform:uppercase;letter-spacing:.08em;}
+.bm-val{font-family:var(--mono);font-size:15px;font-weight:600;margin-top:2px;}
+.base-drone-list{display:flex;flex-wrap:wrap;gap:5px;}
+.drone-tag{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:3px;background:var(--border2);color:var(--dim);}
+.drone-tag.active{background:var(--green-bg);color:var(--green);border:1px solid #22c55e22;}
+.drone-tag.warn{background:var(--amber-bg);color:var(--amber);border:1px solid #f59e0b22;}
+
+/* ── TELEMETRY PAGE ── */
+.telem-layout{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.telem-toolbar{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.telem-select{background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 8px;cursor:pointer;outline:none;}
+.telem-select:hover{border-color:var(--muted);}
+.telem-body{flex:1;display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);overflow:hidden;}
+.telem-chart-panel{background:var(--surface);display:flex;flex-direction:column;overflow:hidden;}
+.chart-hdr{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.chart-title{font-family:var(--mono);font-size:11px;color:var(--text);font-weight:500;}
+.chart-val{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--text);}
+.chart-unit{font-size:11px;color:var(--subtle);font-weight:400;}
+.chart-area{flex:1;padding:10px 16px;position:relative;overflow:hidden;}
+canvas.sparkline{width:100%;height:100%;}
+.chart-axis{position:absolute;bottom:10px;left:16px;right:16px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--subtle);}
+
+/* ── AUDIT PAGE ── */
+.audit-layout{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.audit-toolbar{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.audit-search{flex:1;max-width:280px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 10px;outline:none;}
+.audit-search:focus{border-color:var(--muted);}
+.audit-search::placeholder{color:var(--subtle);}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:#000000cc;z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:8px;width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px #000000aa;}
+.modal-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:14px;font-weight:600;}
+.modal-close{background:none;border:none;color:var(--subtle);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;}
+.modal-close:hover{color:var(--text);}
+.modal-body{padding:20px;}
+.form-row{margin-bottom:14px;}
+.form-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--subtle);text-transform:uppercase;margin-bottom:5px;display:block;}
+.form-input,.form-select{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 10px;outline:none;transition:border-color .1s;}
+.form-input:focus,.form-select:focus{border-color:var(--muted);}
+.form-select option{background:var(--surface);}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+
+/* ── TOAST ── */
+.toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:2000;}
+.toast{background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;animation:slideIn .2s ease;box-shadow:0 4px 20px #000000aa;max-width:300px;}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+.toast.fadeout{animation:fadeOut .3s ease forwards;}
+@keyframes fadeOut{to{opacity:0;transform:translateX(20px);}}
+.toast-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;}
+.ti-g{background:var(--green-bg);color:var(--green);}
+.ti-r{background:var(--red-bg);color:var(--red);}
+.ti-a{background:var(--amber-bg);color:var(--amber);}
+
+/* ── ORG DROPDOWN ── */
+.org-dropdown{position:absolute;top:calc(100% + 6px);left:0;background:var(--surface);border:1px solid var(--border2);border-radius:6px;width:200px;z-index:100;box-shadow:0 8px 24px #000000aa;padding:4px;}
+.org-option{padding:7px 10px;border-radius:4px;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;align-items:center;gap:8px;transition:background .1s;}
+.org-option:hover{background:var(--border);color:var(--text);}
+.org-option.active-org{color:var(--text);}
+
+/* Misc */
+.divider{height:1px;background:var(--border);margin:4px 0;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:8px;color:var(--subtle);}
+.empty-icon{font-size:32px;opacity:.3;}
+.empty-text{font-family:var(--mono);font-size:11px;letter-spacing:.06em;}
+.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:3px;font-family:var(--mono);font-size:10px;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">VECTR <span>/ Fleet</span></div>
+  <div style="position:relative">
+    <button class="org-btn" id="orgBtn">
+      <div class="org-dot"></div>
+      <span id="orgName">Bravo Team</span>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="org-dropdown" id="orgDropdown" style="display:none">
+      <div class="org-option active-org" onclick="selectOrg('Bravo Team')"><div class="org-dot"></div>Bravo Team</div>
+      <div class="org-option" onclick="selectOrg('Alpha Ops')"><div style="width:6px;height:6px;border-radius:50%;background:var(--amber)"></div>Alpha Ops</div>
+      <div class="org-option" onclick="selectOrg('Delta Unit')"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div>Delta Unit</div>
+      <div class="divider"></div>
+      <div class="org-option" onclick="toast('Organisation settings coming soon','a')">+ New Organisation</div>
+    </div>
+  </div>
+  <nav class="topbar-nav">
+    <button class="active" onclick="nav('overview',this)">Overview</button>
+    <button onclick="nav('missions',this)">Missions</button>
+    <button onclick="nav('fleet',this)">Fleet</button>
+    <button onclick="nav('bases',this)">Bases</button>
+    <button onclick="nav('telemetry',this)">Telemetry</button>
+    <button onclick="nav('audit',this)">Audit</button>
+  </nav>
+  <div class="topbar-right">
+    <div class="status-pill"><div class="dot"></div>Base-01 Online</div>
+    <button class="btn" onclick="openModal('newMission')">+ New Mission</button>
+    <div class="avatar">DK</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-label">Active</div>
+    <button class="sidebar-item active" onclick="nav('overview',null,'overview')">
+      <svg class="s-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 7h6M7 4v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Overview
+    </button>
+    <button class="sidebar-item" onclick="nav('missions',null,'missions')">
+      <svg class="s-icon" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M7 4.5v3l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Missions
+      <span class="badge bg">1</span>
+    </button>
+    <button class="sidebar-item" onclick="nav('fleet',null,'fleet')">
+      <svg class="s-icon" viewBox="0 0 14 14" fill="none"><path d="M7 1L9 5h4L10 8l1 4-4-2.5L3 12l1-4L1 5h4z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+      Fleet
+      <span class="badge bm">8</span>
+    </button>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Manage</div>
+    <button class="sidebar-item" onclick="nav('bases',null,'bases')">
+      <svg class="s-icon" viewBox="0 0 14 14" fill="none"><rect x="2" y="4" width="10" height="7" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M5 4V3a2 2 0 014 0v1" stroke="currentColor" stroke-width="1.2"/></svg>
+      Bases
+      <span class="badge bg">2</span>
+    </button>
+    <button class="sidebar-item" onclick="nav('telemetry',null,'telemetry')">
+      <svg class="s-icon" viewBox="0 0 14 14" fill="none"><path d="M1 10l3-4 2.5 2 2.5-5L12 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Telemetry
+    </button>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">System</div>
+    <button class="sidebar-item" onclick="nav('audit',null,'audit')">
+      <svg class="s-icon" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M2 7h10M2 10h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Audit Log
+    </button>
+    <button class="sidebar-item" onclick="toast('Alert settings','a')">
+      <svg class="s-icon" viewBox="0 0 14 14" fill="none"><path d="M7 1v2M7 11v2M1 7h2M11 7h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="7" cy="7" r="2.5" stroke="currentColor" stroke-width="1.2"/></svg>
+      Alerts
+      <span class="badge ba">3</span>
+    </button>
+  </div>
+  <div class="sidebar-bottom">
+    <button class="sidebar-item" onclick="toast('Firmware v2.4.1 — all drones up to date','g')">
+      <svg class="s-icon" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4.5 6.5L7 9l2.5-2.5M2 11h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Firmware
+      <span class="badge bm">v2.4</span>
+    </button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: OVERVIEW
+═══════════════════════════════════════════════════ -->
+<div class="page active" id="page-overview">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Fleet Overview</div>
+      <div class="page-sub">MISSION-241 · Area Surveillance · 62% complete · Base-01</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn" onclick="openModal('preflight')">Pre-flight Check</button>
+      <button class="btn btn-primary" onclick="openModal('newMission')">+ New Mission</button>
+    </div>
+  </div>
+  <div class="stats-row stats-5">
+    <div class="stat"><div class="stat-label">Drones Active</div><div class="stat-value">8</div><div class="stat-meta"><span class="up">●</span> 7 nominal · 1 warning</div></div>
+    <div class="stat"><div class="stat-label">Coverage</div><div class="stat-value">62<span style="font-size:14px;color:var(--subtle)">%</span></div><div class="stat-meta"><span class="up">↑</span> +4% last 2 min</div></div>
+    <div class="stat"><div class="stat-label">Formation</div><div class="stat-value" style="color:var(--green)">87<span style="font-size:14px;color:var(--subtle)">%</span></div><div class="stat-meta"><span class="up">●</span> Grid · VRP locked</div></div>
+    <div class="stat"><div class="stat-label">Mesh Links</div><div class="stat-value">24</div><div class="stat-meta"><span class="up">●</span> All nodes connected</div></div>
+    <div class="stat"><div class="stat-label">ETA Complete</div><div class="stat-value">18<span style="font-size:14px;color:var(--subtle)">m</span></div><div class="stat-meta"><span class="warn">⚠</span> D-07 low battery</div></div>
+  </div>
+  <div class="body-grid">
+    <!-- Map -->
+    <div class="map-panel">
+      <div class="map-canvas">
+        <div id="leaflet-map"></div>
+        <div class="map-overlay-tl">
+          <div class="map-chip"><span>WIND</span><span class="val">12 kt NNE</span><span class="green">●</span></div>
+          <div class="map-chip"><span>ALT</span><span class="val">120 m AGL</span></div>
+          <div class="map-chip"><span>GPS</span><span class="val green">8/8 locked</span></div>
+        </div>
+        <div class="mission-bar">
+          <span class="mn">MISSION-241</span><span class="sep">·</span>
+          <span style="color:var(--dim)">Area Surveillance</span><span class="sep">·</span>
+          <div class="progress-track"><div class="progress-fill" style="width:62%"></div></div>
+          <span style="color:var(--green);font-weight:600">62%</span><span class="sep">·</span>
+          <span style="color:var(--dim)">18m ETA</span>
+        </div>
+        <div class="map-overlay-br">
+          <div class="map-btn" id="zoom-in">+</div>
+          <div class="map-btn" id="zoom-out">−</div>
+          <div class="map-btn" id="recenter">⊙</div>
+        </div>
+      </div>
+    </div>
+    <!-- Right panel -->
+    <div class="right-panel">
+      <div class="panel-tabs">
+        <button class="panel-tab active" onclick="rpTab('fleet',this)">Fleet</button>
+        <button class="panel-tab" onclick="rpTab('alerts',this)">Alerts</button>
+        <button class="panel-tab" onclick="rpTab('cmds',this)">Commands</button>
+      </div>
+      <div class="panel-body" id="rp-fleet">
+        <div class="form-section">
+          <div class="form-hdr"><div class="form-title">Formation Integrity</div><div class="form-score">87%</div></div>
+          <div class="form-track"><div class="form-fill" style="width:87%"></div></div>
+          <div class="telem-grid">
+            <div class="telem-cell"><div class="tc-label">Avg Bat</div><div class="tc-val">71<span class="tc-unit">%</span></div></div>
+            <div class="telem-cell"><div class="tc-label">Mesh RTT</div><div class="tc-val">14<span class="tc-unit">ms</span></div></div>
+            <div class="telem-cell"><div class="tc-label">Uplink</div><div class="tc-val" style="color:var(--green)">OK</div></div>
+          </div>
+        </div>
+        <div id="drone-list-rp"></div>
+      </div>
+      <div class="panel-body" id="rp-alerts" style="display:none">
+        <div id="alerts-list-rp"></div>
+      </div>
+      <div class="panel-body" id="rp-cmds" style="display:none">
+        <div class="cmd-label">Fleet Commands</div>
+        <div class="cmd-grid">
+          <button class="cmd-btn" onclick="sendCmd('PAUSE_MISSION','ALL')">⏸ Pause</button>
+          <button class="cmd-btn" onclick="sendCmd('RTB_ALL','ALL')">↩ RTB All</button>
+          <button class="cmd-btn" onclick="sendCmd('GO_TO_WP','ALL')">⊕ Go-To WP</button>
+          <button class="cmd-btn" onclick="sendCmd('ORBIT','ALL')">⊙ Orbit</button>
+          <button class="cmd-btn" onclick="sendCmd('ADJUST_SPACING','ALL')">⊞ Adjust Spacing</button>
+          <button class="cmd-btn" onclick="sendCmd('SENSOR_ON','ALL')">◉ Sensors On</button>
+          <button class="cmd-btn cmd-emg" onclick="confirmAbort()">⬡ ABORT MISSION</button>
+        </div>
+        <div class="cmd-label" style="margin-top:4px">Command Log</div>
+        <div class="cmd-log" id="cmd-log"></div>
+      </div>
+      <div class="swarm-health">
+        <div class="health-cell"><div class="health-label">Swarm</div><div class="health-val hg">Nominal</div></div>
+        <div class="health-cell"><div class="health-label">Base Link</div><div class="health-val hg">14ms</div></div>
+        <div class="health-cell"><div class="health-label">Cloud</div><div class="health-val hg">Online</div></div>
+        <div class="health-cell"><div class="health-label">Alerts</div><div class="health-val ha">3 active</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: MISSIONS
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-missions">
+  <div class="page-hdr">
+    <div><div class="page-title">Missions</div><div class="page-sub">4 total · 1 active · 3 completed</div></div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="openModal('newMission')">+ New Mission</button>
+    </div>
+  </div>
+  <div class="stats-row stats-4">
+    <div class="stat"><div class="stat-label">Active</div><div class="stat-value" style="color:var(--green)">1</div><div class="stat-meta"><span class="up">●</span> In progress</div></div>
+    <div class="stat"><div class="stat-label">Completed Today</div><div class="stat-value">3</div><div class="stat-meta"><span class="up">↑</span> 2 yesterday</div></div>
+    <div class="stat"><div class="stat-label">Avg Coverage</div><div class="stat-value">94<span style="font-size:14px;color:var(--subtle)">%</span></div><div class="stat-meta"><span class="up">↑</span> +3% this week</div></div>
+    <div class="stat"><div class="stat-label">Pending Approval</div><div class="stat-value" style="color:var(--amber)">1</div><div class="stat-meta"><span class="warn">⚠</span> Awaiting sign-off</div></div>
+  </div>
+  <div class="missions-layout">
+    <div class="missions-list">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;">
+        <input class="audit-search" style="flex:1" placeholder="Search missions…" oninput="filterMissions(this.value)">
+      </div>
+      <div id="mission-list-items" style="overflow-y:auto;flex:1"></div>
+    </div>
+    <div class="missions-detail" id="mission-detail"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: FLEET
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-fleet">
+  <div class="page-hdr">
+    <div><div class="page-title">Fleet Management</div><div class="page-sub">8 drones registered · Base-01 & Base-02</div></div>
+    <div class="page-actions">
+      <button class="btn" onclick="openModal('registerDrone')">+ Register Drone</button>
+      <button class="btn btn-primary" onclick="toast('Batch update sent to all drones','g')">Batch Update</button>
+    </div>
+  </div>
+  <div class="stats-row stats-4">
+    <div class="stat"><div class="stat-label">Total Drones</div><div class="stat-value">8</div><div class="stat-meta"><span class="up">●</span> 7 active · 1 charging</div></div>
+    <div class="stat"><div class="stat-label">On Mission</div><div class="stat-value" style="color:var(--green)">8</div><div class="stat-meta"><span class="up">●</span> MISSION-241</div></div>
+    <div class="stat"><div class="stat-label">Avg Flight Hrs</div><div class="stat-value">142</div><div class="stat-meta"><span class="up">↑</span> hrs total logged</div></div>
+    <div class="stat"><div class="stat-label">Firmware</div><div class="stat-value">v2.4</div><div class="stat-meta"><span class="up">●</span> All drones current</div></div>
+  </div>
+  <div class="fleet-layout">
+    <div class="fleet-list-panel">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;background:var(--surface)">
+        <input class="audit-search" style="flex:1;max-width:none" placeholder="Search drones…" oninput="filterDrones(this.value)">
+        <select class="telem-select" onchange="filterDroneStatus(this.value)">
+          <option value="">All Status</option>
+          <option value="on-mission">On Mission</option>
+          <option value="charging">Charging</option>
+          <option value="ready">Ready</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table id="drone-table">
+          <thead><tr>
+            <th></th><th>ID</th><th>Role</th><th>Battery</th><th>Status</th><th>Base</th><th>Firmware</th><th>Flight Hrs</th><th></th>
+          </tr></thead>
+          <tbody id="drone-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="fleet-detail-panel" id="fleet-detail">
+      <div class="empty-state"><div class="empty-icon">◎</div><div class="empty-text">Select a drone</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: BASES
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-bases">
+  <div class="page-hdr">
+    <div><div class="page-title">Base Stations</div><div class="page-sub">2 registered · 2 online</div></div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="openModal('registerBase')">+ Register Base</button>
+    </div>
+  </div>
+  <div class="stats-row stats-4">
+    <div class="stat"><div class="stat-label">Online</div><div class="stat-value" style="color:var(--green)">2</div><div class="stat-meta"><span class="up">●</span> All operational</div></div>
+    <div class="stat"><div class="stat-label">Connected Drones</div><div class="stat-value">8</div><div class="stat-meta"><span class="up">●</span> Across 2 bases</div></div>
+    <div class="stat"><div class="stat-label">Avg Latency</div><div class="stat-value">16<span style="font-size:14px;color:var(--subtle)">ms</span></div><div class="stat-meta"><span class="up">●</span> Cloud uplink</div></div>
+    <div class="stat"><div class="stat-label">Buffer Fill</div><div class="stat-value">12<span style="font-size:14px;color:var(--subtle)">%</span></div><div class="stat-meta"><span class="up">●</span> Normal</div></div>
+  </div>
+  <div class="bases-grid" style="margin-top:1px;background:var(--border)">
+    <div class="base-card" onclick="toast('BASE-01 detail panel — coming in next iteration','a')">
+      <div class="base-card-hdr">
+        <div><div class="base-card-name">BASE-01</div><div class="base-card-id">Sonoran Ops · 32.240°N, 110.932°W</div></div>
+        <span class="state-chip chip-green">ONLINE</span>
+      </div>
+      <div class="base-metrics-grid">
+        <div class="bm-cell"><div class="bm-label">Drones</div><div class="bm-val" style="color:var(--green)">6</div></div>
+        <div class="bm-cell"><div class="bm-label">Latency</div><div class="bm-val">14ms</div></div>
+        <div class="bm-cell"><div class="bm-label">Buffer</div><div class="bm-val">8%</div></div>
+        <div class="bm-cell"><div class="bm-label">Uptime</div><div class="bm-val">99.8%</div></div>
+        <div class="bm-cell"><div class="bm-label">Firmware</div><div class="bm-val">v3.1</div></div>
+        <div class="bm-cell"><div class="bm-label">Mesh Nodes</div><div class="bm-val">6</div></div>
+      </div>
+      <div>
+        <div class="bm-label" style="margin-bottom:6px">Connected Drones</div>
+        <div class="base-drone-list">
+          <div class="drone-tag active">D-01</div><div class="drone-tag active">D-02</div>
+          <div class="drone-tag active">D-03</div><div class="drone-tag active">D-04</div>
+          <div class="drone-tag warn">D-07 ⚡</div><div class="drone-tag active">D-08</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn" style="flex:1" onclick="event.stopPropagation();toast('Remote config panel opening…','a')">Configure</button>
+        <button class="btn" style="flex:1" onclick="event.stopPropagation();toast('BASE-01 placed in maintenance mode','a')">Maintenance</button>
+      </div>
+    </div>
+    <div class="base-card" onclick="toast('BASE-02 detail panel — coming in next iteration','a')">
+      <div class="base-card-hdr">
+        <div><div class="base-card-name">BASE-02</div><div class="base-card-id">Northern Ridge · 32.310°N, 110.870°W</div></div>
+        <span class="state-chip chip-green">ONLINE</span>
+      </div>
+      <div class="base-metrics-grid">
+        <div class="bm-cell"><div class="bm-label">Drones</div><div class="bm-val" style="color:var(--green)">2</div></div>
+        <div class="bm-cell"><div class="bm-label">Latency</div><div class="bm-val">18ms</div></div>
+        <div class="bm-cell"><div class="bm-label">Buffer</div><div class="bm-val">15%</div></div>
+        <div class="bm-cell"><div class="bm-label">Uptime</div><div class="bm-val">99.4%</div></div>
+        <div class="bm-cell"><div class="bm-label">Firmware</div><div class="bm-val">v3.1</div></div>
+        <div class="bm-cell"><div class="bm-label">Mesh Nodes</div><div class="bm-val">2</div></div>
+      </div>
+      <div>
+        <div class="bm-label" style="margin-bottom:6px">Connected Drones</div>
+        <div class="base-drone-list">
+          <div class="drone-tag active">D-05</div><div class="drone-tag active">D-06</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn" style="flex:1" onclick="event.stopPropagation();toast('Remote config panel opening…','a')">Configure</button>
+        <button class="btn" style="flex:1" onclick="event.stopPropagation();toast('BASE-02 placed in maintenance mode','a')">Maintenance</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: TELEMETRY
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-telemetry">
+  <div class="page-hdr">
+    <div><div class="page-title">Telemetry</div><div class="page-sub">Live streams · MISSION-241 · 10Hz</div></div>
+    <div class="page-actions">
+      <button class="btn" onclick="toast('Exporting telemetry as CSV…','g')">Export CSV</button>
+      <button class="btn" onclick="toast('Replay mode: select a completed mission to replay','a')">Replay Mode</button>
+    </div>
+  </div>
+  <div class="telem-layout">
+    <div class="telem-toolbar">
+      <span style="font-family:var(--mono);font-size:11px;color:var(--subtle)">Drone:</span>
+      <select class="telem-select" id="telem-drone-select" onchange="telemSelectDrone(this.value)">
+        <option value="ALL">All (Fleet Avg)</option>
+        <option value="D-01">D-01</option><option value="D-02">D-02</option>
+        <option value="D-03">D-03</option><option value="D-04">D-04</option>
+        <option value="D-05">D-05</option><option value="D-06">D-06</option>
+        <option value="D-07">D-07 ⚡</option><option value="D-08">D-08</option>
+      </select>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--subtle);margin-left:10px">Range:</span>
+      <select class="telem-select">
+        <option>Live</option><option>Last 5m</option><option>Last 30m</option><option>Last 1h</option>
+      </select>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--green)">
+        <div class="dot" style="width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div>
+        Live · 10Hz
+      </div>
+    </div>
+    <div class="telem-body" id="telem-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE: AUDIT
+═══════════════════════════════════════════════════ -->
+<div class="page" id="page-audit">
+  <div class="page-hdr">
+    <div><div class="page-title">Audit Log</div><div class="page-sub">Immutable · All user and system actions · Org: Bravo Team</div></div>
+    <div class="page-actions">
+      <button class="btn" onclick="toast('Exporting audit log as JSON…','g')">Export JSON</button>
+      <button class="btn" onclick="toast('Exporting audit log as CSV…','g')">Export CSV</button>
+    </div>
+  </div>
+  <div class="audit-layout">
+    <div class="audit-toolbar">
+      <input class="audit-search" id="audit-search" placeholder="Search actions, users, drones…" oninput="filterAudit(this.value)">
+      <select class="telem-select" id="audit-type" onchange="filterAudit()">
+        <option value="">All Types</option>
+        <option value="COMMAND">Commands</option>
+        <option value="MISSION">Mission</option>
+        <option value="AUTH">Auth</option>
+        <option value="CONFIG">Config</option>
+      </select>
+      <select class="telem-select" id="audit-user" onchange="filterAudit()">
+        <option value="">All Users</option>
+        <option value="dkhan">D. Khan</option>
+        <option value="system">System</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Timestamp</th><th>User</th><th>Action</th><th>Resource</th><th>Target</th><th>Result</th><th>IP</th>
+        </tr></thead>
+        <tbody id="audit-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ═══════════════════════════════════════════════════
+     MODALS
+═══════════════════════════════════════════════════ -->
+
+<!-- New Mission Modal -->
+<div class="modal-overlay" id="modal-newMission">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">New Mission</div><button class="modal-close" onclick="closeModal('newMission')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Mission Name</label><input class="form-input" placeholder="e.g. Alpha-7 Night Sweep" value=""></div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin-bottom:0"><label class="form-label">Mission Type</label>
+          <select class="form-select"><option>Area Surveillance</option><option>Border Patrol</option><option>Search & Rescue</option><option>Infrastructure Inspection</option><option>Threat Detection</option></select>
+        </div>
+        <div class="form-row" style="margin-bottom:0"><label class="form-label">Mode</label>
+          <select class="form-select"><option>Fully Autonomous</option><option>Human-in-the-Loop</option><option>Manual Assisted</option></select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:14px"><label class="form-label">Base Station</label>
+        <select class="form-select"><option>BASE-01 · Sonoran Ops (6 drones)</option><option>BASE-02 · Northern Ridge (2 drones)</option></select>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin-bottom:0"><label class="form-label">Min Drones</label><input class="form-input" value="4" type="number" min="1"></div>
+        <div class="form-row" style="margin-bottom:0"><label class="form-label">Max Altitude (m)</label><input class="form-input" value="120" type="number"></div>
+      </div>
+      <div class="form-row" style="margin-top:14px"><label class="form-label">Formation</label>
+        <select class="form-select"><option>Grid Coverage</option><option>Line Abreast</option><option>V-Formation</option><option>Orbit</option><option>Wedge</option></select>
+      </div>
+      <div class="form-row"><label class="form-label">Notes / Briefing</label>
+        <input class="form-input" placeholder="Optional mission notes…">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('newMission')">Cancel</button>
+      <button class="btn" onclick="saveMissionDraft()">Save as Draft</button>
+      <button class="btn btn-primary" onclick="createMission()">Create & Approve</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pre-flight Modal -->
+<div class="modal-overlay" id="modal-preflight">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">Pre-flight Checklist · MISSION-241</div><button class="modal-close" onclick="closeModal('preflight')">×</button></div>
+    <div class="modal-body" id="preflight-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('preflight')">Close</button>
+      <button class="btn btn-primary" onclick="closeModal('preflight');toast('Pre-flight passed — mission ready to activate','g')">Confirm & Activate</button>
+    </div>
+  </div>
+</div>
+
+<!-- Register Drone Modal -->
+<div class="modal-overlay" id="modal-registerDrone">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">Register Drone</div><button class="modal-close" onclick="closeModal('registerDrone')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Drone ID</label><input class="form-input" placeholder="e.g. D-09" id="reg-drone-id"></div>
+      <div class="form-row"><label class="form-label">Hardware Serial</label><input class="form-input" placeholder="VCT-XXXX-XXXX"></div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin-bottom:0"><label class="form-label">Assign to Base</label>
+          <select class="form-select"><option>BASE-01</option><option>BASE-02</option></select>
+        </div>
+        <div class="form-row" style="margin-bottom:0"><label class="form-label">Drone Class</label>
+          <select class="form-select"><option>VECTR-MK2</option><option>VECTR-MK1</option><option>3rd Party / MAVLink</option></select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:14px"><label class="form-label">Connectivity Model</label>
+        <select class="form-select"><option>Native VECTR (Mesh + Base)</option><option>3rd Party (5G Direct)</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('registerDrone')">Cancel</button>
+      <button class="btn btn-primary" onclick="registerDrone()">Register & Provision</button>
+    </div>
+  </div>
+</div>
+
+<!-- Register Base Modal -->
+<div class="modal-overlay" id="modal-registerBase">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">Register Base Station</div><button class="modal-close" onclick="closeModal('registerBase')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Base Name</label><input class="form-input" placeholder="e.g. Eastern Outpost"></div>
+      <div class="form-row"><label class="form-label">Provisioning Token</label><input class="form-input" placeholder="One-time token from base boot screen" id="base-token"></div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin-bottom:0"><label class="form-label">Latitude</label><input class="form-input" placeholder="32.310"></div>
+        <div class="form-row" style="margin-bottom:0"><label class="form-label">Longitude</label><input class="form-input" placeholder="-110.870"></div>
+      </div>
+      <div class="form-row" style="margin-top:14px"><label class="form-label">Deployment Tier</label>
+        <select class="form-select"><option>Tier 1 — VECTR-operated Cloud</option><option>Tier 2 — Private Cloud</option><option>Tier 4 — Air-Gapped On-Prem</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('registerBase')">Cancel</button>
+      <button class="btn btn-primary" onclick="closeModal('registerBase');toast('BASE-03 provisioned and connecting…','g')">Provision Base</button>
+    </div>
+  </div>
+</div>
+
+<!-- Abort confirm modal -->
+<div class="modal-overlay" id="modal-abortConfirm">
+  <div class="modal" style="width:380px">
+    <div class="modal-hdr"><div class="modal-title" style="color:var(--red)">⚠ Abort Mission</div><button class="modal-close" onclick="closeModal('abortConfirm')">×</button></div>
+    <div class="modal-body">
+      <p style="color:var(--dim);font-size:13px;line-height:1.6">This will immediately abort <strong style="color:var(--text)">MISSION-241</strong> and send all 8 drones to return-to-base. This action cannot be undone.</p>
+      <p style="color:var(--subtle);font-size:11px;font-family:var(--mono);margin-top:10px">Emergency abort will be logged in the audit trail.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('abortConfirm')">Cancel</button>
+      <button class="btn btn-red" onclick="executeAbort()">Confirm Abort</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════════════
+const DRONES = [
+  {id:'D-01',role:'Coord',base:'BASE-01',battery:84,status:'on-mission',firmware:'v2.4',hours:167,lat:32.260,lng:-110.924,mesh:true},
+  {id:'D-02',role:'Relay', base:'BASE-01',battery:79,status:'on-mission',firmware:'v2.4',hours:143,lat:32.260,lng:-110.913,mesh:true},
+  {id:'D-03',role:'Follow',base:'BASE-01',battery:76,status:'on-mission',firmware:'v2.4',hours:129,lat:32.260,lng:-110.901,mesh:true},
+  {id:'D-04',role:'Follow',base:'BASE-01',battery:71,status:'on-mission',firmware:'v2.4',hours:158,lat:32.254,lng:-110.924,mesh:true},
+  {id:'D-05',role:'Follow',base:'BASE-02',battery:68,status:'on-mission',firmware:'v2.4',hours:112,lat:32.254,lng:-110.913,mesh:true},
+  {id:'D-06',role:'Follow',base:'BASE-02',battery:65,status:'on-mission',firmware:'v2.4',hours:98, lat:32.254,lng:-110.901,mesh:true},
+  {id:'D-07',role:'Follow',base:'BASE-01',battery:22,status:'on-mission',firmware:'v2.4',hours:201,lat:32.248,lng:-110.920,mesh:true,warn:true},
+  {id:'D-08',role:'Follow',base:'BASE-01',battery:61,status:'on-mission',firmware:'v2.4',hours:134,lat:32.248,lng:-110.908,mesh:true},
+];
+
+const MISSIONS = [
+  {id:'MISSION-241',type:'Area Surveillance',state:'IN_PROGRESS',base:'BASE-01',drones:8,coverage:62,start:'14:32',eta:'18m',mode:'Fully Autonomous',formation:'Grid',altitude:120,notes:'Routine night sweep Alpha-7 sector'},
+  {id:'MISSION-240',type:'Border Patrol',state:'COMPLETED',base:'BASE-01',drones:6,coverage:100,start:'10:15',eta:'—',mode:'Fully Autonomous',formation:'Line Abreast',altitude:100,notes:'Northern perimeter check'},
+  {id:'MISSION-239',type:'Infrastructure Inspection',state:'COMPLETED',base:'BASE-02',drones:4,coverage:98,start:'08:00',eta:'—',mode:'Human-in-the-Loop',formation:'Waypoint',altitude:80,notes:'Pipeline segment B4–B9'},
+  {id:'MISSION-238',type:'Search & Rescue',state:'PENDING_APPROVAL',base:'BASE-01',drones:8,coverage:0,start:'—',eta:'—',mode:'Fully Autonomous',formation:'Grid',altitude:120,notes:'SAR exercise — awaiting supervisor sign-off'},
+];
+
+const AUDIT_LOG = [
+  {ts:'14:51:02',user:'dkhan',action:'COMMAND_SENT',resource:'Mission',target:'MISSION-241',result:'ACK',ip:'10.0.1.4'},
+  {ts:'14:50:44',user:'system',action:'ALERT_RAISED',resource:'Drone',target:'D-07',result:'WARN',ip:'internal'},
+  {ts:'14:48:30',user:'dkhan',action:'FORMATION_CHANGE',resource:'Swarm',target:'ALL',result:'OK',ip:'10.0.1.4'},
+  {ts:'14:42:11',user:'dkhan',action:'MISSION_ACTIVATED',resource:'Mission',target:'MISSION-241',result:'OK',ip:'10.0.1.4'},
+  {ts:'14:40:05',user:'dkhan',action:'PREFLIGHT_PASS',resource:'Mission',target:'MISSION-241',result:'OK',ip:'10.0.1.4'},
+  {ts:'14:38:22',user:'dkhan',action:'MISSION_APPROVED',resource:'Mission',target:'MISSION-241',result:'OK',ip:'10.0.1.4'},
+  {ts:'14:35:10',user:'dkhan',action:'MISSION_CREATED',resource:'Mission',target:'MISSION-241',result:'OK',ip:'10.0.1.4'},
+  {ts:'11:02:44',user:'system',action:'MISSION_COMPLETED',resource:'Mission',target:'MISSION-240',result:'OK',ip:'internal'},
+  {ts:'10:15:00',user:'dkhan',action:'MISSION_ACTIVATED',resource:'Mission',target:'MISSION-240',result:'OK',ip:'10.0.1.4'},
+  {ts:'09:58:11',user:'dkhan',action:'LOGIN',resource:'Auth',target:'dkhan',result:'OK',ip:'10.0.1.4'},
+  {ts:'08:44:30',user:'system',action:'MISSION_COMPLETED',resource:'Mission',target:'MISSION-239',result:'OK',ip:'internal'},
+  {ts:'08:00:01',user:'dkhan',action:'MISSION_ACTIVATED',resource:'Mission',target:'MISSION-239',result:'OK',ip:'10.0.1.4'},
+];
+
+const ALERTS = [
+  {type:'warn',icon:'⚡',title:'D-07 Battery Critical',detail:'22% remaining · RTB threshold at 15%',time:'2m ago'},
+  {type:'warn',icon:'⚠',title:'Formation integrity degraded',detail:'87% — D-07 spacing drift detected',time:'4m ago'},
+  {type:'info',icon:'↗',title:'Formation reconfigured',detail:'Grid spacing adjusted for terrain at row 3',time:'8m ago'},
+  {type:'info',icon:'●',title:'Mission ACTIVATED',detail:'8 drones · Area Surveillance · Alpha-7',time:'24m ago'},
+  {type:'green',icon:'✓',title:'Pre-flight passed',detail:'All 8 drones — battery, GPS, mesh nominal',time:'26m ago'},
+];
+
+let cmdLog = [
+  {state:'cs-ok',label:'DONE',text:'ACTIVATE_MISSION',target:'ALL'},
+  {state:'cs-ok',label:'DONE',text:'SET_FORMATION grid',target:'ALL'},
+  {state:'cs-ex',label:'EXEC',text:'ADJUST_SPACING 1.2x',target:'ALL'},
+];
+
+let selectedMission = MISSIONS[0];
+let selectedDrone = null;
+let telemDrone = 'ALL';
+const telemCharts = {};
+
+// ══════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════════
+function nav(pageId, btn, sidebarId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  document.querySelectorAll('.topbar-nav button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    document.querySelectorAll('.topbar-nav button').forEach(b => {
+      if (b.textContent.toLowerCase().includes(pageId.toLowerCase())) b.classList.add('active');
+    });
+  }
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  if (sidebarId) {
+    document.querySelectorAll('.sidebar-item').forEach(b => {
+      if (b.textContent.trim().toLowerCase().startsWith(sidebarId.toLowerCase())) b.classList.add('active');
+    });
+  }
+  if (pageId === 'missions') renderMissions();
+  if (pageId === 'fleet') renderFleetTable();
+  if (pageId === 'telemetry') initTelemetry();
+  if (pageId === 'audit') renderAudit();
+  if (pageId === 'overview' && !window._mapInited) initMap();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// OVERVIEW RIGHT PANEL TABS
+// ══════════════════════════════════════════════════════════════════
+function rpTab(tab, btn) {
+  ['fleet','alerts','cmds'].forEach(t => {
+    document.getElementById('rp-' + t).style.display = 'none';
+  });
+  document.getElementById('rp-' + tab).style.display = 'block';
+  document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER DRONE LIST (right panel)
+// ══════════════════════════════════════════════════════════════════
+function renderDroneListRP() {
+  const el = document.getElementById('drone-list-rp');
+  el.innerHTML = DRONES.map(d => `
+    <div class="drone-row ${d.warn?'warn-row':''}" onclick="toast('${d.id} · ${d.role} · ${d.battery}% bat · ${d.base}','${d.warn?'a':'g'}')">
+      <div class="status-dot ${d.warn?'sd-a':'sd-g'}"></div>
+      <div class="drone-info">
+        <div class="drone-id">${d.id} ${d.warn?'<span style="color:var(--amber);font-size:10px">⚠ LOW BAT</span>':''}</div>
+        <div class="drone-role">${d.role} · Grid pos ${Math.ceil(DRONES.indexOf(d)/3)+1},${(DRONES.indexOf(d)%3)+1}</div>
+      </div>
+      <div class="drone-metrics">
+        <div class="met"><span>BAT</span><span class="v${d.warn?'a':'g'}">${d.battery}%</span></div>
+        <div class="bat-bar"><div class="bat-fill ${d.battery>50?'bfg':d.battery>25?'bfa':'bfr'}" style="width:${d.battery}%"></div></div>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER ALERTS
+// ══════════════════════════════════════════════════════════════════
+function renderAlertsRP() {
+  const el = document.getElementById('alerts-list-rp');
+  el.innerHTML = ALERTS.map(a => `
+    <div class="alert-row" onclick="toast('${a.title}','${a.type==='warn'?'a':a.type==='info'?'a':'g'}')">
+      <div class="alert-icon ai-${a.type==='green'?'g':a.type==='warn'?'w':'i'}">${a.icon}</div>
+      <div class="alert-content">
+        <div class="alert-title">${a.title}</div>
+        <div class="alert-detail">${a.detail}</div>
+      </div>
+      <div class="alert-time">${a.time}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// COMMAND LOG
+// ══════════════════════════════════════════════════════════════════
+function renderCmdLog() {
+  const el = document.getElementById('cmd-log');
+  el.innerHTML = cmdLog.slice(-6).reverse().map(c => `
+    <div class="cmd-log-item">
+      <span class="cs ${c.state}">${c.label}</span>
+      <span class="cmd-text">${c.text}</span>
+      <span class="cmd-tgt">${c.target}</span>
+    </div>`).join('');
+}
+
+function sendCmd(cmd, target) {
+  cmdLog.push({state:'cs-ex',label:'EXEC',text:cmd.replace(/_/g,' '),target});
+  renderCmdLog();
+  toast(`${cmd.replace(/_/g,' ')} → ${target}`,'g');
+  setTimeout(()=>{
+    cmdLog[cmdLog.length-1].state='cs-ok';
+    cmdLog[cmdLog.length-1].label='DONE';
+    renderCmdLog();
+    AUDIT_LOG.unshift({ts:nowTime(),user:'dkhan',action:'COMMAND_SENT',resource:'Swarm',target,result:'ACK',ip:'10.0.1.4'});
+  },1400);
+}
+
+function confirmAbort() { openModal('abortConfirm'); }
+function executeAbort() {
+  closeModal('abortConfirm');
+  cmdLog.push({state:'cs-fa',label:'ABORT',text:'ABORT_MISSION',target:'ALL'});
+  renderCmdLog();
+  toast('ABORT sent — all drones returning to base','r');
+  AUDIT_LOG.unshift({ts:nowTime(),user:'dkhan',action:'MISSION_ABORTED',resource:'Mission',target:'MISSION-241',result:'OK',ip:'10.0.1.4'});
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MISSIONS PAGE
+// ══════════════════════════════════════════════════════════════════
+function stateChip(s) {
+  const map = {IN_PROGRESS:'chip-green',COMPLETED:'chip-muted',PENDING_APPROVAL:'chip-amber',ABORTED:'chip-red',DRAFT:'chip-blue'};
+  return `<span class="state-chip ${map[s]||'chip-muted'}">${s.replace(/_/g,' ')}</span>`;
+}
+
+function renderMissions(filter='') {
+  const list = document.getElementById('mission-list-items');
+  const filtered = MISSIONS.filter(m =>
+    m.id.toLowerCase().includes(filter.toLowerCase()) ||
+    m.type.toLowerCase().includes(filter.toLowerCase())
+  );
+  list.innerHTML = filtered.map(m => `
+    <div class="mission-item ${m===selectedMission?'active':''}" onclick="selectMission('${m.id}')">
+      <div class="mi-header">
+        <div class="mi-id">${m.id}</div>
+        ${stateChip(m.state)}
+      </div>
+      <div class="mi-type">${m.type} · ${m.base}</div>
+      <div class="mi-meta">
+        <span>${m.drones} drones</span>
+        <span>·</span>
+        <span>${m.coverage}% cov</span>
+        <span>·</span>
+        <span>${m.start}</span>
+      </div>
+    </div>`).join('');
+  renderMissionDetail();
+}
+
+function selectMission(id) {
+  selectedMission = MISSIONS.find(m => m.id === id);
+  renderMissions();
+}
+
+function filterMissions(v) { renderMissions(v); }
+
+function renderMissionDetail() {
+  const el = document.getElementById('mission-detail');
+  if (!selectedMission) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">◎</div><div class="empty-text">Select a mission</div></div>'; return; }
+  const m = selectedMission;
+  const canActivate = m.state === 'PENDING_APPROVAL';
+  const canAbort = m.state === 'IN_PROGRESS';
+  el.innerHTML = `
+    <div class="mission-detail-hdr">
+      <div style="display:flex;align-items:center;gap:10px">${stateChip(m.state)}<div class="md-title">${m.id}</div></div>
+      <div class="md-sub">${m.type} · ${m.mode} · ${m.base}</div>
+      <div class="md-actions">
+        ${canActivate?`<button class="btn btn-primary" onclick="approveMission('${m.id}')">Approve & Activate</button>`:''}
+        ${canAbort?`<button class="btn btn-red" onclick="confirmAbort()">Abort Mission</button>`:''}
+        <button class="btn" onclick="toast('Mission ${m.id} cloned as draft','g')">Clone</button>
+        <button class="btn" onclick="toast('Post-mission report downloading…','a')">Report</button>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="ds-title">Mission Parameters</div>
+      <div class="detail-grid">
+        <div class="detail-cell"><div class="dc-label">Type</div><div class="dc-val" style="font-size:12px">${m.type}</div></div>
+        <div class="detail-cell"><div class="dc-label">Formation</div><div class="dc-val" style="font-size:12px">${m.formation}</div></div>
+        <div class="detail-cell"><div class="dc-label">Mode</div><div class="dc-val" style="font-size:11px">${m.mode}</div></div>
+        <div class="detail-cell"><div class="dc-label">Drones</div><div class="dc-val">${m.drones}</div></div>
+        <div class="detail-cell"><div class="dc-label">Altitude</div><div class="dc-val">${m.altitude}m</div></div>
+        <div class="detail-cell"><div class="dc-label">Coverage</div><div class="dc-val">${m.coverage}%</div></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="ds-title">Timeline</div>
+      <div class="timeline">
+        ${m.state==='IN_PROGRESS'?`
+        <div class="tl-item"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-line"></div><div class="tl-content"><div class="tl-event">IN_PROGRESS — 62% coverage</div><div class="tl-time">${m.start} · ongoing</div></div></div>
+        <div class="tl-item"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-line"></div><div class="tl-content"><div class="tl-event">PRE_FLIGHT passed — all checks nominal</div><div class="tl-time">14:40</div></div></div>
+        <div class="tl-item"><div class="tl-dot" style="background:var(--blue)"></div><div class="tl-content"><div class="tl-event">Mission CREATED by D. Khan</div><div class="tl-time">14:35</div></div></div>
+        `:''}
+        ${m.state==='COMPLETED'?`
+        <div class="tl-item"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-line"></div><div class="tl-content"><div class="tl-event">COMPLETED — 100% coverage</div><div class="tl-time">Completed</div></div></div>
+        <div class="tl-item"><div class="tl-dot" style="background:var(--blue)"></div><div class="tl-content"><div class="tl-event">Mission started</div><div class="tl-time">${m.start}</div></div></div>
+        `:''}
+        ${m.state==='PENDING_APPROVAL'?`
+        <div class="tl-item"><div class="tl-dot" style="background:var(--amber)"></div><div class="tl-line"></div><div class="tl-content"><div class="tl-event">PENDING_APPROVAL — awaiting supervisor</div><div class="tl-time">Today</div></div></div>
+        <div class="tl-item"><div class="tl-dot" style="background:var(--blue)"></div><div class="tl-content"><div class="tl-event">Mission DRAFTED</div><div class="tl-time">Today</div></div></div>
+        `:''}
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="ds-title">Notes</div>
+      <p style="font-size:12px;color:var(--dim);line-height:1.6">${m.notes}</p>
+    </div>`;
+}
+
+function approveMission(id) {
+  const m = MISSIONS.find(x => x.id === id);
+  if (m) { m.state = 'IN_PROGRESS'; toast(`${id} approved and activated`,'g'); renderMissions(); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FLEET TABLE
+// ══════════════════════════════════════════════════════════════════
+function renderFleetTable(filter='', statusFilter='') {
+  const filtered = DRONES.filter(d =>
+    (d.id.toLowerCase().includes(filter.toLowerCase()) || d.role.toLowerCase().includes(filter.toLowerCase())) &&
+    (statusFilter === '' || d.status === statusFilter)
+  );
+  document.getElementById('drone-tbody').innerHTML = filtered.map(d => `
+    <tr class="${d===selectedDrone?'selected':''}" onclick="selectDroneDetail('${d.id}')">
+      <td><div class="status-dot ${d.warn?'sd-a':'sd-g'}" style="margin:auto"></div></td>
+      <td class="bold mono">${d.id} ${d.warn?'<span style="color:var(--amber);font-size:10px">⚠</span>':''}</td>
+      <td>${d.role}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="bat-bar" style="width:40px"><div class="bat-fill ${d.battery>50?'bfg':d.battery>25?'bfa':'bfr'}" style="width:${d.battery}%"></div></div>
+          <span class="mono" style="color:${d.battery<30?'var(--amber)':'var(--dim)'}">${d.battery}%</span>
+        </div>
+      </td>
+      <td>${stateChip(d.status==='on-mission'?'IN_PROGRESS':d.status.toUpperCase())}</td>
+      <td class="mono">${d.base}</td>
+      <td class="mono">${d.firmware}</td>
+      <td class="mono">${d.hours}h</td>
+      <td>
+        <button class="btn" style="padding:3px 8px;font-size:11px" onclick="event.stopPropagation();toast('${d.id} commands panel','a')">⊕</button>
+      </td>
+    </tr>`).join('');
+}
+
+function filterDrones(v) { renderFleetTable(v, document.querySelector('#page-fleet select')?.value||''); }
+function filterDroneStatus(v) { renderFleetTable(document.querySelector('#page-fleet input')?.value||'', v); }
+
+function selectDroneDetail(id) {
+  selectedDrone = DRONES.find(d => d.id === id);
+  renderFleetTable();
+  const panel = document.getElementById('fleet-detail');
+  const d = selectedDrone;
+  panel.innerHTML = `
+    <div class="drone-card-hdr">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="status-dot ${d.warn?'sd-a':'sd-g'}"></div>
+        <div class="dc-drone-id">${d.id}</div>
+        ${stateChip('IN_PROGRESS')}
+      </div>
+      <div class="dc-drone-sub">${d.role} · ${d.base} · Native VECTR</div>
+    </div>
+    <div class="drone-detail-section">
+      <div class="dds-title">Vitals</div>
+      <div class="kv-grid">
+        <div class="kv-row"><span class="kv-key">Battery</span><span class="kv-val" style="color:${d.battery<30?'var(--amber)':'var(--green)'}">${d.battery}%</span></div>
+        <div class="kv-row"><span class="kv-key">Status</span><span class="kv-val">On Mission</span></div>
+        <div class="kv-row"><span class="kv-key">Swarm Role</span><span class="kv-val">${d.role}</span></div>
+        <div class="kv-row"><span class="kv-key">Mesh Links</span><span class="kv-val" style="color:var(--green)">3 active</span></div>
+        <div class="kv-row"><span class="kv-key">GPS Lock</span><span class="kv-val" style="color:var(--green)">12 sats</span></div>
+        <div class="kv-row"><span class="kv-key">Altitude</span><span class="kv-val">120 m AGL</span></div>
+      </div>
+    </div>
+    <div class="drone-detail-section">
+      <div class="dds-title">Hardware</div>
+      <div class="kv-grid">
+        <div class="kv-row"><span class="kv-key">Model</span><span class="kv-val">VECTR-MK2</span></div>
+        <div class="kv-row"><span class="kv-key">Firmware</span><span class="kv-val">${d.firmware}</span></div>
+        <div class="kv-row"><span class="kv-key">Flight Hours</span><span class="kv-val">${d.hours}h</span></div>
+        <div class="kv-row"><span class="kv-key">Base</span><span class="kv-val">${d.base}</span></div>
+        <div class="kv-row"><span class="kv-key">Connectivity</span><span class="kv-val">Mesh + Base</span></div>
+        <div class="kv-row"><span class="kv-key">Last Maint.</span><span class="kv-val">7 days ago</span></div>
+      </div>
+    </div>
+    <div class="drone-detail-section">
+      <div class="dds-title">Quick Commands</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+        <button class="btn" onclick="sendCmd('RTB','${d.id}');toast('${d.id} returning to base','g')" style="justify-content:center">↩ Return to Base</button>
+        <button class="btn" onclick="toast('${d.id} hovering in place','a')" style="justify-content:center">⊙ Hover in Place</button>
+        <button class="btn btn-red" onclick="toast('${d.id} emergency land initiated','r')" style="justify-content:center">⬇ Emergency Land</button>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TELEMETRY CHARTS (canvas sparklines)
+// ══════════════════════════════════════════════════════════════════
+const telemPanels = [
+  {key:'alt',    label:'Altitude',  unit:'m',    base:120, range:8,   color:'#3b82f6'},
+  {key:'bat',    label:'Battery',   unit:'%',    base:65,  range:5,   color:'#22c55e'},
+  {key:'speed',  label:'Speed',     unit:'m/s',  base:8,   range:3,   color:'#f59e0b'},
+  {key:'meshRtt',label:'Mesh RTT',  unit:'ms',   base:14,  range:6,   color:'#a78bfa'},
+];
+
+const telemData = {};
+telemPanels.forEach(p => { telemData[p.key] = Array.from({length:60},()=>p.base + (Math.random()-.5)*p.range); });
+
+function initTelemetry() {
+  const body = document.getElementById('telem-body');
+  body.innerHTML = telemPanels.map(p => `
+    <div class="telem-chart-panel">
+      <div class="chart-hdr">
+        <div class="chart-title">${p.label}</div>
+        <div><span class="chart-val" id="tv-${p.key}">${telemData[p.key].slice(-1)[0].toFixed(1)}</span><span class="chart-unit"> ${p.unit}</span></div>
+      </div>
+      <div class="chart-area">
+        <canvas class="sparkline" id="canvas-${p.key}"></canvas>
+        <div class="chart-axis">
+          <span>60s ago</span><span>45s</span><span>30s</span><span>15s</span><span>now</span>
+        </div>
+      </div>
+    </div>`).join('');
+  telemPanels.forEach(p => drawChart(p));
+  if (!window._telemInterval) {
+    window._telemInterval = setInterval(()=>{
+      if (!document.getElementById('page-telemetry').classList.contains('active')) return;
+      telemPanels.forEach(p => {
+        const last = telemData[p.key].slice(-1)[0];
+        telemData[p.key].push(last + (Math.random()-.5)*p.range*1.2);
+        telemData[p.key].shift();
+        drawChart(p);
+        const el = document.getElementById('tv-'+p.key);
+        if (el) el.textContent = telemData[p.key].slice(-1)[0].toFixed(1);
+      });
+    },1000);
+  }
+}
+
+function drawChart(p) {
+  const canvas = document.getElementById('canvas-' + p.key);
+  if (!canvas) return;
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const data = telemData[p.key];
+  const min = Math.min(...data) - 1, max = Math.max(...data) + 1;
+  ctx.clearRect(0,0,W,H);
+  // grid lines
+  ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1;
+  [.25,.5,.75].forEach(f => { ctx.beginPath(); ctx.moveTo(0,H*f); ctx.lineTo(W,H*f); ctx.stroke(); });
+  // fill
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, p.color + '30'); grad.addColorStop(1, p.color + '02');
+  ctx.beginPath();
+  data.forEach((v,i) => {
+    const x = (i/(data.length-1))*W, y = H - ((v-min)/(max-min))*H;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+  // line
+  ctx.beginPath(); ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+  data.forEach((v,i) => {
+    const x = (i/(data.length-1))*W, y = H - ((v-min)/(max-min))*H;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  // current dot
+  const lv = data[data.length-1], lx = W, ly = H - ((lv-min)/(max-min))*H;
+  ctx.beginPath(); ctx.arc(lx,ly,3,0,Math.PI*2);
+  ctx.fillStyle = p.color; ctx.fill();
+}
+
+function telemSelectDrone(v) { telemDrone = v; toast(`Telemetry: ${v==='ALL'?'Fleet average':v}`,'a'); }
+
+// ══════════════════════════════════════════════════════════════════
+// AUDIT LOG
+// ══════════════════════════════════════════════════════════════════
+function renderAudit(filter='', typeFilter='', userFilter='') {
+  const f = filter || document.getElementById('audit-search')?.value || '';
+  const t = typeFilter || document.getElementById('audit-type')?.value || '';
+  const u = userFilter || document.getElementById('audit-user')?.value || '';
+  const filtered = AUDIT_LOG.filter(a =>
+    (f==='' || a.action.toLowerCase().includes(f.toLowerCase()) || a.target.toLowerCase().includes(f.toLowerCase()) || a.user.includes(f.toLowerCase())) &&
+    (t==='' || a.action.includes(t)) &&
+    (u==='' || a.user === u)
+  );
+  const resultColor = r => r==='OK'?'var(--green)':r==='ACK'?'var(--blue)':r==='WARN'?'var(--amber)':'var(--red)';
+  document.getElementById('audit-tbody').innerHTML = filtered.map(a => `
+    <tr onclick="toast('${a.action} · ${a.target} · ${a.result}','${a.result==='OK'||a.result==='ACK'?'g':'a'}')">
+      <td class="mono">${a.ts}</td>
+      <td>${a.user==='system'?'<span style="color:var(--subtle)">system</span>':'<span style="color:var(--text)">D. Khan</span>'}</td>
+      <td class="bold mono" style="font-size:11px">${a.action}</td>
+      <td>${a.resource}</td>
+      <td class="mono">${a.target}</td>
+      <td><span class="mono" style="color:${resultColor(a.result)}">${a.result}</span></td>
+      <td class="mono" style="color:var(--subtle)">${a.ip}</td>
+    </tr>`).join('');
+}
+
+function filterAudit() { renderAudit(); }
+
+// ══════════════════════════════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════════════════════════════
+function openModal(id) {
+  if (id === 'preflight') renderPreflightModal();
+  document.getElementById('modal-' + id).classList.add('open');
+}
+function closeModal(id) { document.getElementById('modal-' + id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function renderPreflightModal() {
+  const checks = [
+    {label:'Battery ≥ 80%',   status:'PASS', detail:'Avg 71% · D-07 22% ⚠'},
+    {label:'GPS Lock',         status:'PASS', detail:'8/8 drones locked · 12+ satellites'},
+    {label:'Mesh Connectivity',status:'PASS', detail:'All 8 nodes connected · RTT 14ms'},
+    {label:'Firmware Version', status:'PASS', detail:'All drones on v2.4'},
+    {label:'Airspace Clear',   status:'WARN', detail:'Manual check required · no UTM integration yet'},
+    {label:'Wind Speed ≤ 15kt',status:'PASS', detail:'12 kt NNE · within limits'},
+    {label:'Sensor Self-test', status:'PASS', detail:'Cameras, IMU, barometer nominal'},
+    {label:'Formation Lock',   status:'PASS', detail:'VRP established · grid formation ready'},
+  ];
+  document.getElementById('preflight-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${checks.map(c=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:5px">
+          <div style="width:16px;height:16px;border-radius:50%;background:${c.status==='PASS'?'var(--green-bg)':'var(--amber-bg)'};border:1px solid ${c.status==='PASS'?'#22c55e22':'#f59e0b22'};display:flex;align-items:center;justify-content:center;font-size:9px;color:${c.status==='PASS'?'var(--green)':'var(--amber)'};flex-shrink:0">${c.status==='PASS'?'✓':'⚠'}</div>
+          <div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--text)">${c.label}</div><div style="font-size:11px;color:var(--dim)">${c.detail}</div></div>
+          <span class="mono" style="font-size:10px;font-weight:600;color:${c.status==='PASS'?'var(--green)':'var(--amber)'}">${c.status}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function createMission() {
+  const newM = {id:`MISSION-${242+MISSIONS.length}`,type:'Area Surveillance',state:'APPROVED',base:'BASE-01',drones:6,coverage:0,start:'—',eta:'—',mode:'Fully Autonomous',formation:'Grid',altitude:120,notes:'New mission'};
+  MISSIONS.unshift(newM);
+  closeModal('newMission');
+  toast(`Mission ${newM.id} created and approved`,'g');
+  AUDIT_LOG.unshift({ts:nowTime(),user:'dkhan',action:'MISSION_CREATED',resource:'Mission',target:newM.id,result:'OK',ip:'10.0.1.4'});
+}
+
+function saveMissionDraft() {
+  closeModal('newMission');
+  toast('Mission saved as draft','a');
+}
+
+function registerDrone() {
+  const id = document.getElementById('reg-drone-id').value || 'D-09';
+  DRONES.push({id,role:'Follow',base:'BASE-01',battery:100,status:'ready',firmware:'v2.4',hours:0,lat:32.245,lng:-110.915,mesh:true});
+  closeModal('registerDrone');
+  toast(`${id} registered and provisioned`,'g');
+  AUDIT_LOG.unshift({ts:nowTime(),user:'dkhan',action:'DRONE_REGISTERED',resource:'Drone',target:id,result:'OK',ip:'10.0.1.4'});
+  renderFleetTable();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ORG SELECTOR
+// ══════════════════════════════════════════════════════════════════
+document.getElementById('orgBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  const d = document.getElementById('orgDropdown');
+  d.style.display = d.style.display === 'none' ? 'block' : 'none';
+});
+document.addEventListener('click', () => { document.getElementById('orgDropdown').style.display = 'none'; });
+
+function selectOrg(name) {
+  document.getElementById('orgName').textContent = name;
+  document.getElementById('orgDropdown').style.display = 'none';
+  toast(`Switched to ${name}`,'g');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════════
+function toast(msg, type='g') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  const colors = {g:'ti-g',r:'ti-r',a:'ti-a'};
+  const icons  = {g:'✓',r:'✕',a:'!'};
+  t.className = 'toast';
+  t.innerHTML = `<div class="toast-icon ${colors[type]}">${icons[type]}</div><span style="color:var(--text)">${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(()=>{ t.classList.add('fadeout'); setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// LEAFLET MAP
+// ══════════════════════════════════════════════════════════════════
+window._mapInited = false;
+function initMap() {
+  window._mapInited = true;
+  const CENTER = [32.253, -110.911];
+  const map = L.map('leaflet-map', {center:CENTER,zoom:14,zoomControl:false,attributionControl:false});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+  // Mission zone
+  L.polygon([[32.262,-110.928],[32.262,-110.895],[32.244,-110.895],[32.244,-110.928]],
+    {color:'#3b82f6',weight:1.5,opacity:.5,fillColor:'#3b82f6',fillOpacity:.04,dashArray:'4,6'})
+    .addTo(map).bindTooltip('<span style="font-family:monospace;font-size:10px;color:#3b82f6;letter-spacing:.08em">MISSION AREA · ALPHA-7</span>',{permanent:true,direction:'top',className:'zone-label',offset:[0,-4]});
+
+  // Coverage fill + scan lines
+  L.polygon([[32.244,-110.928],[32.244,-110.895],[32.255,-110.895],[32.255,-110.928]],
+    {color:'#3b82f6',weight:0,fillColor:'#3b82f6',fillOpacity:.07}).addTo(map);
+  for(let i=0;i<7;i++){
+    const lat=32.244+i*0.0016;
+    L.polyline([[lat,-110.928],[lat,-110.895]],{color:'#3b82f6',weight:.6,opacity:.15}).addTo(map);
+  }
+
+  // VRP
+  const vrpIcon=L.divIcon({className:'',html:`<div style="position:relative;width:20px;height:20px"><div style="position:absolute;top:50%;left:0;right:0;height:1px;background:#3b82f6;opacity:.6"></div><div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#3b82f6;opacity:.6"></div><div style="position:absolute;top:50%;left:50%;width:5px;height:5px;border-radius:50%;background:#3b82f6;transform:translate(-50%,-50%);box-shadow:0 0 8px #3b82f6"></div><div style="position:absolute;top:-16px;left:8px;font-family:monospace;font-size:9px;color:#3b82f6;opacity:.8;white-space:nowrap">VRP</div></div>`,iconSize:[20,20],iconAnchor:[10,10]});
+  L.marker([32.253,-110.911],{icon:vrpIcon,interactive:false}).addTo(map);
+
+  // Base
+  const baseIcon=L.divIcon({className:'',html:`<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:24px;height:24px;background:#0f0f0f;border:1.5px solid #252525;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 0 10px #000">⬡</div><div style="font-family:monospace;font-size:9px;color:#888;background:#080808cc;padding:1px 5px;border-radius:2px;border:1px solid #252525;white-space:nowrap">BASE-01</div></div>`,iconSize:[60,42],iconAnchor:[30,21]});
+  L.marker([32.240,-110.932],{icon:baseIcon}).addTo(map).bindPopup('<span style="font-family:monospace;font-size:11px">BASE-01 · Online · 14ms</span>');
+
+  // Drone markers + animation
+  const droneMarkers = DRONES.map(d => {
+    const col=d.warn?'#f59e0b':'#22c55e', glow=d.warn?'#f59e0b44':'#22c55e44';
+    const icon=L.divIcon({className:'',html:`<div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer"><div style="width:10px;height:10px;border-radius:50%;background:${col};border:1.5px solid ${col};box-shadow:0 0 8px ${glow}"></div><div style="font-family:monospace;font-size:9px;color:#888;background:#080808cc;padding:1px 4px;border-radius:2px;border:1px solid #252525;white-space:nowrap">${d.id}${d.warn?' ⚡':''}</div></div>`,iconSize:[50,28],iconAnchor:[25,10]});
+    const marker=L.marker([d.lat,d.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:monospace;font-size:11px;line-height:1.6"><strong style="color:#e8e8e8">${d.id}</strong><br>Role: <span style="color:#888">${d.role}</span><br>Battery: <span style="color:${col}">${d.battery}%</span><br>Base: ${d.base}</div>`);
+    return {marker,d};
+  });
+
+  // Mesh links
+  [[0,1],[1,2],[0,3],[1,4],[2,5],[3,4],[4,5],[3,6],[4,7],[6,7]].forEach(([a,b])=>{
+    const da=DRONES[a],db=DRONES[b],isW=da.warn||db.warn;
+    L.polyline([[da.lat,da.lng],[db.lat,db.lng]],{color:isW?'#f59e0b':'#22c55e',weight:1,opacity:isW?.25:.18,dashArray:isW?'3,5':null}).addTo(map);
+  });
+
+  // Base uplinks
+  [DRONES[0],DRONES[3]].forEach(d=>{
+    L.polyline([[32.240,-110.932],[d.lat,d.lng]],{color:'#3b82f6',weight:1,opacity:.12,dashArray:'2,6'}).addTo(map);
+  });
+
+  // Waypoint rows
+  [[32.261,-110.928],[32.255,-110.895],[32.249,-110.928]].forEach((pt,i)=>{
+    const end=i%2===0?[pt[0],-110.895]:[pt[0],-110.928];
+    L.polyline([pt,end],{color:'#3b82f6',weight:1,opacity:.12,dashArray:'3,5'}).addTo(map);
+  });
+
+  // Controls
+  document.getElementById('zoom-in').addEventListener('click',()=>map.zoomIn());
+  document.getElementById('zoom-out').addEventListener('click',()=>map.zoomOut());
+  document.getElementById('recenter').addEventListener('click',()=>map.setView(CENTER,14));
+
+  // Drone drift
+  let tick=0;
+  setInterval(()=>{
+    tick+=0.02;
+    droneMarkers.forEach(({marker,d},i)=>{
+      marker.setLatLng([d.lat+Math.cos(tick+i*.8)*.0003, d.lng+Math.sin(tick+i*1.1)*.0002]);
+    });
+  },100);
+
+  // Styles
+  const s=document.createElement('style');
+  s.textContent=`.zone-label{background:transparent!important;border:none!important;box-shadow:none!important;color:#3b82f6;}.zone-label::before{display:none!important;}.leaflet-popup-content-wrapper{background:#0f0f0f!important;border:1px solid #252525!important;border-radius:5px!important;color:#888!important;box-shadow:0 4px 20px #000000aa!important;}.leaflet-popup-tip{background:#0f0f0f!important;}.leaflet-popup-close-button{color:#666!important;}.leaflet-control-attribution{display:none!important;}`;
+  document.head.appendChild(s);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════════════
+function nowTime() {
+  const n=new Date(); return `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+renderDroneListRP();
+renderAlertsRP();
+renderCmdLog();
+initMap();
+
+// Live telemetry ticker on overview stats
+setInterval(()=>{
+  if (!document.getElementById('page-overview').classList.contains('active')) return;
+  // subtle coverage increment
+},5000);
+
+</script>
+</body>
+</html>
