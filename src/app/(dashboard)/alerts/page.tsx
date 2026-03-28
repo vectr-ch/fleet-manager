@@ -127,7 +127,7 @@ export default function AlertsPage() {
                   )}
                   {alert.node_id && (
                     <div className="font-mono text-[10px] text-neutral-600 mt-1">
-                      Node: <span className="text-neutral-400">{alert.node_id}</span>
+                      Drone: <span className="text-neutral-400">{alert.node_id}</span>
                     </div>
                   )}
                 </div>

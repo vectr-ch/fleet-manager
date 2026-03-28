@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { friendlyError } from "@/lib/error-messages";
 import { trpc } from "@/lib/trpc/client";
 
 export default function ForgotPasswordPage() {
@@ -15,7 +16,7 @@ export default function ForgotPasswordPage() {
       if (err.data?.code === "TOO_MANY_REQUESTS") {
         setError("Too many requests. Please try again later.");
       } else {
-        setError(err.message);
+        setError(friendlyError(err));
       }
     },
   });

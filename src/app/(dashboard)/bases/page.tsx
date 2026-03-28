@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import {
+  getBaseEditDefaults,
+  validateBaseEditCoordinates,
+  validateBaseEditName,
+} from "@/lib/base-edit";
 import { trpc } from "@/lib/trpc/client";
+import { friendlyError } from "@/lib/error-messages";
 import {
   MapPin,
   Shield,
@@ -296,7 +302,7 @@ function CreateBaseModal({
       onTokenReceived(data.provisioning_token);
       onClose();
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -452,11 +458,14 @@ interface BaseCardProps {
 
 function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
   const utils = trpc.useUtils();
+  const initialEditState = getBaseEditDefaults(base);
   const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState(base.name);
-  const [editLat, setEditLat] = useState(base.lat?.toString() ?? "");
-  const [editLng, setEditLng] = useState(base.lng?.toString() ?? "");
-  const [editMaintenance, setEditMaintenance] = useState(base.maintenance_mode);
+  const [editName, setEditName] = useState(initialEditState.name);
+  const [editLat, setEditLat] = useState(initialEditState.lat);
+  const [editLng, setEditLng] = useState(initialEditState.lng);
+  const [editLatInvalid, setEditLatInvalid] = useState(false);
+  const [editLngInvalid, setEditLngInvalid] = useState(false);
+  const [editMaintenance, setEditMaintenance] = useState(initialEditState.maintenance);
   const [error, setError] = useState<string | null>(null);
   const [showRevoke, setShowRevoke] = useState(false);
   const [showIssueCert, setShowIssueCert] = useState(false);
@@ -474,7 +483,7 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
       setEditing(false);
       setError(null);
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const revokeMutation = trpc.bases.revokeCert.useMutation({
@@ -482,23 +491,23 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
       utils.bases.list.invalidate();
       setShowRevoke(false);
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const decommissionMutation = trpc.bases.decommission.useMutation({
     onSuccess: () => { utils.bases.list.invalidate(); setShowDecommission(false); },
-    onError: (e) => { setShowDecommission(false); setError(e.message); },
+    onError: (e) => { setShowDecommission(false); setError(friendlyError(e)); },
   });
   const recommissionMutation = trpc.bases.recommission.useMutation({
     onSuccess: () => { utils.bases.list.invalidate(); },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const regenerateMutation = trpc.bases.regenerateToken.useMutation({
     onSuccess: (data) => {
       onTokenReceived(data.provisioning_token);
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const issueCertMutation = trpc.bases.issueCert.useMutation({
@@ -508,25 +517,56 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
       onCertIssued(data);
       setTimeout(() => issueCertMutation.reset(), 0);
     },
-    onError: (e) => { setShowIssueCert(false); setError(e.message); },
+    onError: (e) => { setShowIssueCert(false); setError(friendlyError(e)); },
   });
 
   const handleSave = () => {
+    const trimmedName = editName.trim();
+    const validationError = validateBaseEditName(trimmedName);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const coordinateError = validateBaseEditCoordinates({
+      lat: editLat,
+      lng: editLng,
+      hadCoordinates: base.lat != null || base.lng != null,
+      hasInvalidInput: editLatInvalid || editLngInvalid,
+    });
+    if (coordinateError) {
+      setError(coordinateError);
+      return;
+    }
+
     setError(null);
     updateMutation.mutate({
       id: base.id,
-      name: editName.trim() || undefined,
+      name: trimmedName,
       lat: editLat !== "" ? parseFloat(editLat) : undefined,
       lng: editLng !== "" ? parseFloat(editLng) : undefined,
       maintenance_mode: editMaintenance,
     });
   };
 
+  const resetEditState = () => {
+    const next = getBaseEditDefaults(base);
+    setEditName(next.name);
+    setEditLat(next.lat);
+    setEditLng(next.lng);
+    setEditLatInvalid(false);
+    setEditLngInvalid(false);
+    setEditMaintenance(next.maintenance);
+  };
+
+  const handleStartEdit = () => {
+    resetEditState();
+    setEditing(true);
+    setError(null);
+  };
+
   const handleCancel = () => {
-    setEditName(base.name);
-    setEditLat(base.lat?.toString() ?? "");
-    setEditLng(base.lng?.toString() ?? "");
-    setEditMaintenance(base.maintenance_mode);
+    resetEditState();
     setEditing(false);
     setError(null);
   };
@@ -550,8 +590,30 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
             {editing ? (
               <div className="flex items-center gap-1.5 mt-1.5">
                 <MapPin className="size-3 text-[#3a3a3a] shrink-0 mt-0.5" />
-                <FieldInput type="number" step="any" value={editLat} onChange={(e) => setEditLat(e.currentTarget.value)} placeholder="Lat" size="sm" className="w-24" />
-                <FieldInput type="number" step="any" value={editLng} onChange={(e) => setEditLng(e.currentTarget.value)} placeholder="Lng" size="sm" className="w-24" />
+                <FieldInput
+                  type="number"
+                  step="any"
+                  value={editLat}
+                  onChange={(e) => {
+                    setEditLat(e.currentTarget.value);
+                    setEditLatInvalid(e.currentTarget.validity.badInput);
+                  }}
+                  placeholder="Lat"
+                  size="sm"
+                  className="w-24"
+                />
+                <FieldInput
+                  type="number"
+                  step="any"
+                  value={editLng}
+                  onChange={(e) => {
+                    setEditLng(e.currentTarget.value);
+                    setEditLngInvalid(e.currentTarget.validity.badInput);
+                  }}
+                  placeholder="Lng"
+                  size="sm"
+                  className="w-24"
+                />
                 <button
                   type="button"
                   onClick={() => setShowMapPicker(true)}
@@ -641,7 +703,7 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
             <>
               {!isDecommissioned && (
                 <>
-                  <ActionButton icon={<Pencil className="size-3" />} onClick={() => setEditing(true)}>Edit</ActionButton>
+                  <ActionButton icon={<Pencil className="size-3" />} onClick={handleStartEdit}>Edit</ActionButton>
                   {isPending && (
                     <>
                       <ActionButton variant="amber" icon={<RotateCcw className="size-3" />} onClick={() => regenerateMutation.mutate({ id: base.id })} disabled={regenerateMutation.isPending}>
@@ -721,6 +783,8 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
           onConfirm={(newLat, newLng) => {
             setEditLat(newLat.toFixed(6));
             setEditLng(newLng.toFixed(6));
+            setEditLatInvalid(false);
+            setEditLngInvalid(false);
             setShowMapPicker(false);
           }}
           onCancel={() => setShowMapPicker(false)}

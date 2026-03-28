@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { friendlyError } from "@/lib/error-messages";
 import { trpc } from "@/lib/trpc/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PasswordSection } from "@/components/settings/password-section";
@@ -42,7 +43,7 @@ function OrgTab() {
       setError(null);
       setTimeout(() => setSuccess(false), 2000);
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const startEdit = () => {
@@ -122,7 +123,7 @@ function OrgTab() {
             <div className="grid grid-cols-3 gap-3 pt-2 border-t border-neutral-800">
               {org?.max_nodes != null && (
                 <div>
-                  <div className="font-mono text-[10px] text-neutral-500 mb-0.5">Max Nodes</div>
+                  <div className="font-mono text-[10px] text-neutral-500 mb-0.5">Max Drones</div>
                   <div className="font-mono text-[13px] font-semibold text-foreground">{org.max_nodes}</div>
                 </div>
               )}
@@ -245,7 +246,7 @@ function InvitesTab() {
       setRoleId("");
       setCreateError(null);
     },
-    onError: (e) => setCreateError(e.message),
+    onError: (e) => setCreateError(friendlyError(e)),
   });
 
   const deleteMutation = trpc.invites.delete.useMutation({

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { friendlyError } from "@/lib/error-messages";
 import { trpc } from "@/lib/trpc/client";
 import { StepUpDialog } from "./step-up-dialog";
 
@@ -34,7 +35,7 @@ export function TOTPSection() {
       setActiveAction(null);
       setActionError(null);
     },
-    onError: (e) => setActionError(e.message),
+    onError: (e) => setActionError(friendlyError(e)),
   });
 
   const regenerateMutation = trpc.userAccount.regenerateBackupCodes.useMutation({
@@ -44,7 +45,7 @@ export function TOTPSection() {
       setActionError(null);
       utils.userAccount.mfaStatus.invalidate();
     },
-    onError: (e) => setActionError(e.message),
+    onError: (e) => setActionError(friendlyError(e)),
   });
 
   // MFA setup flow (uses JWT-authenticated procedures, not the login challenge flow)
@@ -55,7 +56,7 @@ export function TOTPSection() {
       setShowSetup(false);
       utils.userAccount.mfaStatus.invalidate();
     },
-    onError: (e) => setActionError(e.message),
+    onError: (e) => setActionError(friendlyError(e)),
   });
 
   const [setupCode, setSetupCode] = useState("");

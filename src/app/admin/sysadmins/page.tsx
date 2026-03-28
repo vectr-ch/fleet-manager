@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { friendlyError } from "@/lib/error-messages";
 import { trpc } from "@/lib/trpc/client";
 import type { Sysadmin } from "@/lib/types";
 
@@ -20,7 +21,7 @@ function InviteForm({ onClose }: { onClose: () => void }) {
       setInviteUrl(data.invite_url);
     },
     onError: (err) => {
-      setError(err.message);
+      setError(friendlyError(err));
     },
   });
 
@@ -111,7 +112,7 @@ function ResetPasswordAction({ admin }: { admin: Sysadmin }) {
       setResetUrl(data.reset_url);
     },
     onError: (err) => {
-      setError(err.message);
+      setError(friendlyError(err));
     },
   });
 

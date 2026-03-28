@@ -30,7 +30,7 @@ export default function MapPage() {
         <div className="flex items-center gap-3">
           <div className="text-[15px] font-semibold text-white tracking-tight">Map</div>
           <div className="font-mono text-[10px] text-neutral-500">
-            {basesWithCoords.length} base{basesWithCoords.length !== 1 ? "s" : ""} · {nodes.length} node{nodes.length !== 1 ? "s" : ""}
+            {basesWithCoords.length} base{basesWithCoords.length !== 1 ? "s" : ""} · {nodes.length} drone{nodes.length !== 1 ? "s" : ""}
           </div>
         </div>
       </div>

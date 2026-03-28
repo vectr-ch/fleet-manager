@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { friendlyError } from "@/lib/error-messages";
 import { trpc } from "@/lib/trpc/client";
 
 const inputClass =
@@ -22,7 +23,7 @@ export function PasswordSection() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const handleSubmit = (e: React.FormEvent) => {

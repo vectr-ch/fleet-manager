@@ -46,7 +46,7 @@ export default function TelemetryPage() {
       ) : !hasData ? (
         <div className="flex flex-col items-center justify-center py-16 gap-2 text-center bg-neutral-900 border border-neutral-800 rounded-[5px]">
           <span className="font-mono text-[13px] text-neutral-400">No telemetry data available</span>
-          <span className="font-mono text-[11px] text-neutral-600">Data will appear once nodes begin reporting</span>
+          <span className="font-mono text-[11px] text-neutral-600">Data will appear once drones begin reporting</span>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4">

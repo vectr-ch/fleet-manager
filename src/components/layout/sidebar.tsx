@@ -73,21 +73,6 @@ export function Sidebar() {
         },
       ],
     },
-    {
-      label: t("system"),
-      items: [
-        {
-          label: t("settings"),
-          href: "/settings",
-          icon: (
-            <svg viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M7 4.5v3M7 9.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-            </svg>
-          ),
-        },
-      ],
-    },
   ];
 
   return (
@@ -135,6 +120,25 @@ export function Sidebar() {
 
       {/* Bottom */}
       <div className="mt-auto pt-2 px-2 border-t border-border">
+        <Link
+          href="/settings"
+          className={cn(
+            "flex items-center gap-2 px-2 py-1.5 rounded-[5px] cursor-pointer text-muted-foreground text-[12.5px] transition-colors relative",
+            pathname.startsWith("/settings") && "bg-secondary text-foreground",
+            !pathname.startsWith("/settings") && "hover:bg-border hover:text-foreground"
+          )}
+        >
+          {pathname.startsWith("/settings") && (
+            <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-foreground rounded-r" />
+          )}
+          <span className={cn("w-3.5 h-3.5 shrink-0 [&>svg]:w-full [&>svg]:h-full", pathname.startsWith("/settings") ? "opacity-100" : "opacity-60")}>
+            <svg viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M7 4.5v3M7 9.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+          </span>
+          {t("settings")}
+        </Link>
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-[5px] text-muted-foreground text-[12.5px]">
           <span className="w-3.5 h-3.5 shrink-0 opacity-60 [&>svg]:w-full [&>svg]:h-full">
             <svg viewBox="0 0 14 14" fill="none">
@@ -143,7 +147,7 @@ export function Sidebar() {
           </span>
           {t("firmware")}
           <span className="ml-auto font-mono text-[10px] px-1.5 py-px rounded-sm bg-fleet-green-dim text-fleet-green border border-fleet-green/15">
-            v2.4
+            v1.0
           </span>
         </div>
       </div>

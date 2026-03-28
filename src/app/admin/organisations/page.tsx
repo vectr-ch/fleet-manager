@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { friendlyError } from "@/lib/error-messages";
 import { trpc } from "@/lib/trpc/client";
 import type { SysadminOrg, OrgMember } from "@/lib/types";
 
@@ -35,7 +36,7 @@ function CreateOrgForm({ onClose }: { onClose: () => void }) {
       }
     },
     onError: (err) => {
-      setError(err.message);
+      setError(friendlyError(err));
     },
   });
 
@@ -205,7 +206,7 @@ function OrgMembers({ slug }: { slug: string }) {
       {isLoading ? (
         <p className="text-sm text-neutral-500">Loading…</p>
       ) : error ? (
-        <p className="text-sm text-red-400">{error.message}</p>
+        <p className="text-sm text-red-400">{friendlyError(error)}</p>
       ) : !members || members.length === 0 ? (
         <p className="text-sm text-neutral-500">No members</p>
       ) : (
@@ -294,7 +295,7 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
       utils.sysadminOrgs.list.invalidate();
       setEditError(null);
     },
-    onError: (err) => setEditError(err.message),
+    onError: (err) => setEditError(friendlyError(err)),
   });
 
   const inviteMutation = trpc.sysadminOrgs.inviteAdmin.useMutation({
@@ -303,7 +304,7 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
       setInviteError(null);
       setInviteEmail("");
     },
-    onError: (err) => setInviteError(err.message),
+    onError: (err) => setInviteError(friendlyError(err)),
   });
 
   const deactivateMutation = trpc.sysadminOrgs.deactivate.useMutation({
@@ -311,7 +312,7 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
       utils.sysadminOrgs.list.invalidate();
       onClose();
     },
-    onError: (err) => setDeactivateError(err.message),
+    onError: (err) => setDeactivateError(friendlyError(err)),
   });
 
   const handleSave = (e: React.FormEvent) => {
@@ -369,7 +370,7 @@ function EditPanel({ org, onClose }: { org: SysadminOrg; onClose: () => void }) 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-sm text-neutral-400">Max Nodes</label>
+                  <label className="block text-sm text-neutral-400">Max Drones</label>
                   <input
                     type="number"
                     min={0}
@@ -600,7 +601,7 @@ export default function OrganisationsPage() {
       {isLoading ? (
         <div className="py-12 text-center text-sm text-neutral-500">Loading...</div>
       ) : error ? (
-        <div className="py-12 text-center text-sm text-red-400">{error.message}</div>
+        <div className="py-12 text-center text-sm text-red-400">{friendlyError(error)}</div>
       ) : !orgs || orgs.length === 0 ? (
         <div className="rounded-lg border border-neutral-800 py-12 text-center text-sm text-neutral-500">
           No organisations yet
@@ -623,7 +624,7 @@ export default function OrganisationsPage() {
                   Plan
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-400">
-                  Nodes (max)
+                  Drones (max)
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-400">
                   Bases (max)

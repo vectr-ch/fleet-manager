@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { friendlyError } from "@/lib/error-messages";
 import { trpc } from "@/lib/trpc/client";
 import {
   isWebAuthnSupported,
@@ -54,7 +55,7 @@ function PasskeyRow({ passkey, onDeleted }: { passkey: PasskeyInfo; onDeleted: (
       setError(null);
       onDeleted(); // re-fetch list
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const deleteMutation = trpc.userAccount.deletePasskey.useMutation({
@@ -62,7 +63,7 @@ function PasskeyRow({ passkey, onDeleted }: { passkey: PasskeyInfo; onDeleted: (
       setConfirmDelete(false);
       onDeleted();
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const handleRename = (e: React.FormEvent) => {
@@ -204,8 +205,7 @@ export function PasskeysSection() {
         setAddLoading(false);
         return; // User cancelled
       }
-      const message = err instanceof Error ? err.message : "Failed to register passkey";
-      setAddError(message);
+      setAddError(friendlyError(err));
     } finally {
       setAddLoading(false);
     }

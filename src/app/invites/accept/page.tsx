@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { friendlyError } from "@/lib/error-messages";
 import { trpc } from "@/lib/trpc/client";
 import { validatePassword } from "@/lib/password";
 import { getInviteAcceptContinuePath } from "@/lib/routing/app-access";
@@ -39,7 +40,7 @@ function InviteAcceptForm() {
       if (err.data?.code === "TOO_MANY_REQUESTS") {
         setError("Too many requests. Please try again later.");
       } else {
-        setError(err.message);
+        setError(friendlyError(err));
       }
     },
   });

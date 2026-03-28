@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { friendlyError } from "@/lib/error-messages";
+import { getNodeEditDefaults, validateNodeEditBaseId, validateNodeEditName } from "@/lib/node-edit";
 import { trpc } from "@/lib/trpc/client";
 import {
   Shield,
@@ -26,6 +28,7 @@ import {
   Cpu,
   Server,
 } from "lucide-react";
+import { InlineEditActions } from "@/components/dashboard/inline-edit-actions";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -232,7 +235,7 @@ function RevokeModal({
         </div>
         <p className="text-[12px] text-[#888] mb-4 mt-2 leading-relaxed">
           Revoke the certificate for <span className="text-foreground font-medium">{nodeName}</span>?
-          The node will return to pending status and require re-enrollment.
+          The drone will return to pending status and require re-enrollment.
         </p>
         <div className="mb-4">
           <label className="font-mono text-[10px] text-[#555] block mb-1.5">Reason (optional)</label>
@@ -320,14 +323,21 @@ function CreateNodeModal({
       onTokenReceived(data.provisioning_token);
       onClose();
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedName = name.trim();
+    const nameError = validateNodeEditName(trimmedName);
+    if (nameError) {
+      setError(nameError);
+      return;
+    }
+
     setError(null);
     createMutation.mutate({
-      name: name.trim(),
+      name: trimmedName,
       serial: serial.trim() || undefined,
       base_id: baseId.trim() || undefined,
     });
@@ -341,7 +351,7 @@ function CreateNodeModal({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Plus className="size-3.5 text-foreground" />
-            <span className="font-mono text-[10px] tracking-[.08em] text-foreground uppercase font-medium">Register Node</span>
+            <span className="font-mono text-[10px] tracking-[.08em] text-foreground uppercase font-medium">Register Drone</span>
           </div>
           <button type="button" onClick={onClose} className="text-[#555] hover:text-foreground transition-colors">
             <X className="size-4" />
@@ -351,7 +361,7 @@ function CreateNodeModal({
         <div className="space-y-3">
           <div>
             <label className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase block mb-1.5">Name *</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Node-01" required className={inputClass} />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Drone-01" required className={inputClass} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -390,7 +400,7 @@ function CreateNodeModal({
             disabled={createMutation.isPending}
             className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
           >
-            {createMutation.isPending ? "Creating..." : "Register Node"}
+            {createMutation.isPending ? "Creating..." : "Register Drone"}
           </button>
         </div>
       </form>
@@ -419,10 +429,11 @@ interface NodeRowProps {
 
 function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
   const utils = trpc.useUtils();
+  const initialEditState = getNodeEditDefaults(node);
   const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState(node.name);
-  const [editSerial, setEditSerial] = useState(node.serial ?? "");
-  const [editBaseId, setEditBaseId] = useState(node.base_id ?? "");
+  const [editName, setEditName] = useState(initialEditState.name);
+  const [editSerial, setEditSerial] = useState(initialEditState.serial);
+  const [editBaseId, setEditBaseId] = useState(initialEditState.baseId);
   const [error, setError] = useState<string | null>(null);
   const [showRevoke, setShowRevoke] = useState(false);
 
@@ -436,7 +447,7 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
       setEditing(false);
       setError(null);
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const revokeMutation = trpc.nodes.revokeCert.useMutation({
@@ -444,23 +455,23 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
       utils.nodes.list.invalidate();
       setShowRevoke(false);
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const decommissionMutation = trpc.nodes.decommission.useMutation({
     onSuccess: () => { utils.nodes.list.invalidate(); },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
   const recommissionMutation = trpc.nodes.recommission.useMutation({
     onSuccess: () => { utils.nodes.list.invalidate(); },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const regenerateMutation = trpc.nodes.regenerateToken.useMutation({
     onSuccess: (data) => {
       onTokenReceived(data.provisioning_token);
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const issueCertMutation = trpc.nodes.issueCert.useMutation({
@@ -469,23 +480,50 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
       onCertIssued(data);
       setTimeout(() => issueCertMutation.reset(), 0);
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => setError(friendlyError(e)),
   });
 
   const handleSave = () => {
+    const trimmedName = editName.trim();
+    const nameError = validateNodeEditName(trimmedName);
+    if (nameError) {
+      setError(nameError);
+      return;
+    }
+
+    const baseError = validateNodeEditBaseId({
+      baseId: editBaseId,
+      hadBase: !!node.base_id,
+    });
+    if (baseError) {
+      setError(baseError);
+      return;
+    }
+
     setError(null);
     updateMutation.mutate({
       id: node.id,
-      name: editName.trim() || undefined,
+      name: trimmedName,
       serial: editSerial.trim() || undefined,
       base_id: editBaseId.trim() || undefined,
     });
   };
 
+  const resetEditState = () => {
+    const next = getNodeEditDefaults(node);
+    setEditName(next.name);
+    setEditSerial(next.serial);
+    setEditBaseId(next.baseId);
+  };
+
+  const handleStartEdit = () => {
+    resetEditState();
+    setEditing(true);
+    setError(null);
+  };
+
   const handleCancel = () => {
-    setEditName(node.name);
-    setEditSerial(node.serial ?? "");
-    setEditBaseId(node.base_id ?? "");
+    resetEditState();
     setEditing(false);
     setError(null);
   };
@@ -515,20 +553,14 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
         <td className="px-4 py-2.5">
           <div className="flex items-center gap-1.5">
             {error && <span className="text-[10px] text-red-400 mr-1">{error}</span>}
-            <button
-              onClick={handleSave}
-              disabled={updateMutation.isPending}
-              className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2 py-1 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 disabled:opacity-50 transition-colors"
-            >
-              <Check className="size-3" />
-              {updateMutation.isPending ? "Saving..." : "Save"}
-            </button>
-            <button
-              onClick={handleCancel}
-              className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2 py-1 rounded-md border border-[#252525] text-[#888] hover:text-foreground transition-colors"
-            >
-              <X className="size-3" />
-            </button>
+            <InlineEditActions
+              isPending={updateMutation.isPending}
+              saveLabel={updateMutation.isPending ? "Saving..." : "Save"}
+              onSave={handleSave}
+              onClose={handleCancel}
+              saveIcon={<Check className="size-3" />}
+              closeIcon={<X className="size-3" />}
+            />
           </div>
         </td>
       </tr>
@@ -569,7 +601,7 @@ function NodeRow({ node, bases, onTokenReceived, onCertIssued }: NodeRowProps) {
             {!isDecommissioned && (
               <>
                 <button
-                  onClick={() => setEditing(true)}
+                  onClick={handleStartEdit}
                   className="inline-flex items-center justify-center size-7 rounded-md border border-[#252525] text-[#555] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
                   title="Edit"
                 >
@@ -685,7 +717,7 @@ export default function FleetPage() {
           <div>
             <h1 className="text-[15px] font-semibold text-foreground tracking-[-0.01em]">Fleet</h1>
             <p className="text-[11px] text-[#555] font-mono mt-0.5">
-              {isLoading ? "Loading..." : `${nodes?.length ?? 0} node${(nodes?.length ?? 0) === 1 ? "" : "s"} registered`}
+              {isLoading ? "Loading..." : `${nodes?.length ?? 0} drone${(nodes?.length ?? 0) === 1 ? "" : "s"} registered`}
             </p>
           </div>
           <button
@@ -693,7 +725,7 @@ export default function FleetPage() {
             className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 transition-colors"
           >
             <Plus className="size-3.5" />
-            Register Node
+            Register Drone
           </button>
         </div>
       </div>
@@ -746,7 +778,7 @@ export default function FleetPage() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <div className="size-5 border-2 border-[#252525] border-t-[#666] rounded-full animate-spin" />
-            <span className="font-mono text-[11px] text-[#555]">Loading nodes...</span>
+            <span className="font-mono text-[11px] text-[#555]">Loading drones...</span>
           </div>
         ) : !filteredNodes || filteredNodes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -755,10 +787,10 @@ export default function FleetPage() {
             </div>
             <div className="text-center">
               <div className="font-mono text-[12px] text-[#555]">
-                {searchQuery || filterBase ? "No nodes match your filters" : "No nodes registered yet"}
+                {searchQuery || filterBase ? "No drones match your filters" : "No drones registered yet"}
               </div>
               <div className="font-mono text-[10px] text-[#3a3a3a] mt-1">
-                {searchQuery || filterBase ? "Try different search criteria" : "Register a node to get started"}
+                {searchQuery || filterBase ? "Try different search criteria" : "Register a drone to get started"}
               </div>
             </div>
           </div>
