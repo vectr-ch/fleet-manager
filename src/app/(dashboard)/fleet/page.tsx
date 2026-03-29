@@ -473,7 +473,7 @@ function NodeRow({ node, bases }: NodeRowProps) {
                     onClick={() => issueCertMutation.mutate({ id: node.id })}
                     disabled={issueCertMutation.isPending}
                     className="inline-flex items-center justify-center size-7 rounded-md bg-fleet-green-dim text-fleet-green border border-fleet-green/15 hover:bg-fleet-green/15 disabled:opacity-50 transition-colors"
-                    title="Download Bundle"
+                    title="Download Certificate Bundle"
                   >
                     <Download className="size-3" />
                   </button>

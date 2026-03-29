@@ -574,7 +574,7 @@ function BaseCard({ base }: BaseCardProps) {
                 <>
                   <ActionButton icon={<Pencil className="size-3" />} onClick={handleStartEdit}>Edit</ActionButton>
                   {(isPending || isRevoked) && (
-                    <ActionButton variant="green" icon={<Download className="size-3" />} onClick={() => setShowIssueCert(true)}>Download Bundle</ActionButton>
+                    <ActionButton variant="green" icon={<Download className="size-3" />} onClick={() => setShowIssueCert(true)}>Download Certificate Bundle</ActionButton>
                   )}
                   {isEnrolled && (
                     <ActionButton variant="danger" icon={<ShieldAlert className="size-3" />} onClick={() => setShowRevoke(true)}>Revoke</ActionButton>
@@ -605,7 +605,7 @@ function BaseCard({ base }: BaseCardProps) {
           icon={<ShieldCheck className="size-3.5 text-fleet-green" />}
           title="Download Provisioning Bundle"
           confirmVariant="green"
-          confirmLabel="Download Bundle"
+          confirmLabel="Download Certificate Bundle"
           confirmingLabel="Issuing..."
           confirmIcon={<Download className="size-3" />}
           onConfirm={() => issueCertMutation.mutate({ id: base.id })}
