@@ -94,6 +94,8 @@ export const baseSchema = z.object({
   cert_serial: z.string().nullable().optional(),
   enrolled_at: z.string().optional(),
   last_seen_at: z.string().nullable().optional(),
+  firmware_version: z.string().nullable().optional(),
+  latency_ms: z.number().nullable().optional(),
   cert_expires_at: z.string().optional(),
   decommissioned_at: z.string().optional(),
   created_at: z.string(),

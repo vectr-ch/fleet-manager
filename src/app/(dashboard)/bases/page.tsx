@@ -24,6 +24,8 @@ import {
   Download,
   AlertTriangle,
   Search,
+  Activity,
+  Cpu,
 } from "lucide-react";
 import { ActionButton, ConfirmModal, FieldInput, LocationPickerModal, Toggle } from "@/components/dashboard";
 
@@ -318,6 +320,8 @@ interface BaseCardProps {
     cert_serial?: string | null;
     enrolled_at?: string;
     last_seen_at?: string | null;
+    firmware_version?: string | null;
+    latency_ms?: number | null;
     cert_expires_at?: string;
     decommissioned_at?: string;
     created_at: string;
@@ -521,6 +525,26 @@ function BaseCard({ base }: BaseCardProps) {
               <span className="font-mono text-[10px] text-[#3a3a3a]">Awaiting enrollment</span>
             )}
           </div>
+
+          {/* Firmware & Latency — only for enrolled bases with recent connection */}
+          {isEnrolled && (connectionStatus(base.last_seen_at) === "active" || connectionStatus(base.last_seen_at) === "delayed") && (base.firmware_version || base.latency_ms != null) && (
+            <div className="flex items-center justify-between py-2 border-t border-[#1a1a1a]">
+              <div className="flex items-center gap-4">
+                {base.firmware_version && (
+                  <div className="flex items-center gap-1.5">
+                    <Cpu className="size-3 text-[#3a3a3a]" />
+                    <span className="font-mono text-[10px] text-[#888]">{base.firmware_version}</span>
+                  </div>
+                )}
+                {base.latency_ms != null && base.latency_ms > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Activity className="size-3 text-[#3a3a3a]" />
+                    <span className="font-mono text-[10px] text-[#888]">{base.latency_ms}ms</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Maintenance */}
           <div className="flex items-center justify-between py-2 border-t border-[#1a1a1a]">
