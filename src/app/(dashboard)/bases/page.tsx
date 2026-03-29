@@ -13,8 +13,6 @@ import {
   Shield,
   ShieldCheck,
   ShieldAlert,
-  Clock,
-  Wrench,
   Plus,
   Power,
   PowerOff,
@@ -24,8 +22,6 @@ import {
   Download,
   AlertTriangle,
   Search,
-  Activity,
-  Cpu,
 } from "lucide-react";
 import { ActionButton, ConfirmModal, FieldInput, LocationPickerModal, Toggle } from "@/components/dashboard";
 
@@ -48,6 +44,20 @@ function formatCoords(lat?: number, lng?: number) {
   const latDir = lat >= 0 ? "N" : "S";
   const lngDir = lng >= 0 ? "E" : "W";
   return `${Math.abs(lat).toFixed(4)}\u00B0${latDir}, ${Math.abs(lng).toFixed(4)}\u00B0${lngDir}`;
+}
+
+function certExpiryDays(certExpiresAt?: string): { days: number; color: string } | null {
+  if (!certExpiresAt) return null;
+  const diff = new Date(certExpiresAt).getTime() - Date.now();
+  const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  const color = days < 3 ? "text-red-400" : days < 14 ? "text-fleet-amber" : "text-foreground";
+  return { days, color };
+}
+
+function latencyColor(ms: number): string {
+  if (ms > 200) return "text-red-400";
+  if (ms >= 50) return "text-fleet-amber";
+  return "text-fleet-green";
 }
 
 function connectionStatus(lastSeenAt?: string | null): "active" | "delayed" | "offline" | "unknown" {
@@ -503,75 +513,71 @@ function BaseCard({ base }: BaseCardProps) {
           <StatusChip device={base} />
         </div>
 
-        {/* Info rows */}
-        <div className="px-5 pb-3 space-y-2">
-          {/* Enrollment info */}
-          <div className="flex items-center justify-between py-2 border-t border-[#1a1a1a]">
-            <div className="flex items-center gap-2">
-              <Shield className="size-3 text-[#3a3a3a]" />
-              <span className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase">Enrollment</span>
-            </div>
-            {base.enrolled_at ? (
-              <div className="text-right">
-                <div className="font-mono text-[11px] text-[#888]">{formatDate(base.enrolled_at)}</div>
-                {isEnrolled && base.cert_expires_at && (
-                  <div className="font-mono text-[10px] text-[#555]">expires {formatDate(base.cert_expires_at)}</div>
-                )}
-                {isRevoked && (
-                  <div className="font-mono text-[10px] text-red-400/70">certificate revoked</div>
-                )}
+        {/* Header metrics grid — enrollment & maintenance */}
+        <div className="px-5 pb-3">
+          <div className="grid grid-cols-3 gap-px border-t border-[#1a1a1a] pt-3">
+            {/* Enrolled */}
+            <div className="bg-[#080808] border border-[#1a1a1a] rounded p-2">
+              <div className="font-mono text-[9px] uppercase tracking-[.08em] text-[#555]">Enrolled</div>
+              <div className="font-mono text-[15px] font-semibold mt-0.5 text-foreground">
+                {base.enrolled_at ? formatDate(base.enrolled_at) : <span className="text-[#3a3a3a]">Pending</span>}
               </div>
-            ) : (
-              <span className="font-mono text-[10px] text-[#3a3a3a]">Awaiting enrollment</span>
-            )}
-          </div>
-
-          {/* Firmware & Latency — only for enrolled bases with recent connection */}
-          {isEnrolled && (connectionStatus(base.last_seen_at) === "active" || connectionStatus(base.last_seen_at) === "delayed") && (base.firmware_version || base.latency_ms != null) && (
-            <div className="flex items-center justify-between py-2 border-t border-[#1a1a1a]">
-              <div className="flex items-center gap-4">
-                {base.firmware_version && (
-                  <div className="flex items-center gap-1.5">
-                    <Cpu className="size-3 text-[#3a3a3a]" />
-                    <span className="font-mono text-[10px] text-[#888]">{base.firmware_version}</span>
-                  </div>
-                )}
-                {base.latency_ms != null && base.latency_ms > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <Activity className="size-3 text-[#3a3a3a]" />
-                    <span className="font-mono text-[10px] text-[#888]">{base.latency_ms}ms</span>
-                  </div>
-                )}
-              </div>
+              {isRevoked && (
+                <div className="font-mono text-[9px] text-red-400/70 mt-0.5">certificate revoked</div>
+              )}
             </div>
-          )}
-
-          {/* Maintenance */}
-          <div className="flex items-center justify-between py-2 border-t border-[#1a1a1a]">
-            <div className="flex items-center gap-2">
-              <Wrench className="size-3 text-[#3a3a3a]" />
-              <span className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase">Maintenance</span>
+            {/* Maintenance */}
+            <div className="bg-[#080808] border border-[#1a1a1a] rounded p-2">
+              <div className="font-mono text-[9px] uppercase tracking-[.08em] text-[#555]">Maintenance</div>
+              {editing ? (
+                <div className="mt-1">
+                  <Toggle checked={editMaintenance} onChange={setEditMaintenance} label={editMaintenance ? "On" : "Off"} />
+                </div>
+              ) : (
+                <div className={`font-mono text-[15px] font-semibold mt-0.5 ${base.maintenance_mode ? "text-fleet-amber" : "text-foreground"}`}>
+                  {base.maintenance_mode ? "Active" : "Off"}
+                </div>
+              )}
             </div>
-            {editing ? (
-              <Toggle checked={editMaintenance} onChange={setEditMaintenance} label={editMaintenance ? "On" : "Off"} />
-            ) : base.maintenance_mode ? (
-              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full bg-fleet-amber-dim text-fleet-amber border border-fleet-amber/15">
-                Active
-              </span>
-            ) : (
-              <span className="font-mono text-[10px] text-[#3a3a3a]">{"—"}</span>
-            )}
-          </div>
-
-          {/* Created */}
-          <div className="flex items-center justify-between py-2 border-t border-[#1a1a1a]">
-            <div className="flex items-center gap-2">
-              <Clock className="size-3 text-[#3a3a3a]" />
-              <span className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase">Created</span>
+            {/* Created */}
+            <div className="bg-[#080808] border border-[#1a1a1a] rounded p-2">
+              <div className="font-mono text-[9px] uppercase tracking-[.08em] text-[#555]">Created</div>
+              <div className="font-mono text-[15px] font-semibold mt-0.5 text-foreground">{formatDate(base.created_at)}</div>
             </div>
-            <span className="font-mono text-[11px] text-[#555]">{formatDate(base.created_at)}</span>
           </div>
         </div>
+
+        {/* Telemetry metrics grid — only for enrolled bases */}
+        {isEnrolled && (() => {
+          const expiry = certExpiryDays(base.cert_expires_at);
+          return (
+            <div className="px-5 pb-3">
+              <div className="grid grid-cols-3 gap-px">
+                {/* Latency */}
+                <div className="bg-[#080808] border border-[#1a1a1a] rounded p-2">
+                  <div className="font-mono text-[9px] uppercase tracking-[.08em] text-[#555]">Latency</div>
+                  <div className={`font-mono text-[15px] font-semibold mt-0.5 ${base.latency_ms != null && base.latency_ms > 0 ? latencyColor(base.latency_ms) : "text-[#3a3a3a]"}`}>
+                    {base.latency_ms != null && base.latency_ms > 0 ? `${base.latency_ms}ms` : "—"}
+                  </div>
+                </div>
+                {/* Firmware */}
+                <div className="bg-[#080808] border border-[#1a1a1a] rounded p-2">
+                  <div className="font-mono text-[9px] uppercase tracking-[.08em] text-[#555]">Firmware</div>
+                  <div className="font-mono text-[15px] font-semibold mt-0.5 text-foreground">
+                    {base.firmware_version ?? <span className="text-[#3a3a3a]">—</span>}
+                  </div>
+                </div>
+                {/* Cert Expiry */}
+                <div className="bg-[#080808] border border-[#1a1a1a] rounded p-2">
+                  <div className="font-mono text-[9px] uppercase tracking-[.08em] text-[#555]">Cert Expiry</div>
+                  <div className={`font-mono text-[15px] font-semibold mt-0.5 ${expiry?.color ?? "text-[#3a3a3a]"}`}>
+                    {expiry ? `${expiry.days} days` : "—"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Error display */}
         {error && (
