@@ -126,13 +126,12 @@ export const createNodeResponseSchema = z.object({
 });
 export type CreateNodeResponse = z.infer<typeof createNodeResponseSchema>;
 
-export const regenerateTokenResponseSchema = z.object({
-  provisioning_token: z.string(),
-});
-export type RegenerateTokenResponse = z.infer<typeof regenerateTokenResponseSchema>;
-
 export const issueCertResponseSchema = z.object({
-  certificate: z.string(),
+  device_id: z.string(),
+  device_type: z.string(),
+  org_id: z.string(),
+  gateway_address: z.string(),
+  device_cert: z.string(),
   private_key: z.string(),
   ca_cert: z.string(),
 });

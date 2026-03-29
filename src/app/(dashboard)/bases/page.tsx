@@ -16,10 +16,7 @@ import {
   Clock,
   Wrench,
   Plus,
-  RotateCcw,
   KeyRound,
-  FileKey,
-  FileLock2,
   Power,
   PowerOff,
   Pencil,
@@ -27,8 +24,6 @@ import {
   Check,
   Copy,
   Download,
-  ChevronDown,
-  ChevronRight,
   AlertTriangle,
   Search,
 } from "lucide-react";
@@ -99,127 +94,22 @@ function TokenModal({ token, onClose }: { token: string; onClose: () => void }) 
   );
 }
 
-// ── Credential Bundle Modal ──────────────────────────────────────────────────
+// ── Helpers ── Bundle Download ────────────────────────────────────────────────
 
-function downloadPemFile(filename: string, content: string) {
-  const blob = new Blob([content], { type: "application/x-pem-file" });
+function downloadJsonBundle(data: { device_id: string; device_type: string; [key: string]: unknown }) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
+  a.download = `${data.device_type}-${data.device_id.slice(0, 8)}.json`;
   a.click();
-  document.body.removeChild(a);
   URL.revokeObjectURL(url);
-}
-
-function CertBundleModal({
-  entityName,
-  certificate,
-  privateKey,
-  caCert,
-  onClose,
-}: {
-  entityName: string;
-  certificate: string;
-  privateKey: string;
-  caCert: string;
-  onClose: () => void;
-}) {
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-
-  const handleCopy = async (field: string, content: string) => {
-    await navigator.clipboard.writeText(content);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
-
-  const toggleExpand = (field: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      next.has(field) ? next.delete(field) : next.add(field);
-      return next;
-    });
-  };
-
-  const slug = entityName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const handleDownloadAll = () => {
-    downloadPemFile(`${slug}-cert.pem`, certificate);
-    setTimeout(() => downloadPemFile(`${slug}-key.pem`, privateKey), 100);
-    setTimeout(() => downloadPemFile(`${slug}-ca.pem`, caCert), 200);
-  };
-
-  const pemBlocks = [
-    { key: "cert", label: "Certificate", content: certificate },
-    { key: "key", label: "Private Key", content: privateKey },
-    { key: "ca", label: "CA Certificate", content: caCert },
-  ];
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="flex items-center gap-2 mb-1">
-          <FileLock2 className="size-3.5 text-amber-400" />
-          <span className="font-mono text-[10px] tracking-[.08em] text-amber-400 uppercase font-medium">Credential Bundle</span>
-        </div>
-        <div className="flex items-center gap-2 bg-red-500/8 border border-red-500/15 rounded-md px-3 py-2.5 mb-4 mt-3">
-          <AlertTriangle className="size-3.5 text-red-400 shrink-0" />
-          <span className="text-[11px] text-red-400">The private key is shown once. Download the bundle now.</span>
-        </div>
-        <div className="font-mono text-[13px] text-foreground font-semibold mb-4">{entityName}</div>
-
-        {pemBlocks.map(({ key, label, content }) => (
-          <div key={key} className="mb-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <button
-                onClick={() => toggleExpand(key)}
-                className="flex items-center gap-1.5 font-mono text-[11px] text-[#888] hover:text-foreground transition-colors"
-              >
-                {expanded.has(key) ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
-                {label}
-              </button>
-              <button
-                onClick={() => handleCopy(key, content)}
-                className="inline-flex items-center gap-1 font-mono text-[10px] tracking-wide px-2 py-1 rounded border border-[#252525] text-[#666] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
-              >
-                {copiedField === key ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
-                {copiedField === key ? "Copied" : "Copy"}
-              </button>
-            </div>
-            {expanded.has(key) && (
-              <pre className="bg-[#080808] border border-[#1a1a1a] rounded-md p-3 overflow-x-auto max-h-32 overflow-y-auto">
-                <code className="font-mono text-[10px] text-emerald-400 whitespace-pre select-all">{content}</code>
-              </pre>
-            )}
-          </div>
-        ))}
-
-        <div className="flex items-center gap-2 mt-5">
-          <button
-            onClick={handleDownloadAll}
-            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 transition-colors"
-          >
-            <Download className="size-3" />
-            Download All
-          </button>
-          <button
-            onClick={onClose}
-            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md border border-[#252525] text-[#888] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
-          >
-            Dismiss
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ── Credential State Type ────────────────────────────────────────────────────
 
 type PendingCredential =
   | { type: "token"; token: string }
-  | { type: "cert"; certificate: string; private_key: string; ca_cert: string; entityName: string }
   | null;
 
 // ── Revoke Confirmation Modal ────────────────────────────────────────────────
@@ -452,11 +342,9 @@ interface BaseCardProps {
     decommissioned_at?: string;
     created_at: string;
   };
-  onTokenReceived: (token: string) => void;
-  onCertIssued: (cert: { certificate: string; private_key: string; ca_cert: string }) => void;
 }
 
-function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
+function BaseCard({ base }: BaseCardProps) {
   const utils = trpc.useUtils();
   const initialEditState = getBaseEditDefaults(base);
   const [editing, setEditing] = useState(false);
@@ -503,18 +391,11 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
     onError: (e) => setError(friendlyError(e)),
   });
 
-  const regenerateMutation = trpc.bases.regenerateToken.useMutation({
-    onSuccess: (data) => {
-      onTokenReceived(data.provisioning_token);
-    },
-    onError: (e) => setError(friendlyError(e)),
-  });
-
   const issueCertMutation = trpc.bases.issueCert.useMutation({
     onSuccess: (data) => {
       utils.bases.list.invalidate();
       setShowIssueCert(false);
-      onCertIssued(data);
+      downloadJsonBundle(data);
       setTimeout(() => issueCertMutation.reset(), 0);
     },
     onError: (e) => { setShowIssueCert(false); setError(friendlyError(e)); },
@@ -705,12 +586,7 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
                 <>
                   <ActionButton icon={<Pencil className="size-3" />} onClick={handleStartEdit}>Edit</ActionButton>
                   {isPending && (
-                    <>
-                      <ActionButton variant="amber" icon={<RotateCcw className="size-3" />} onClick={() => regenerateMutation.mutate({ id: base.id })} disabled={regenerateMutation.isPending}>
-                        {regenerateMutation.isPending ? "..." : "New Token"}
-                      </ActionButton>
-                      <ActionButton icon={<FileKey className="size-3" />} onClick={() => setShowIssueCert(true)}>Issue Cert</ActionButton>
-                    </>
+                    <ActionButton variant="green" icon={<Download className="size-3" />} onClick={() => setShowIssueCert(true)}>Download Bundle</ActionButton>
                   )}
                   {isEnrolled && (
                     <ActionButton variant="danger" icon={<ShieldAlert className="size-3" />} onClick={() => setShowRevoke(true)}>Revoke</ActionButton>
@@ -739,20 +615,20 @@ function BaseCard({ base, onTokenReceived, onCertIssued }: BaseCardProps) {
       {showIssueCert && (
         <ConfirmModal
           icon={<ShieldCheck className="size-3.5 text-fleet-green" />}
-          title="Issue Certificate"
+          title="Download Provisioning Bundle"
           confirmVariant="green"
-          confirmLabel="Issue Certificate"
+          confirmLabel="Download Bundle"
           confirmingLabel="Issuing..."
-          confirmIcon={<FileKey className="size-3" />}
+          confirmIcon={<Download className="size-3" />}
           onConfirm={() => issueCertMutation.mutate({ id: base.id })}
           onCancel={() => setShowIssueCert(false)}
           isPending={issueCertMutation.isPending}
         >
           <p className="text-[12px] text-[#888] mb-2 leading-relaxed">
-            Issue a certificate for <span className="text-foreground font-medium">{base.name}</span>?
+            Issue a certificate and download the provisioning bundle for <span className="text-foreground font-medium">{base.name}</span>?
           </p>
           <p className="text-[11px] text-[#555] leading-relaxed">
-            This will mark the base as enrolled and generate a TLS certificate bundle. Only proceed if the base has completed provisioning and is ready to authenticate.
+            This will mark the base as enrolled and download a JSON bundle containing the TLS certificate, private key, and gateway address. Only proceed if the base is ready to authenticate.
           </p>
         </ConfirmModal>
       )}
@@ -898,8 +774,6 @@ export default function BasesPage() {
               <BaseCard
                 key={base.id}
                 base={base}
-                onTokenReceived={(token) => setPendingCredential({ type: "token", token })}
-                onCertIssued={(cert) => setPendingCredential({ type: "cert", ...cert, entityName: base.name })}
               />
             ))}
           </div>
@@ -915,15 +789,6 @@ export default function BasesPage() {
       )}
       {pendingCredential?.type === "token" && (
         <TokenModal token={pendingCredential.token} onClose={() => setPendingCredential(null)} />
-      )}
-      {pendingCredential?.type === "cert" && (
-        <CertBundleModal
-          entityName={pendingCredential.entityName}
-          certificate={pendingCredential.certificate}
-          privateKey={pendingCredential.private_key}
-          caCert={pendingCredential.ca_cert}
-          onClose={() => setPendingCredential(null)}
-        />
       )}
     </div>
   );
