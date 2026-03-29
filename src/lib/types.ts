@@ -99,10 +99,7 @@ export const baseSchema = z.object({
 });
 export type Base = z.infer<typeof baseSchema>;
 
-export const createBaseResponseSchema = z.object({
-  base: baseSchema,
-  provisioning_token: z.string(),
-});
+export const createBaseResponseSchema = baseSchema;
 export type CreateBaseResponse = z.infer<typeof createBaseResponseSchema>;
 
 // ─── Node ────────────────────────────────────────────────────
@@ -120,10 +117,7 @@ export const nodeSchema = z.object({
 });
 export type Node = z.infer<typeof nodeSchema>;
 
-export const createNodeResponseSchema = z.object({
-  node: nodeSchema,
-  provisioning_token: z.string(),
-});
+export const createNodeResponseSchema = nodeSchema;
 export type CreateNodeResponse = z.infer<typeof createNodeResponseSchema>;
 
 export const issueCertResponseSchema = z.object({

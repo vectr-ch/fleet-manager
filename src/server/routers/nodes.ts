@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "@/server/trpc";
 import { fmsFetch } from "@/lib/fms";
-import type { Node, CreateNodeResponse, IssueCertResponse } from "@/lib/types";
+import type { Node, IssueCertResponse } from "@/lib/types";
 
 export const nodesRouter = router({
   list: protectedProcedure
@@ -31,7 +31,7 @@ export const nodesRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return fmsFetch<CreateNodeResponse>(`/orgs/${ctx.orgSlug}/nodes`, {
+      return fmsFetch<Node>(`/orgs/${ctx.orgSlug}/nodes`, {
         method: "POST",
         body: input,
         accessToken: ctx.accessToken,

@@ -5,7 +5,6 @@ import { friendlyError } from "@/lib/error-messages";
 import { getNodeEditDefaults, validateNodeEditBaseId, validateNodeEditName } from "@/lib/node-edit";
 import { trpc } from "@/lib/trpc/client";
 import {
-  Shield,
   ShieldAlert,
   Plus,
   Power,
@@ -13,15 +12,14 @@ import {
   Pencil,
   X,
   Check,
-  Copy,
   Download,
   AlertTriangle,
   Search,
-  KeyRound,
   Cpu,
   Server,
 } from "lucide-react";
 import { InlineEditActions } from "@/components/dashboard/inline-edit-actions";
+import { ConfirmModal } from "@/components/dashboard";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -37,50 +35,6 @@ function formatDate(iso: string) {
   }
 }
 
-// ── Provisioning Token Modal ─────────────────────────────────────────────────
-
-function TokenModal({ token, onClose }: { token: string; onClose: () => void }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(token);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-lg w-full mx-4 shadow-2xl">
-        <div className="flex items-center gap-2 mb-1">
-          <KeyRound className="size-3.5 text-amber-400" />
-          <span className="font-mono text-[10px] tracking-[.08em] text-amber-400 uppercase font-medium">Provisioning Token</span>
-        </div>
-        <p className="text-[12px] text-[#888] mb-4 leading-relaxed">
-          This token is shown <span className="text-foreground font-medium">once</span>. Copy it now and transfer it to the device for enrollment.
-        </p>
-        <div className="bg-[#080808] border border-[#1a1a1a] rounded-md p-3.5 mb-4 break-all">
-          <code className="font-mono text-[11px] text-emerald-400 select-all leading-relaxed">{token}</code>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 transition-colors"
-          >
-            {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-            {copied ? "Copied" : "Copy Token"}
-          </button>
-          <button
-            onClick={onClose}
-            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md border border-[#252525] text-[#888] hover:text-foreground hover:border-[#3a3a3a] transition-colors"
-          >
-            Dismiss
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Credential Bundle Modal ──────────────────────────────────────────────────
 
 // ── Helpers ── Bundle Download ────────────────────────────────────────────────
@@ -94,12 +48,6 @@ function downloadJsonBundle(data: { device_id: string; device_type: string; [key
   a.click();
   URL.revokeObjectURL(url);
 }
-
-// ── Credential State Type ────────────────────────────────────────────────────
-
-type PendingCredential =
-  | { type: "token"; token: string }
-  | null;
 
 // ── Revoke Confirmation Modal ────────────────────────────────────────────────
 
@@ -194,10 +142,8 @@ function StatCell({ label, value, color }: { label: string; value: number | stri
 
 function CreateNodeModal({
   onClose,
-  onTokenReceived,
 }: {
   onClose: () => void;
-  onTokenReceived: (token: string) => void;
 }) {
   const utils = trpc.useUtils();
   const [name, setName] = useState("");
@@ -208,9 +154,8 @@ function CreateNodeModal({
   const { data: bases } = trpc.bases.list.useQuery();
 
   const createMutation = trpc.nodes.create.useMutation({
-    onSuccess: (data) => {
+    onSuccess: () => {
       utils.nodes.list.invalidate();
-      onTokenReceived(data.provisioning_token);
       onClose();
     },
     onError: (e) => setError(friendlyError(e)),
@@ -324,6 +269,7 @@ function NodeRow({ node, bases }: NodeRowProps) {
   const [editBaseId, setEditBaseId] = useState(initialEditState.baseId);
   const [error, setError] = useState<string | null>(null);
   const [showRevoke, setShowRevoke] = useState(false);
+  const [showDecommission, setShowDecommission] = useState(false);
 
   const isEnrolled = !!node.enrolled_at;
   const isPending = !node.enrolled_at;
@@ -347,8 +293,8 @@ function NodeRow({ node, bases }: NodeRowProps) {
   });
 
   const decommissionMutation = trpc.nodes.decommission.useMutation({
-    onSuccess: () => { utils.nodes.list.invalidate(); },
-    onError: (e) => setError(friendlyError(e)),
+    onSuccess: () => { utils.nodes.list.invalidate(); setShowDecommission(false); },
+    onError: (e) => { setShowDecommission(false); setError(friendlyError(e)); },
   });
   const recommissionMutation = trpc.nodes.recommission.useMutation({
     onSuccess: () => { utils.nodes.list.invalidate(); },
@@ -508,9 +454,8 @@ function NodeRow({ node, bases }: NodeRowProps) {
                   </button>
                 )}
                 <button
-                  onClick={() => decommissionMutation.mutate({ id: node.id })}
-                  disabled={decommissionMutation.isPending}
-                  className="inline-flex items-center justify-center size-7 rounded-md border border-red-500/20 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-50 transition-colors"
+                  onClick={() => setShowDecommission(true)}
+                  className="inline-flex items-center justify-center size-7 rounded-md border border-red-500/20 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                   title="Decommission"
                 >
                   <PowerOff className="size-3" />
@@ -539,6 +484,26 @@ function NodeRow({ node, bases }: NodeRowProps) {
           isPending={revokeMutation.isPending}
         />
       )}
+      {showDecommission && (
+        <ConfirmModal
+          icon={<PowerOff className="size-3.5 text-red-400" />}
+          title="Decommission Drone"
+          confirmVariant="danger"
+          confirmLabel="Decommission"
+          confirmingLabel="Decommissioning..."
+          confirmIcon={<PowerOff className="size-3" />}
+          onConfirm={() => decommissionMutation.mutate({ id: node.id })}
+          onCancel={() => setShowDecommission(false)}
+          isPending={decommissionMutation.isPending}
+        >
+          <p className="text-[12px] text-[#888] mb-2 leading-relaxed">
+            Decommission <span className="text-foreground font-medium">{node.name}</span>?
+          </p>
+          <p className="text-[11px] text-[#555] leading-relaxed">
+            This will take the drone offline and revoke its certificate if one is active. The drone can be recommissioned later, but will require re-enrollment.
+          </p>
+        </ConfirmModal>
+      )}
     </>
   );
 }
@@ -552,7 +517,6 @@ export default function FleetPage() {
   const { data: nodes, isLoading } = trpc.nodes.list.useQuery({ includeDecommissioned: showDecommissioned });
   const { data: bases = [] } = trpc.bases.list.useQuery();
   const [showCreate, setShowCreate] = useState(false);
-  const [pendingCredential, setPendingCredential] = useState<PendingCredential>(null);
 
   const stats = useMemo(() => {
     if (!nodes) return { total: 0, enrolled: 0, pending: 0, withBase: 0 };
@@ -705,11 +669,7 @@ export default function FleetPage() {
       {showCreate && (
         <CreateNodeModal
           onClose={() => setShowCreate(false)}
-          onTokenReceived={(token) => setPendingCredential({ type: "token", token })}
         />
-      )}
-      {pendingCredential?.type === "token" && (
-        <TokenModal token={pendingCredential.token} onClose={() => setPendingCredential(null)} />
       )}
     </div>
   );
