@@ -48,6 +48,27 @@ function formatCoords(lat?: number, lng?: number) {
   return `${Math.abs(lat).toFixed(4)}\u00B0${latDir}, ${Math.abs(lng).toFixed(4)}\u00B0${lngDir}`;
 }
 
+function connectionStatus(lastSeenAt?: string | null): "active" | "delayed" | "offline" | "unknown" {
+  if (!lastSeenAt) return "unknown";
+  const diffMs = Date.now() - new Date(lastSeenAt).getTime();
+  if (diffMs < 60_000) return "active";       // < 1 min
+  if (diffMs < 600_000) return "delayed";      // < 10 min
+  return "offline";
+}
+
+function ConnectionDot({ lastSeenAt, status }: { lastSeenAt?: string | null; status: string }) {
+  if (status !== "enrolled") return null;
+  const conn = connectionStatus(lastSeenAt);
+  if (conn === "unknown") return null;
+  if (conn === "active") {
+    return <span className="size-1.5 rounded-full bg-fleet-green animate-status-pulse" title="Active" />;
+  }
+  if (conn === "delayed") {
+    return <span className="size-1.5 rounded-full bg-fleet-amber" title="Delayed" />;
+  }
+  return <span className="size-1.5 rounded-full bg-[#555]" title="Offline" />;
+}
+
 // ── Helpers ── Bundle Download ────────────────────────────────────────────────
 
 function downloadJsonBundle(data: { device_id: string; device_type: string; [key: string]: unknown }) {
@@ -283,6 +304,7 @@ interface BaseCardProps {
     lng?: number;
     maintenance_mode: boolean;
     enrolled_at?: string;
+    last_seen_at?: string | null;
     cert_expires_at?: string;
     decommissioned_at?: string;
     created_at: string;
@@ -411,7 +433,10 @@ function BaseCard({ base }: BaseCardProps) {
                 size="sm"
               />
             ) : (
-              <h3 className="text-[14px] font-semibold text-foreground tracking-[-0.01em]">{base.name}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-[14px] font-semibold text-foreground tracking-[-0.01em]">{base.name}</h3>
+                <ConnectionDot lastSeenAt={base.last_seen_at} status={base.status} />
+              </div>
             )}
             {editing ? (
               <div className="flex items-center gap-1.5 mt-1.5">
@@ -620,7 +645,7 @@ function BaseCard({ base }: BaseCardProps) {
 export default function BasesPage() {
   const [showDecommissioned, setShowDecommissioned] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: bases, isLoading } = trpc.bases.list.useQuery({ includeDecommissioned: showDecommissioned });
+  const { data: bases, isLoading } = trpc.bases.list.useQuery({ includeDecommissioned: showDecommissioned }, { refetchInterval: 15_000 });
   const [showCreate, setShowCreate] = useState(false);
 
   const stats = useMemo(() => {

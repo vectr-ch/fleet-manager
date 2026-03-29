@@ -35,6 +35,14 @@ function formatDate(iso: string) {
   }
 }
 
+function connectionStatus(lastSeenAt?: string | null): "active" | "delayed" | "offline" | "unknown" {
+  if (!lastSeenAt) return "unknown";
+  const diffMs = Date.now() - new Date(lastSeenAt).getTime();
+  if (diffMs < 60_000) return "active";       // < 1 min
+  if (diffMs < 600_000) return "delayed";      // < 10 min
+  return "offline";
+}
+
 // ── Credential Bundle Modal ──────────────────────────────────────────────────
 
 // ── Helpers ── Bundle Download ────────────────────────────────────────────────
@@ -107,11 +115,22 @@ function RevokeModal({
 
 // ── Status Dot ───────────────────────────────────────────────────────────────
 
-function StatusDot({ enrolled_at, decommissioned_at }: { enrolled_at?: string; decommissioned_at?: string }) {
+function StatusDot({ enrolled_at, decommissioned_at, last_seen_at }: { enrolled_at?: string; decommissioned_at?: string; last_seen_at?: string | null }) {
   if (decommissioned_at) {
     return <span className="size-2 rounded-full bg-[#3a3a3a]" title="Decommissioned" />;
   }
   if (enrolled_at) {
+    const conn = connectionStatus(last_seen_at);
+    if (conn === "active") {
+      return <span className="size-2 rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88] animate-status-pulse" title="Active" />;
+    }
+    if (conn === "delayed") {
+      return <span className="size-2 rounded-full bg-fleet-amber shadow-[0_0_4px_#f59e0b88]" title="Delayed" />;
+    }
+    if (conn === "offline") {
+      return <span className="size-2 rounded-full bg-[#555]" title="Offline" />;
+    }
+    // unknown — enrolled but never connected through gateway yet
     return <span className="size-2 rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88] animate-status-pulse" title="Enrolled" />;
   }
   return <span className="size-2 rounded-full bg-fleet-amber shadow-[0_0_4px_#f59e0b88] animate-status-pulse-fast" title="Pending" />;
@@ -253,6 +272,7 @@ interface NodeRowProps {
     base_id?: string;
     firmware_version?: string;
     enrolled_at?: string;
+    last_seen_at?: string | null;
     cert_expires_at?: string;
     decommissioned_at?: string;
     created_at: string;
@@ -362,7 +382,7 @@ function NodeRow({ node, bases }: NodeRowProps) {
   if (editing) {
     return (
       <tr className="border-b border-[#1a1a1a] bg-[#0a0a0a]">
-        <td className="pl-4 pr-2 py-2.5"><StatusDot enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} /></td>
+        <td className="pl-4 pr-2 py-2.5"><StatusDot enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} last_seen_at={node.last_seen_at} /></td>
         <td className="px-3 py-2.5">
           <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={`${editInputClass} w-32`} />
         </td>
@@ -398,7 +418,7 @@ function NodeRow({ node, bases }: NodeRowProps) {
     <>
       <tr className={`border-b border-[#1a1a1a] hover:bg-[#0f0f0f] transition-colors group ${isDecommissioned ? "opacity-40" : ""}`}>
         <td className="pl-4 pr-2 py-3">
-          <StatusDot enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} />
+          <StatusDot enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} last_seen_at={node.last_seen_at} />
         </td>
         <td className="px-3 py-3">
           <div>
@@ -514,7 +534,7 @@ export default function FleetPage() {
   const [showDecommissioned, setShowDecommissioned] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBase, setFilterBase] = useState("");
-  const { data: nodes, isLoading } = trpc.nodes.list.useQuery({ includeDecommissioned: showDecommissioned });
+  const { data: nodes, isLoading } = trpc.nodes.list.useQuery({ includeDecommissioned: showDecommissioned }, { refetchInterval: 15_000 });
   const { data: bases = [] } = trpc.bases.list.useQuery();
   const [showCreate, setShowCreate] = useState(false);
 
