@@ -56,17 +56,35 @@ function connectionStatus(lastSeenAt?: string | null): "active" | "delayed" | "o
   return "offline";
 }
 
-function ConnectionDot({ lastSeenAt, status }: { lastSeenAt?: string | null; status: string }) {
-  if (status !== "enrolled") return null;
-  const conn = connectionStatus(lastSeenAt);
-  if (conn === "unknown") return null;
-  if (conn === "active") {
-    return <span className="size-1.5 rounded-full bg-fleet-green animate-status-pulse" title="Active" />;
+type DeviceStatusResult = { label: string; color: string; dot: "green-pulse" | "green" | "amber-pulse" | "amber-dim" | "red" | "grey" };
+
+function deviceStatus(device: { cert_serial?: string | null; enrolled_at?: string | null; decommissioned_at?: string | null }): DeviceStatusResult {
+  if (device.decommissioned_at) return { label: "Decommissioned", color: "text-[#555]", dot: "grey" };
+  if (device.enrolled_at && device.cert_serial) return { label: "Enrolled", color: "text-fleet-green", dot: "green-pulse" };
+  if (device.enrolled_at && !device.cert_serial) return { label: "Revoked", color: "text-red-400", dot: "red" };
+  if (device.cert_serial && !device.enrolled_at) return { label: "Awaiting Connection", color: "text-fleet-amber", dot: "amber-pulse" };
+  return { label: "Awaiting Certificate", color: "text-fleet-amber/60", dot: "amber-dim" };
+}
+
+function StatusDotElement({ dot, title, lastSeenAt }: { dot: DeviceStatusResult["dot"]; title: string; lastSeenAt?: string | null }) {
+  // For enrolled devices, refine the dot based on connection status
+  if (dot === "green-pulse" && lastSeenAt) {
+    const conn = connectionStatus(lastSeenAt);
+    if (conn === "active") {
+      return <span className="size-1.5 rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88] animate-status-pulse" title="Active" />;
+    }
+    if (conn === "delayed") {
+      return <span className="size-1.5 rounded-full bg-fleet-amber shadow-[0_0_4px_#f59e0b88]" title="Delayed" />;
+    }
+    if (conn === "offline") {
+      return <span className="size-1.5 rounded-full bg-[#555]" title="Offline" />;
+    }
   }
-  if (conn === "delayed") {
-    return <span className="size-1.5 rounded-full bg-fleet-amber" title="Delayed" />;
-  }
-  return <span className="size-1.5 rounded-full bg-[#555]" title="Offline" />;
+  if (dot === "green-pulse" || dot === "green") return <span className="size-1.5 rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88] animate-status-pulse" title={title} />;
+  if (dot === "amber-pulse") return <span className="size-1.5 rounded-full bg-fleet-amber shadow-[0_0_4px_#f59e0b88] animate-status-pulse" title={title} />;
+  if (dot === "amber-dim") return <span className="size-1.5 rounded-full bg-fleet-amber/40" title={title} />;
+  if (dot === "red") return <span className="size-1.5 rounded-full bg-red-400 shadow-[0_0_4px_#f8717188]" title={title} />;
+  return <span className="size-1.5 rounded-full bg-[#555]" title={title} />;
 }
 
 // ── Helpers ── Bundle Download ────────────────────────────────────────────────
@@ -257,27 +275,21 @@ function CreateBaseModal({
 
 // ── Status Chip ──────────────────────────────────────────────────────────────
 
-function StatusChip({ status }: { status: string }) {
-  if (status === "decommissioned") {
-    return (
-      <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full bg-[#252525] text-[#555]">
-        <span className="size-1.5 rounded-full bg-[#555]" />
-        Decommissioned
-      </span>
-    );
-  }
-  if (status === "enrolled") {
-    return (
-      <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full bg-fleet-green-dim text-fleet-green border border-fleet-green/15">
-        <span className="size-1.5 rounded-full bg-fleet-green animate-status-pulse" />
-        Enrolled
-      </span>
-    );
-  }
+function StatusChip({ device }: { device: { cert_serial?: string | null; enrolled_at?: string | null; decommissioned_at?: string | null; last_seen_at?: string | null } }) {
+  const status = deviceStatus(device);
+
+  const bgMap: Record<string, string> = {
+    "Decommissioned": "bg-[#252525]",
+    "Enrolled": "bg-fleet-green-dim border border-fleet-green/15",
+    "Revoked": "bg-red-500/10 border border-red-500/15",
+    "Awaiting Connection": "bg-fleet-amber-dim border border-fleet-amber/15",
+    "Awaiting Certificate": "bg-fleet-amber/5 border border-fleet-amber/10",
+  };
+
   return (
-    <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full bg-fleet-amber-dim text-fleet-amber border border-fleet-amber/15">
-      <span className="size-1.5 rounded-full bg-fleet-amber animate-status-pulse-fast" />
-      Pending
+    <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full ${bgMap[status.label] ?? ""} ${status.color}`}>
+      <StatusDotElement dot={status.dot} title={status.label} lastSeenAt={device.last_seen_at} />
+      {status.label}
     </span>
   );
 }
@@ -303,6 +315,7 @@ interface BaseCardProps {
     lat?: number;
     lng?: number;
     maintenance_mode: boolean;
+    cert_serial?: string | null;
     enrolled_at?: string;
     last_seen_at?: string | null;
     cert_expires_at?: string;
@@ -327,8 +340,10 @@ function BaseCard({ base }: BaseCardProps) {
   const [showDecommission, setShowDecommission] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
 
-  const isEnrolled = base.status === "enrolled";
-  const isPending = base.status === "pending";
+  const status = deviceStatus(base);
+  const isEnrolled = status.label === "Enrolled";
+  const isPending = status.label === "Awaiting Certificate" || status.label === "Awaiting Connection";
+  const isRevoked = status.label === "Revoked";
   const isDecommissioned = !!base.decommissioned_at;
   const coords = formatCoords(base.lat, base.lng);
 
@@ -435,7 +450,7 @@ function BaseCard({ base }: BaseCardProps) {
             ) : (
               <div className="flex items-center gap-2">
                 <h3 className="text-[14px] font-semibold text-foreground tracking-[-0.01em]">{base.name}</h3>
-                <ConnectionDot lastSeenAt={base.last_seen_at} status={base.status} />
+                {isEnrolled && <StatusDotElement dot={status.dot} title={status.label} lastSeenAt={base.last_seen_at} />}
               </div>
             )}
             {editing ? (
@@ -481,7 +496,7 @@ function BaseCard({ base }: BaseCardProps) {
               </div>
             ) : null}
           </div>
-          <StatusChip status={base.status} />
+          <StatusChip device={base} />
         </div>
 
         {/* Info rows */}
@@ -492,11 +507,14 @@ function BaseCard({ base }: BaseCardProps) {
               <Shield className="size-3 text-[#3a3a3a]" />
               <span className="font-mono text-[10px] tracking-[.06em] text-[#555] uppercase">Enrollment</span>
             </div>
-            {isEnrolled && base.enrolled_at ? (
+            {base.enrolled_at ? (
               <div className="text-right">
                 <div className="font-mono text-[11px] text-[#888]">{formatDate(base.enrolled_at)}</div>
-                {base.cert_expires_at && (
+                {isEnrolled && base.cert_expires_at && (
                   <div className="font-mono text-[10px] text-[#555]">expires {formatDate(base.cert_expires_at)}</div>
+                )}
+                {isRevoked && (
+                  <div className="font-mono text-[10px] text-red-400/70">certificate revoked</div>
                 )}
               </div>
             ) : (
@@ -555,7 +573,7 @@ function BaseCard({ base }: BaseCardProps) {
               {!isDecommissioned && (
                 <>
                   <ActionButton icon={<Pencil className="size-3" />} onClick={handleStartEdit}>Edit</ActionButton>
-                  {isPending && (
+                  {(isPending || isRevoked) && (
                     <ActionButton variant="green" icon={<Download className="size-3" />} onClick={() => setShowIssueCert(true)}>Download Bundle</ActionButton>
                   )}
                   {isEnrolled && (

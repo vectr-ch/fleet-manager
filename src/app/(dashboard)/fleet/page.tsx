@@ -113,13 +113,23 @@ function RevokeModal({
   );
 }
 
-// ── Status Dot ───────────────────────────────────────────────────────────────
+// ── Device Status ────────────────────────────────────────────────────────────
 
-function StatusDot({ enrolled_at, decommissioned_at, last_seen_at }: { enrolled_at?: string; decommissioned_at?: string; last_seen_at?: string | null }) {
-  if (decommissioned_at) {
-    return <span className="size-2 rounded-full bg-[#3a3a3a]" title="Decommissioned" />;
-  }
-  if (enrolled_at) {
+type DeviceStatusResult = { label: string; color: string; dot: "green-pulse" | "green" | "amber-pulse" | "amber-dim" | "red" | "grey" };
+
+function deviceStatus(device: { cert_serial?: string | null; enrolled_at?: string | null; decommissioned_at?: string | null }): DeviceStatusResult {
+  if (device.decommissioned_at) return { label: "Decommissioned", color: "text-[#555]", dot: "grey" };
+  if (device.enrolled_at && device.cert_serial) return { label: "Enrolled", color: "text-fleet-green", dot: "green-pulse" };
+  if (device.enrolled_at && !device.cert_serial) return { label: "Revoked", color: "text-red-400", dot: "red" };
+  if (device.cert_serial && !device.enrolled_at) return { label: "Awaiting Connection", color: "text-fleet-amber", dot: "amber-pulse" };
+  return { label: "Awaiting Certificate", color: "text-fleet-amber/60", dot: "amber-dim" };
+}
+
+function StatusDot({ cert_serial, enrolled_at, decommissioned_at, last_seen_at }: { cert_serial?: string | null; enrolled_at?: string; decommissioned_at?: string; last_seen_at?: string | null }) {
+  const status = deviceStatus({ cert_serial, enrolled_at, decommissioned_at });
+
+  // For enrolled devices, refine the dot based on connection status
+  if (status.dot === "green-pulse" && last_seen_at) {
     const conn = connectionStatus(last_seen_at);
     if (conn === "active") {
       return <span className="size-2 rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88] animate-status-pulse" title="Active" />;
@@ -130,20 +140,18 @@ function StatusDot({ enrolled_at, decommissioned_at, last_seen_at }: { enrolled_
     if (conn === "offline") {
       return <span className="size-2 rounded-full bg-[#555]" title="Offline" />;
     }
-    // unknown — enrolled but never connected through gateway yet
-    return <span className="size-2 rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88] animate-status-pulse" title="Enrolled" />;
   }
-  return <span className="size-2 rounded-full bg-fleet-amber shadow-[0_0_4px_#f59e0b88] animate-status-pulse-fast" title="Pending" />;
+
+  if (status.dot === "green-pulse" || status.dot === "green") return <span className="size-2 rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88] animate-status-pulse" title={status.label} />;
+  if (status.dot === "amber-pulse") return <span className="size-2 rounded-full bg-fleet-amber shadow-[0_0_4px_#f59e0b88] animate-status-pulse" title={status.label} />;
+  if (status.dot === "amber-dim") return <span className="size-2 rounded-full bg-fleet-amber/40" title={status.label} />;
+  if (status.dot === "red") return <span className="size-2 rounded-full bg-red-400 shadow-[0_0_4px_#f8717188]" title={status.label} />;
+  return <span className="size-2 rounded-full bg-[#3a3a3a]" title={status.label} />;
 }
 
-function StatusLabel({ enrolled_at, decommissioned_at }: { enrolled_at?: string; decommissioned_at?: string }) {
-  if (decommissioned_at) {
-    return <span className="font-mono text-[10px] tracking-[.04em] uppercase text-[#555]">Decommissioned</span>;
-  }
-  if (enrolled_at) {
-    return <span className="font-mono text-[10px] tracking-[.04em] uppercase text-fleet-green">Enrolled</span>;
-  }
-  return <span className="font-mono text-[10px] tracking-[.04em] uppercase text-fleet-amber">Pending</span>;
+function StatusLabel({ cert_serial, enrolled_at, decommissioned_at }: { cert_serial?: string | null; enrolled_at?: string; decommissioned_at?: string }) {
+  const status = deviceStatus({ cert_serial, enrolled_at, decommissioned_at });
+  return <span className={`font-mono text-[10px] tracking-[.04em] uppercase ${status.color}`}>{status.label}</span>;
 }
 
 // ── Stat Cell ────────────────────────────────────────────────────────────────
@@ -271,6 +279,7 @@ interface NodeRowProps {
     serial?: string;
     base_id?: string;
     firmware_version?: string;
+    cert_serial?: string | null;
     enrolled_at?: string;
     last_seen_at?: string | null;
     cert_expires_at?: string;
@@ -291,8 +300,10 @@ function NodeRow({ node, bases }: NodeRowProps) {
   const [showRevoke, setShowRevoke] = useState(false);
   const [showDecommission, setShowDecommission] = useState(false);
 
-  const isEnrolled = !!node.enrolled_at;
-  const isPending = !node.enrolled_at;
+  const status = deviceStatus(node);
+  const isEnrolled = status.label === "Enrolled";
+  const isPending = status.label === "Awaiting Certificate" || status.label === "Awaiting Connection";
+  const isRevoked = status.label === "Revoked";
   const isDecommissioned = !!node.decommissioned_at;
 
   const updateMutation = trpc.nodes.update.useMutation({
@@ -382,7 +393,7 @@ function NodeRow({ node, bases }: NodeRowProps) {
   if (editing) {
     return (
       <tr className="border-b border-[#1a1a1a] bg-[#0a0a0a]">
-        <td className="pl-4 pr-2 py-2.5"><StatusDot enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} last_seen_at={node.last_seen_at} /></td>
+        <td className="pl-4 pr-2 py-2.5"><StatusDot cert_serial={node.cert_serial} enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} last_seen_at={node.last_seen_at} /></td>
         <td className="px-3 py-2.5">
           <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={`${editInputClass} w-32`} />
         </td>
@@ -395,7 +406,7 @@ function NodeRow({ node, bases }: NodeRowProps) {
             {bases.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}
           </select>
         </td>
-        <td className="px-3 py-2.5"><StatusLabel enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} /></td>
+        <td className="px-3 py-2.5"><StatusLabel cert_serial={node.cert_serial} enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} /></td>
         <td className="px-3 py-2.5 font-mono text-[11px] text-[#555]">{node.firmware_version ?? "—"}</td>
         <td className="px-4 py-2.5">
           <div className="flex items-center gap-1.5">
@@ -418,13 +429,16 @@ function NodeRow({ node, bases }: NodeRowProps) {
     <>
       <tr className={`border-b border-[#1a1a1a] hover:bg-[#0f0f0f] transition-colors group ${isDecommissioned ? "opacity-40" : ""}`}>
         <td className="pl-4 pr-2 py-3">
-          <StatusDot enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} last_seen_at={node.last_seen_at} />
+          <StatusDot cert_serial={node.cert_serial} enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} last_seen_at={node.last_seen_at} />
         </td>
         <td className="px-3 py-3">
           <div>
             <div className="font-mono text-[12px] font-medium text-foreground">{node.name}</div>
-            {node.enrolled_at && node.cert_expires_at && (
+            {isEnrolled && node.cert_expires_at && (
               <div className="font-mono text-[10px] text-[#3a3a3a] mt-0.5">expires {formatDate(node.cert_expires_at)}</div>
+            )}
+            {isRevoked && (
+              <div className="font-mono text-[10px] text-red-400/50 mt-0.5">certificate revoked</div>
             )}
           </div>
         </td>
@@ -440,7 +454,7 @@ function NodeRow({ node, bases }: NodeRowProps) {
           )}
         </td>
         <td className="px-3 py-3">
-          <StatusLabel enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} />
+          <StatusLabel cert_serial={node.cert_serial} enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} />
         </td>
         <td className="px-3 py-3 font-mono text-[11px] text-[#555]">{node.firmware_version ?? "—"}</td>
         <td className="px-4 py-3">
@@ -454,7 +468,7 @@ function NodeRow({ node, bases }: NodeRowProps) {
                 >
                   <Pencil className="size-3" />
                 </button>
-                {isPending && (
+                {(isPending || isRevoked) && (
                   <button
                     onClick={() => issueCertMutation.mutate({ id: node.id })}
                     disabled={issueCertMutation.isPending}
