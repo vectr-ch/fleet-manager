@@ -154,7 +154,7 @@ function MembersTab() {
 
   return (
     <div className="max-w-2xl">
-      <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] overflow-hidden">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-[5px]">
         <div className="px-4 py-3 border-b border-neutral-800">
           <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">
             {isLoading ? "Loading…" : `${members?.length ?? 0} member${(members?.length ?? 0) === 1 ? "" : "s"}`}
@@ -166,7 +166,8 @@ function MembersTab() {
         ) : !members || members.length === 0 ? (
           <div className="py-12 text-center font-mono text-[11px] text-neutral-500">No members found</div>
         ) : (
-          <table className="w-full border-collapse">
+          <div className="overflow-x-auto">
+          <table className="w-full border-collapse min-w-135">
             <thead>
               <tr className="border-b border-neutral-800 bg-neutral-950">
                 <th className="px-4 py-2.5 text-left">
@@ -222,6 +223,7 @@ function MembersTab() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
