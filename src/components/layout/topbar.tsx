@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc/client";
@@ -22,6 +22,7 @@ interface TopbarProps {
 
 export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const t = useTranslations("topbar");
   const tc = useTranslations("common");
 
@@ -31,6 +32,12 @@ export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps
     onSuccess: () => {
       window.location.href = "/login";
     },
+  });
+
+  // Org list for mobile switcher
+  const orgsQuery = trpc.userAccount.listOrgs.useQuery();
+  const switchOrgMutation = trpc.userAccount.updateDefaultOrg.useMutation({
+    onSuccess: () => router.refresh(),
   });
 
   return (
@@ -81,21 +88,41 @@ export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps
             {userInitials}
           </button>
           {userDropdownOpen && (
-            <div className="absolute right-0 top-full mt-1 z-1100 w-48 rounded-md border border-border bg-card py-1 shadow-lg" onMouseLeave={() => setUserDropdownOpen(false)}>
-              {/* Org name — mobile only, shown as label */}
+            <div className="absolute right-0 top-full mt-1 z-1100 w-52 rounded-lg border border-[#252525] bg-[#181818] py-1.5 shadow-2xl" onMouseLeave={() => setUserDropdownOpen(false)}>
+              {/* Org switcher — mobile only */}
               {currentOrg && (
-                <div className="md:hidden px-3 pt-2 pb-1.5 border-b border-border">
-                  <div className="font-mono text-[9px] tracking-[.06em] text-[#555] uppercase mb-1">Organisation</div>
-                  <div className="text-xs text-foreground font-medium truncate">{currentOrgName ?? currentOrg}</div>
+                <div className="md:hidden border-b border-[#252525] pb-1.5 mb-1.5">
+                  <div className="font-mono text-[9px] tracking-[.06em] text-[#555] uppercase px-3.5 pt-1 pb-1.5">Organisation</div>
+                  {orgsQuery.data?.map((org) => (
+                    <button
+                      key={org.id}
+                      onClick={() => {
+                        if (org.slug !== currentOrg) {
+                          switchOrgMutation.mutate({ orgId: org.id, orgSlug: org.slug, orgName: org.name });
+                        }
+                        setUserDropdownOpen(false);
+                      }}
+                      className={cn(
+                        "block w-full text-left px-3.5 py-1.5 text-xs transition-colors",
+                        org.slug === currentOrg
+                          ? "text-fleet-green font-medium"
+                          : "text-[#888] active:bg-[#ffffff08]"
+                      )}
+                    >
+                      {org.name}
+                    </button>
+                  )) ?? (
+                    <div className="px-3.5 py-1.5 text-xs text-foreground font-medium truncate">{currentOrgName ?? currentOrg}</div>
+                  )}
                 </div>
               )}
-              <Link href="/settings" className="block px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary" onClick={() => setUserDropdownOpen(false)}>
+              <Link href="/settings" className="block px-3.5 py-2 text-xs text-[#888] hover:text-foreground active:bg-[#ffffff08] transition-colors" onClick={() => setUserDropdownOpen(false)}>
                 Settings
               </Link>
               <button
                 onClick={() => { setUserDropdownOpen(false); logoutMutation.mutate(); }}
                 disabled={logoutMutation.isPending}
-                className="block w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-secondary disabled:opacity-50"
+                className="block w-full text-left px-3.5 py-2 text-xs text-red-400 active:bg-[#ffffff08] disabled:opacity-50 transition-colors"
               >
                 {logoutMutation.isPending ? "..." : "Sign out"}
               </button>
