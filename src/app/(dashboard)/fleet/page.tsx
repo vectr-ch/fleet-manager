@@ -136,21 +136,21 @@ function StatusDot({ cert_serial, enrolled_at, decommissioned_at, last_seen_at }
   if (status.dot === "green-pulse" && last_seen_at) {
     const conn = connectionStatus(last_seen_at);
     if (conn === "active") {
-      return <span className="size-2 rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88] animate-status-pulse" title="Active" />;
+      return <span className="size-2.5 rounded-full bg-fleet-green shadow-[0_0_6px_#22c55e88] animate-status-pulse" title="Active" />;
     }
     if (conn === "delayed") {
-      return <span className="size-2 rounded-full bg-fleet-amber shadow-[0_0_4px_#f59e0b88]" title="Delayed" />;
+      return <span className="size-2.5 rounded-full bg-fleet-amber shadow-[0_0_6px_#f59e0b88]" title="Delayed" />;
     }
     if (conn === "offline") {
-      return <span className="size-2 rounded-full bg-[#555]" title="Offline" />;
+      return <span className="size-2.5 rounded-full bg-[#555]" title="Offline" />;
     }
   }
 
-  if (status.dot === "green-pulse" || status.dot === "green") return <span className="size-2 rounded-full bg-fleet-green shadow-[0_0_4px_#22c55e88] animate-status-pulse" title={status.label} />;
-  if (status.dot === "amber-pulse") return <span className="size-2 rounded-full bg-fleet-amber shadow-[0_0_4px_#f59e0b88] animate-status-pulse" title={status.label} />;
-  if (status.dot === "amber-dim") return <span className="size-2 rounded-full bg-fleet-amber/40" title={status.label} />;
-  if (status.dot === "red") return <span className="size-2 rounded-full bg-red-400 shadow-[0_0_4px_#f8717188]" title={status.label} />;
-  return <span className="size-2 rounded-full bg-[#3a3a3a]" title={status.label} />;
+  if (status.dot === "green-pulse" || status.dot === "green") return <span className="size-2.5 rounded-full bg-fleet-green shadow-[0_0_6px_#22c55e88] animate-status-pulse" title={status.label} />;
+  if (status.dot === "amber-pulse") return <span className="size-2.5 rounded-full bg-fleet-amber shadow-[0_0_6px_#f59e0b88] animate-status-pulse" title={status.label} />;
+  if (status.dot === "amber-dim") return <span className="size-2.5 rounded-full bg-fleet-amber/40" title={status.label} />;
+  if (status.dot === "red") return <span className="size-2.5 rounded-full bg-red-400 shadow-[0_0_6px_#f8717188]" title={status.label} />;
+  return <span className="size-2.5 rounded-full bg-[#3a3a3a]" title={status.label} />;
 }
 
 function StatusLabel({ cert_serial, enrolled_at, decommissioned_at }: { cert_serial?: string | null; enrolled_at?: string; decommissioned_at?: string }) {
@@ -596,6 +596,13 @@ function NodeCard({
 
   const baseName = bases.find((b) => b.id === node.base_id)?.name;
 
+  const connStatusMap: Record<string, { label: string; colors: string }> = {
+    active: { label: "Active", colors: "text-fleet-green bg-fleet-green-dim" },
+    delayed: { label: "Delayed", colors: "text-fleet-amber bg-fleet-amber-dim" },
+    offline: { label: "Offline", colors: "text-[#555] bg-[#55555515]" },
+    unknown: { label: "Enrolled", colors: "text-fleet-green bg-fleet-green-dim" },
+  };
+
   const statusPillColors: Record<string, string> = {
     Enrolled: "text-fleet-green bg-fleet-green-dim",
     "Awaiting Certificate": "text-fleet-amber/60 bg-fleet-amber-dim",
@@ -603,6 +610,11 @@ function NodeCard({
     Revoked: "text-red-400 bg-fleet-red-dim",
     Decommissioned: "text-[#555] bg-[#55555515]",
   };
+
+  // For enrolled devices, show connection status instead of "Enrolled"
+  const conn = connectionStatus(node.last_seen_at);
+  const pillLabel = status.label === "Enrolled" ? (connStatusMap[conn]?.label ?? status.label) : status.label;
+  const pillColors = status.label === "Enrolled" ? (connStatusMap[conn]?.colors ?? statusPillColors[status.label]) : statusPillColors[status.label];
 
   const details = [
     { label: "Serial", value: node.serial ?? "—" },
@@ -627,8 +639,8 @@ function NodeCard({
         }
         name={node.name}
         statusPill={
-          <span className={`font-mono text-[9px] tracking-[.04em] uppercase px-1.5 py-0.5 rounded-full ${statusPillColors[status.label] ?? "text-[#555] bg-[#55555515]"}`}>
-            {status.label}
+          <span className={`font-mono text-[9px] tracking-[.04em] uppercase px-1.5 py-0.5 rounded-full ${pillColors ?? "text-[#555] bg-[#55555515]"}`}>
+            {pillLabel}
           </span>
         }
         meta={
