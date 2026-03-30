@@ -596,13 +596,6 @@ function NodeCard({
 
   const baseName = bases.find((b) => b.id === node.base_id)?.name;
 
-  const connStatusMap: Record<string, { label: string; colors: string }> = {
-    active: { label: "Active", colors: "text-fleet-green bg-fleet-green-dim" },
-    delayed: { label: "Delayed", colors: "text-fleet-amber bg-fleet-amber-dim" },
-    offline: { label: "Offline", colors: "text-[#555] bg-[#55555515]" },
-    unknown: { label: "Enrolled", colors: "text-fleet-green bg-fleet-green-dim" },
-  };
-
   const statusPillColors: Record<string, string> = {
     Enrolled: "text-fleet-green bg-fleet-green-dim",
     "Awaiting Certificate": "text-fleet-amber/60 bg-fleet-amber-dim",
@@ -611,10 +604,16 @@ function NodeCard({
     Decommissioned: "text-[#555] bg-[#55555515]",
   };
 
-  // For enrolled devices, show connection status instead of "Enrolled"
-  const conn = connectionStatus(node.last_seen_at);
-  const pillLabel = status.label === "Enrolled" ? (connStatusMap[conn]?.label ?? status.label) : status.label;
-  const pillColors = status.label === "Enrolled" ? (connStatusMap[conn]?.colors ?? statusPillColors[status.label]) : statusPillColors[status.label];
+  const connStatusSuffix: Record<string, { label: string; colors: string }> = {
+    active: { label: "Active", colors: "text-fleet-green bg-fleet-green-dim" },
+    delayed: { label: "Delayed", colors: "text-fleet-amber bg-fleet-amber-dim" },
+    offline: { label: "Offline", colors: "text-[#555] bg-[#55555515]" },
+  };
+
+  const conn = isEnrolled ? connectionStatus(node.last_seen_at) : null;
+  const connInfo = conn ? connStatusSuffix[conn] : null;
+  const pillLabel = status.label;
+  const pillColors = statusPillColors[status.label];
 
   const details = [
     { label: "Serial", value: node.serial ?? "—" },
@@ -639,8 +638,15 @@ function NodeCard({
         }
         name={node.name}
         statusPill={
-          <span className={`font-mono text-[9px] tracking-[.04em] uppercase px-1.5 py-0.5 rounded-full ${pillColors ?? "text-[#555] bg-[#55555515]"}`}>
-            {pillLabel}
+          <span className="flex items-center gap-1">
+            <span className={`font-mono text-[9px] tracking-[.04em] uppercase px-1.5 py-0.5 rounded-full ${pillColors ?? "text-[#555] bg-[#55555515]"}`}>
+              {pillLabel}
+            </span>
+            {connInfo && (
+              <span className={`font-mono text-[9px] tracking-[.04em] uppercase px-1.5 py-0.5 rounded-full ${connInfo.colors}`}>
+                {connInfo.label}
+              </span>
+            )}
           </span>
         }
         meta={
