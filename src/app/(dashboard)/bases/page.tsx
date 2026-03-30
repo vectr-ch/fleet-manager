@@ -347,6 +347,15 @@ function StatCell({ label, value, color }: { label: string; value: number; color
 
 // ── Base Card ────────────────────────────────────────────────────────────────
 
+interface ConnectedDrone {
+  id: string;
+  name: string;
+  enrolled_at?: string;
+  cert_serial?: string | null;
+  last_seen_at?: string | null;
+  decommissioned_at?: string;
+}
+
 interface BaseCardProps {
   base: {
     id: string;
@@ -364,9 +373,20 @@ interface BaseCardProps {
     decommissioned_at?: string;
     created_at: string;
   };
+  connectedDrones: ConnectedDrone[];
 }
 
-function BaseCard({ base }: BaseCardProps) {
+function droneTagStyle(drone: ConnectedDrone): { className: string; suffix: string } {
+  const status = deviceStatus(drone);
+  if (status.label === "Decommissioned") return { className: "bg-[#252525] text-[#555]", suffix: "" };
+  if (status.label !== "Enrolled") return { className: "bg-[#1a1a1a] text-[#555]", suffix: "" };
+  const conn = connectionStatus(drone.last_seen_at);
+  if (conn === "active") return { className: "bg-fleet-green/10 text-fleet-green border border-fleet-green/15", suffix: "" };
+  if (conn === "delayed") return { className: "bg-fleet-amber/10 text-fleet-amber border border-fleet-amber/15", suffix: " \u26A1" };
+  return { className: "bg-[#252525] text-[#555]", suffix: "" };
+}
+
+function BaseCard({ base, connectedDrones }: BaseCardProps) {
   const utils = trpc.useUtils();
   const initialEditState = getBaseEditDefaults(base);
   const [editing, setEditing] = useState(false);
@@ -607,6 +627,23 @@ function BaseCard({ base }: BaseCardProps) {
           );
         })()}
 
+        {/* Connected Drones */}
+        {isEnrolled && connectedDrones.length > 0 && (
+          <div className="px-(--page-padding) pb-3">
+            <div className="font-mono text-[9px] uppercase tracking-[.08em] text-[#555] mb-1.5">Connected Drones</div>
+            <div className="flex flex-wrap gap-1.5">
+              {connectedDrones.map((drone) => {
+                const tag = droneTagStyle(drone);
+                return (
+                  <span key={drone.id} className={`font-mono text-[10px] px-2 py-0.5 rounded ${tag.className}`}>
+                    {drone.name}{tag.suffix}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Error display */}
         {error && (
           <div className="px-(--page-padding) pb-2">
@@ -722,7 +759,20 @@ export default function BasesPage() {
   const [showDecommissioned, setShowDecommissioned] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { data: bases, isLoading } = trpc.bases.list.useQuery({ includeDecommissioned: showDecommissioned }, { refetchInterval: 15_000 });
+  const { data: nodes } = trpc.nodes.list.useQuery(undefined, { refetchInterval: 15_000 });
   const [showCreate, setShowCreate] = useState(false);
+
+  const nodesByBase = useMemo(() => {
+    const map = new Map<string, ConnectedDrone[]>();
+    if (!nodes) return map;
+    for (const node of nodes) {
+      if (!node.base_id) continue;
+      const list = map.get(node.base_id) ?? [];
+      list.push(node);
+      map.set(node.base_id, list);
+    }
+    return map;
+  }, [nodes]);
 
   const stats = useMemo(() => {
     if (!bases) return { total: 0, enrolled: 0, pending: 0, maintenance: 0 };
@@ -819,6 +869,7 @@ export default function BasesPage() {
               <BaseCard
                 key={base.id}
                 base={base}
+                connectedDrones={nodesByBase.get(base.id) ?? []}
               />
             ))}
           </div>
