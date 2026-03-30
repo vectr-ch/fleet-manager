@@ -330,11 +330,21 @@ function NodeRow({ node, bases }: NodeRowProps) {
   const [showRevoke, setShowRevoke] = useState(false);
   const [showDecommission, setShowDecommission] = useState(false);
 
+  useNow(); // live-update relative timestamps
+
   const status = deviceStatus(node);
   const isEnrolled = status.label === "Enrolled";
   const isPending = status.label === "Awaiting Certificate" || status.label === "Awaiting Connection";
   const isRevoked = status.label === "Revoked";
   const isDecommissioned = !!node.decommissioned_at;
+
+  const conn = connectionStatus(node.last_seen_at);
+  const connLabel = isEnrolled
+    ? ({ active: "Active", delayed: "Delayed", offline: "Offline", unknown: "Enrolled" } as const)[conn]
+    : status.label;
+  const connColors = isEnrolled
+    ? ({ active: "text-fleet-green bg-fleet-green-dim", delayed: "text-fleet-amber bg-fleet-amber-dim", offline: "text-[#555] bg-[#55555515]", unknown: "text-fleet-green bg-fleet-green-dim" } as const)[conn]
+    : undefined;
 
   const updateMutation = trpc.nodes.update.useMutation({
     onSuccess: () => {
@@ -438,6 +448,8 @@ function NodeRow({ node, bases }: NodeRowProps) {
         </td>
         <td className="px-3 py-2.5"><StatusLabel cert_serial={node.cert_serial} enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} /></td>
         <td className="px-3 py-2.5 font-mono text-[11px] text-[#555]">{node.firmware_version ?? "—"}</td>
+        <td className="px-3 py-2.5 font-mono text-[11px] text-[#555]">{node.rtt_ms != null ? `${node.rtt_ms}ms` : "—"}</td>
+        <td className="px-3 py-2.5 font-mono text-[11px] text-[#555]">{node.last_seen_at ? formatDateTime(node.last_seen_at) : "—"}</td>
         <td className="px-4 py-2.5">
           <div className="flex items-center gap-1.5">
             {error && <span className="text-[10px] text-red-400 mr-1">{error}</span>}
@@ -484,9 +496,13 @@ function NodeRow({ node, bases }: NodeRowProps) {
           )}
         </td>
         <td className="px-3 py-3">
-          <StatusLabel cert_serial={node.cert_serial} enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} />
+          <span className={`font-mono text-[9px] tracking-[.04em] uppercase px-1.5 py-0.5 rounded-full ${connColors ?? `${status.color} bg-[#55555515]`}`}>
+            {connLabel}
+          </span>
         </td>
         <td className="px-3 py-3 font-mono text-[11px] text-[#555]">{node.firmware_version ?? "—"}</td>
+        <td className="px-3 py-3 font-mono text-[11px] text-[#555] tabular-nums">{node.rtt_ms != null ? `${node.rtt_ms}ms` : "—"}</td>
+        <td className="px-3 py-3 font-mono text-[11px] text-[#555] tabular-nums">{node.last_seen_at ? formatDateTime(node.last_seen_at) : "—"}</td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             {!isDecommissioned && (
@@ -918,6 +934,12 @@ export default function FleetPage() {
                 </th>
                 <th className="px-3 py-2.5 text-left">
                   <span className="font-mono text-[9px] tracking-[.08em] text-[#555] uppercase">Firmware</span>
+                </th>
+                <th className="px-3 py-2.5 text-left">
+                  <span className="font-mono text-[9px] tracking-[.08em] text-[#555] uppercase">RTT</span>
+                </th>
+                <th className="px-3 py-2.5 text-left">
+                  <span className="font-mono text-[9px] tracking-[.08em] text-[#555] uppercase">Last Seen</span>
                 </th>
                 <th className="px-4 py-2.5 w-48" />
               </tr>
