@@ -308,7 +308,7 @@ interface NodeRowProps {
     serial?: string;
     base_id?: string;
     firmware_version?: string;
-    latency_ms?: number | null;
+    rtt_ms?: number | null;
     cert_serial?: string | null;
     enrolled_at?: string;
     last_seen_at?: string | null;
@@ -647,7 +647,7 @@ function NodeCard({
     { label: "Serial", value: node.serial ?? "—" },
     { label: "Base", value: baseName ?? "Unassigned" },
     { label: "Firmware", value: node.firmware_version ?? "—" },
-    ...(node.latency_ms != null ? [{ label: "Latency", value: `${node.latency_ms}ms` }] : []),
+    ...(node.rtt_ms != null ? [{ label: "RTT", value: `${node.rtt_ms}ms` }] : []),
     ...(node.enrolled_at ? [{ label: "Enrolled", value: formatDateTime(node.enrolled_at) }] : []),
     ...(node.last_seen_at ? [{ label: "Last seen", value: formatDateTime(node.last_seen_at) }] : []),
     ...(isEnrolled && node.cert_expires_at
