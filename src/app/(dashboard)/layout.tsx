@@ -27,7 +27,7 @@ export default async function DashboardLayout({
       <Topbar currentOrg={currentOrg} currentOrgName={currentOrgName} userInitials={userInitials} />
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar — hidden on mobile */}
-        <div className="hidden md:block">
+        <div className="hidden md:flex shrink-0">
           <Sidebar />
         </div>
         <main className="flex-1 flex flex-col overflow-hidden min-h-0">

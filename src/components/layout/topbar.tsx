@@ -81,7 +81,7 @@ export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps
             {userInitials}
           </button>
           {userDropdownOpen && (
-            <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-md border border-border bg-card py-1 shadow-lg" onMouseLeave={() => setUserDropdownOpen(false)}>
+            <div className="absolute right-0 top-full mt-1 z-1100 w-40 rounded-md border border-border bg-card py-1 shadow-lg" onMouseLeave={() => setUserDropdownOpen(false)}>
               {/* Org switcher — only in dropdown on mobile */}
               {currentOrg && (
                 <div className="md:hidden px-3 py-2 border-b border-border">
