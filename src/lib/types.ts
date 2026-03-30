@@ -113,6 +113,7 @@ export const nodeSchema = z.object({
   serial: z.string().optional(),
   base_id: z.string().optional(),
   firmware_version: z.string().optional(),
+  latency_ms: z.number().nullable().optional(),
   cert_serial: z.string().nullable().optional(),
   enrolled_at: z.string().optional(),
   last_seen_at: z.string().nullable().optional(),

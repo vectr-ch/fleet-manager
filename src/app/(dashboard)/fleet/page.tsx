@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { friendlyError } from "@/lib/error-messages";
 import { getNodeEditDefaults, validateNodeEditBaseId, validateNodeEditName } from "@/lib/node-edit";
 import { trpc } from "@/lib/trpc/client";
@@ -43,8 +43,9 @@ function formatDateTime(iso: string) {
   try {
     const d = new Date(iso);
     const diffMs = Date.now() - d.getTime();
-    // If within the last 24h, show relative time
-    if (diffMs < 60_000) return "just now";
+    if (diffMs < 0) return "just now";
+    if (diffMs < 5_000) return "just now";
+    if (diffMs < 60_000) return `${Math.floor(diffMs / 1_000)}s ago`;
     if (diffMs < 3600_000) return `${Math.floor(diffMs / 60_000)}m ago`;
     if (diffMs < 86400_000) return `${Math.floor(diffMs / 3600_000)}h ago`;
     return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) +
@@ -52,6 +53,15 @@ function formatDateTime(iso: string) {
   } catch {
     return iso;
   }
+}
+
+// Hook to re-render relative timestamps every second.
+function useNow(intervalMs = 1000) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
 }
 
 function connectionStatus(lastSeenAt?: string | null): "active" | "delayed" | "offline" | "unknown" {
@@ -298,6 +308,7 @@ interface NodeRowProps {
     serial?: string;
     base_id?: string;
     firmware_version?: string;
+    latency_ms?: number | null;
     cert_serial?: string | null;
     enrolled_at?: string;
     last_seen_at?: string | null;
@@ -630,10 +641,13 @@ function NodeCard({
   const pillLabel = isEnrolled ? (connStatusMap[conn]?.label ?? status.label) : status.label;
   const pillColors = isEnrolled ? (connStatusMap[conn]?.colors ?? statusPillColors[status.label]) : statusPillColors[status.label];
 
+  useNow(); // live-update relative timestamps
+
   const details = [
     { label: "Serial", value: node.serial ?? "—" },
     { label: "Base", value: baseName ?? "Unassigned" },
     { label: "Firmware", value: node.firmware_version ?? "—" },
+    ...(node.latency_ms != null ? [{ label: "Latency", value: `${node.latency_ms}ms` }] : []),
     ...(node.enrolled_at ? [{ label: "Enrolled", value: formatDateTime(node.enrolled_at) }] : []),
     ...(node.last_seen_at ? [{ label: "Last seen", value: formatDateTime(node.last_seen_at) }] : []),
     ...(isEnrolled && node.cert_expires_at
