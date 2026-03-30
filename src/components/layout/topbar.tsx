@@ -81,11 +81,12 @@ export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps
             {userInitials}
           </button>
           {userDropdownOpen && (
-            <div className="absolute right-0 top-full mt-1 z-1100 w-40 rounded-md border border-border bg-card py-1 shadow-lg" onMouseLeave={() => setUserDropdownOpen(false)}>
-              {/* Org switcher — only in dropdown on mobile */}
+            <div className="absolute right-0 top-full mt-1 z-1100 w-48 rounded-md border border-border bg-card py-1 shadow-lg" onMouseLeave={() => setUserDropdownOpen(false)}>
+              {/* Org name — mobile only, shown as label */}
               {currentOrg && (
-                <div className="md:hidden px-3 py-2 border-b border-border">
-                  <OrgSwitcher currentOrg={currentOrg} currentOrgName={currentOrgName} />
+                <div className="md:hidden px-3 pt-2 pb-1.5 border-b border-border">
+                  <div className="font-mono text-[9px] tracking-[.06em] text-[#555] uppercase mb-1">Organisation</div>
+                  <div className="text-xs text-foreground font-medium truncate">{currentOrgName ?? currentOrg}</div>
                 </div>
               )}
               <Link href="/settings" className="block px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary" onClick={() => setUserDropdownOpen(false)}>
