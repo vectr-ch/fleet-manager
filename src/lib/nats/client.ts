@@ -18,25 +18,39 @@ export async function getNatsConnection(): Promise<NatsConnection> {
   if (connecting) return connecting;
 
   connecting = (async () => {
-    const { url, creds } = getConfig();
+    try {
+      const { url, creds } = getConfig();
 
-    const encoder = new TextEncoder();
-    const credsBytes = creds.startsWith("-----BEGIN")
-      ? encoder.encode(creds)
-      : await import("fs").then((fs) => fs.readFileSync(creds));
+      // Railway stores multiline env vars with literal \n — normalize to real newlines
+      const normalizedCreds = creds.includes("\\n")
+        ? creds.replace(/\\n/g, "\n")
+        : creds;
 
-    const nc = await connect({
-      servers: url,
-      authenticator: credsAuthenticator(credsBytes),
-      name: "vectr-fleet-manager",
-      maxReconnectAttempts: -1,
-      reconnectTimeWait: 2000,
-    });
+      const encoder = new TextEncoder();
+      const credsBytes = normalizedCreds.startsWith("-----BEGIN")
+        ? encoder.encode(normalizedCreds)
+        : await import("fs").then((fs) => fs.readFileSync(normalizedCreds));
 
-    connection = nc;
-    connecting = null;
-    console.log(`[nats] connected to ${url}`);
-    return nc;
+      console.log("[nats] connecting to", url);
+
+      const nc = await connect({
+        servers: url,
+        authenticator: credsAuthenticator(credsBytes),
+        name: "vectr-fleet-manager",
+        maxReconnectAttempts: 5,
+        reconnectTimeWait: 2000,
+        timeout: 10000,
+      });
+
+      connection = nc;
+      connecting = null;
+      console.log(`[nats] connected to ${url}`);
+      return nc;
+    } catch (err) {
+      connecting = null;
+      console.error("[nats] connection failed:", err);
+      throw err;
+    }
   })();
 
   return connecting;
