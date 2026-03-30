@@ -31,13 +31,17 @@ export async function GET(request: Request) {
   const orgSlug = cookieStore.get("current_org")?.value;
 
   if (!accessToken || !orgSlug) {
+    console.warn("[sse] rejected: missing", !accessToken ? "access_token" : "current_org");
     return new Response("Unauthorized", { status: 401 });
   }
 
   const orgId = await resolveOrgId(accessToken, orgSlug);
   if (!orgId) {
+    console.warn(`[sse] rejected: could not resolve org slug "${orgSlug}"`);
     return new Response("Forbidden", { status: 403 });
   }
+
+  console.log(`[sse] client connected for org ${orgId}`);
 
   const encoder = new TextEncoder();
   let unsubscribe: (() => void) | null = null;
@@ -65,6 +69,7 @@ export async function GET(request: Request) {
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "NATS subscription failed";
+        console.error(`[sse] subscription error for org ${orgId}:`, err);
         controller.enqueue(
           encoder.encode(`event: error\ndata: ${JSON.stringify({ error: msg })}\n\n`)
         );
