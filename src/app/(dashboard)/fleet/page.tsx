@@ -784,7 +784,7 @@ export default function FleetPage() {
   const [showDecommissioned, setShowDecommissioned] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBase, setFilterBase] = useState("");
-  const { data: nodes, isLoading } = trpc.nodes.list.useQuery({ includeDecommissioned: showDecommissioned }, { refetchInterval: 15_000 });
+  const { data: nodes, isLoading } = trpc.nodes.list.useQuery({ includeDecommissioned: showDecommissioned }, { refetchInterval: 1_000 });
   const { data: bases = [] } = trpc.bases.list.useQuery();
   const [showCreate, setShowCreate] = useState(false);
   const isMobile = useIsMobile();
