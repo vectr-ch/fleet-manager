@@ -32,7 +32,7 @@ export default function TelemetryPage() {
   const hasData = systemMetrics !== null && systemMetrics !== undefined;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-auto p-5 gap-5">
+    <div className="flex-1 flex flex-col min-h-0 overflow-auto p-(--page-padding) gap-(--page-gap)">
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold text-white tracking-tight">Telemetry</h1>
@@ -49,7 +49,7 @@ export default function TelemetryPage() {
           <span className="font-mono text-[11px] text-neutral-600">Data will appear once drones begin reporting</span>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SectionCard title="System Metrics">
             <MetricRow
               label="CPU Usage"

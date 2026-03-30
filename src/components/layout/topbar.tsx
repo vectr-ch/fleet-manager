@@ -36,12 +36,12 @@ export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps
   return (
     <header className="h-11 border-b border-border bg-card flex items-center px-4 shrink-0">
       {/* Logo */}
-      <div className="font-mono text-[13px] font-semibold tracking-wider text-foreground uppercase pr-5 border-r border-input mr-5">
+      <div className="font-mono text-[13px] font-semibold tracking-wider text-foreground uppercase pr-5 md:border-r md:border-input md:mr-5">
         {tc("appName")} <span className="text-subtle font-light">/ {tc("appSuffix")}</span>
       </div>
 
-      {/* Nav */}
-      <nav className="flex gap-0.5">
+      {/* Nav — hidden on mobile */}
+      <nav className="hidden md:flex gap-0.5">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
@@ -62,15 +62,15 @@ export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps
 
       {/* Right side */}
       <div className="ml-auto flex items-center gap-2.5">
-        {/* Org badge with switcher */}
+        {/* Org badge — hidden on mobile */}
         {currentOrg && (
-          <div onClick={() => setUserDropdownOpen(false)}>
+          <div className="hidden md:block" onClick={() => setUserDropdownOpen(false)}>
             <OrgSwitcher currentOrg={currentOrg} currentOrgName={currentOrgName} />
           </div>
         )}
 
-        {/* Divider */}
-        <div className="w-px h-5 bg-border" />
+        {/* Divider — hidden on mobile */}
+        <div className="hidden md:block w-px h-5 bg-border" />
 
         {/* User avatar */}
         <div className="relative">
@@ -82,6 +82,12 @@ export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps
           </button>
           {userDropdownOpen && (
             <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-md border border-border bg-card py-1 shadow-lg" onMouseLeave={() => setUserDropdownOpen(false)}>
+              {/* Org switcher — only in dropdown on mobile */}
+              {currentOrg && (
+                <div className="md:hidden px-3 py-2 border-b border-border">
+                  <OrgSwitcher currentOrg={currentOrg} currentOrgName={currentOrgName} />
+                </div>
+              )}
               <Link href="/settings" className="block px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary" onClick={() => setUserDropdownOpen(false)}>
                 Settings
               </Link>

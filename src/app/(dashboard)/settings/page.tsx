@@ -343,7 +343,7 @@ function InvitesTab() {
                     <button
                       onClick={() => deleteMutation.mutate({ id: invite.id })}
                       disabled={deleteMutation.isPending}
-                      className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-red-400 hover:text-red-300 hover:border-red-700 opacity-0 group-hover:opacity-100 disabled:opacity-50 transition-all"
+                      className="font-mono text-[10px] tracking-wider uppercase px-2.5 py-1 rounded border border-neutral-700 text-red-400 hover:text-red-300 hover:border-red-700 md:opacity-0 md:group-hover:opacity-100 disabled:opacity-50 transition-all"
                     >
                       Revoke
                     </button>
@@ -387,16 +387,16 @@ export default function SettingsPage() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-auto">
       {/* Header */}
-      <div className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-950 shrink-0">
+      <div className="flex items-center px-(--page-padding) py-3 border-b border-neutral-800 bg-neutral-950 shrink-0">
         <div>
           <div className="text-[15px] font-semibold text-foreground tracking-tight">Settings</div>
           <div className="text-[11px] text-neutral-500 font-mono mt-0.5">Manage your organisation and account</div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-5">
+      <div className="flex-1 overflow-auto p-(--page-padding)">
         <Tabs defaultValue="org">
-          <TabsList variant="line" className="mb-6">
+          <TabsList variant="line" className="mb-6 overflow-x-auto">
             <TabsTrigger value="org">Organisation</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="invites">Invites</TabsTrigger>

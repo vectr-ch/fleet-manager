@@ -21,7 +21,7 @@ export default function AuditPage() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-800 bg-neutral-950 shrink-0">
+      <div className="flex items-center justify-between px-(--page-padding) py-3 border-b border-neutral-800 bg-neutral-950 shrink-0">
         <div>
           <h1 className="text-[15px] font-semibold text-white tracking-tight">Audit Log</h1>
           <div className="font-mono text-[11px] text-neutral-400 mt-0.5">
@@ -31,7 +31,7 @@ export default function AuditPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3 px-5 pt-4">
+      <div className="grid grid-cols-2 gap-3 px-(--page-padding) pt-4">
         <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-4">
           <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-1">Total Events</div>
           <div className="font-mono text-2xl font-semibold text-neutral-300">{isLoading ? "—" : entries.length}</div>
@@ -45,7 +45,7 @@ export default function AuditPage() {
       </div>
 
       {/* Log entries */}
-      <div className="flex-1 overflow-y-auto min-h-0 px-5 pb-5 pt-4">
+      <div className="flex-1 overflow-y-auto min-h-0 px-(--page-padding) pb-5 pt-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <span className="font-mono text-[11px] text-neutral-500">Loading…</span>
@@ -59,14 +59,14 @@ export default function AuditPage() {
           <div className="divide-y divide-neutral-800 bg-neutral-900 border border-neutral-800 rounded-[5px] overflow-hidden">
             {entries.map((entry) => (
               <div key={entry.id} className="flex items-start gap-4 px-5 py-3 hover:bg-neutral-800/50 transition-colors">
-                <div className="font-mono text-[11px] text-neutral-500 w-36 shrink-0 pt-0.5 tabular-nums">
+                <div className="font-mono text-[11px] text-neutral-500 w-20 md:w-36 shrink-0 pt-0.5 tabular-nums">
                   {formatTimestamp(entry.created_at)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-mono text-sm font-semibold text-white">{entry.action}</div>
                   <div className="font-mono text-[11px] text-neutral-500 mt-0.5">{entry.resource}</div>
                 </div>
-                <div className="font-mono text-[11px] text-neutral-500 shrink-0">
+                <div className="hidden md:block font-mono text-[11px] text-neutral-500 shrink-0">
                   <span className="text-neutral-600">user</span>{" "}
                   <span className="text-neutral-400">{entry.user_id}</span>
                 </div>

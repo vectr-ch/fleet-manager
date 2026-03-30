@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { Topbar } from "@/components/layout/topbar";
 import { Sidebar } from "@/components/layout/sidebar";
+import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 
 export default async function DashboardLayout({
   children,
@@ -25,11 +26,16 @@ export default async function DashboardLayout({
     <div className="flex flex-col h-screen overflow-hidden">
       <Topbar currentOrg={currentOrg} currentOrgName={currentOrgName} userInitials={userInitials} />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
+        {/* Sidebar — hidden on mobile */}
+        <div className="hidden md:block">
+          <Sidebar />
+        </div>
         <main className="flex-1 flex flex-col overflow-hidden min-h-0">
           {children}
         </main>
       </div>
+      {/* Mobile bottom tab bar — hidden on desktop */}
+      <MobileTabBar />
     </div>
   );
 }

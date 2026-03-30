@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile Data Display</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #09090b; color: #e8e8e8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  .page-header { padding: 32px 40px 16px; }
+  .page-header h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+  .page-header p { font-size: 14px; color: #71717a; }
+
+  .options-row {
+    display: flex;
+    gap: 24px;
+    padding: 16px 40px 40px;
+    overflow-x: auto;
+  }
+
+  .option-col {
+    flex: 1;
+    min-width: 340px;
+    cursor: pointer;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .option-col:hover { border-color: #27272a; }
+  .option-col.selected { border-color: #3b82f6; }
+
+  .option-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+  }
+  .option-letter {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #18181b; border: 1px solid #27272a;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: #a1a1aa;
+    flex-shrink: 0;
+  }
+  .selected .option-letter { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+  .option-title { font-size: 15px; font-weight: 600; }
+  .option-desc { font-size: 12px; color: #71717a; margin-top: 2px; }
+
+  /* Phone frame */
+  .phone {
+    width: 320px;
+    margin: 0 auto 20px;
+    background: #080808;
+    border-radius: 24px;
+    border: 2px solid #1a1a1a;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  /* Shared phone header */
+  .phone-topbar {
+    height: 36px;
+    background: #0f0f0f;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 11px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .phone-topbar .logo { font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 11px; }
+  .phone-topbar .logo span { color: #555; font-weight: 300; }
+  .phone-topbar .avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(135deg, #1e3a5f, #3b82f6);
+    border: 1px solid #252525;
+    margin-left: auto;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 600; color: #fff;
+  }
+
+  /* Page header inside phone */
+  .phone-page-header {
+    padding: 12px 14px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .phone-page-title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .phone-page-subtitle {
+    font-size: 10px;
+    color: #555;
+    font-family: 'SF Mono', monospace;
+  }
+  .phone-add-btn {
+    font-size: 9px;
+    font-family: 'SF Mono', monospace;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: #e8e8e8;
+    color: #080808;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  /* Stat bar */
+  .phone-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    margin: 0 14px 8px;
+    background: #1a1a1a;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .phone-stat {
+    background: #0f0f0f;
+    padding: 8px 8px;
+  }
+  .phone-stat-label {
+    font-family: 'SF Mono', monospace;
+    font-size: 8px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .phone-stat-value {
+    font-family: 'SF Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* Phone content area */
+  .phone-content {
+    height: 340px;
+    overflow-y: auto;
+  }
+
+  /* Bottom nav */
+  .phone-bottom-nav {
+    height: 48px;
+    background: #0f0f0f;
+    border-top: 1px solid #1a1a1a;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 9px;
+    color: #555;
+    font-family: 'SF Mono', monospace;
+  }
+  .nav-item.active { color: #e8e8e8; }
+  .nav-icon {
+    width: 16px; height: 16px;
+    border-radius: 3px;
+    background: #1a1a1a;
+  }
+  .nav-item.active .nav-icon { background: #3b82f6; }
+
+  /* Status dot */
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot-green { background: #22c55e; box-shadow: 0 0 4px #22c55e88; }
+  .dot-amber { background: #f59e0b; box-shadow: 0 0 4px #f59e0b88; }
+  .dot-red { background: #ef4444; box-shadow: 0 0 4px #ef444488; }
+  .dot-grey { background: #555; }
+
+  /* ============ OPTION A: Card List ============ */
+  .card-item {
+    margin: 0 14px 8px;
+    background: #0f0f0f;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .card-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .card-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    flex: 1;
+  }
+  .card-item-status {
+    font-family: 'SF Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: 10px;
+  }
+  .status-enrolled { color: #22c55e; background: #22c55e15; }
+  .status-pending { color: #f59e0b; background: #f59e0b15; }
+  .status-offline { color: #555; background: #55555515; }
+  .card-item-meta {
+    display: flex;
+    gap: 12px;
+    font-family: 'SF Mono', monospace;
+    font-size: 10px;
+    color: #555;
+    margin-bottom: 10px;
+  }
+  .card-item-actions {
+    display: flex;
+    gap: 6px;
+    border-top: 1px solid #1a1a1a;
+    padding-top: 8px;
+  }
+  .card-action {
+    font-family: 'SF Mono', monospace;
+    font-size: 9px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid #252525;
+    color: #666;
+    letter-spacing: 0.03em;
+  }
+  .card-action.danger { border-color: #ef444433; color: #ef4444; }
+
+  /* ============ OPTION B: Condensed Rows ============ */
+  .row-list {
+    margin: 0 14px;
+    background: #0f0f0f;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .row-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .row-item:last-child { border-bottom: none; }
+  .row-name {
+    font-size: 12px;
+    font-weight: 500;
+    flex: 1;
+  }
+  .row-chevron { color: #333; font-size: 10px; }
+
+  .row-expanded {
+    background: #0a0a0a;
+  }
+  .row-expand-body {
+    padding: 0 12px 10px 27px;
+    background: #0a0a0a;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .expand-detail {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-family: 'SF Mono', monospace;
+    font-size: 10px;
+  }
+  .expand-label { color: #555; }
+  .expand-value { color: #a1a1aa; }
+  .expand-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  /* ============ OPTION C: Scroll Table ============ */
+  .scroll-wrapper {
+    overflow-x: auto;
+    margin: 0 14px;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+  }
+  .mini-table {
+    min-width: 520px;
+    font-size: 10px;
+    font-family: 'SF Mono', monospace;
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .mini-table thead { background: #0a0a0a; }
+  .mini-table th {
+    padding: 6px 8px;
+    text-align: left;
+    font-size: 8px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    border-bottom: 1px solid #1a1a1a;
+    white-space: nowrap;
+  }
+  .mini-table td {
+    padding: 8px 8px;
+    border-bottom: 1px solid #1a1a1a;
+    white-space: nowrap;
+    color: #a1a1aa;
+  }
+  .mini-table tr:last-child td { border-bottom: none; }
+  .mini-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: #0f0f0f;
+    z-index: 1;
+    color: #e8e8e8;
+    font-weight: 500;
+  }
+  .mini-table thead th:first-child {
+    position: sticky;
+    left: 0;
+    background: #0a0a0a;
+    z-index: 2;
+  }
+  .scroll-hint {
+    text-align: center;
+    font-size: 9px;
+    color: #333;
+    padding: 6px;
+    font-family: 'SF Mono', monospace;
+  }
+  .dots-btn {
+    font-size: 12px;
+    color: #555;
+    letter-spacing: 2px;
+  }
+
+  /* Selection indicator */
+  .selection-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #3b82f6; color: #fff;
+    padding: 12px 20px;
+    font-size: 14px; font-weight: 500;
+    text-align: center;
+    transform: translateY(100%);
+    transition: transform 0.3s;
+    z-index: 100;
+  }
+  .selection-bar.visible { transform: translateY(0); }
+</style>
+<script>
+  let selected = null;
+  function toggleSelect(el) {
+    document.querySelectorAll('.option-col').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    selected = el.dataset.choice;
+    document.querySelector('.selection-bar').classList.add('visible');
+    document.querySelector('.selection-bar').textContent = 'Selected: ' + el.querySelector('.option-title').textContent;
+
+    // Send event
+    fetch('/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'click',
+        text: el.querySelector('.option-title').textContent,
+        choice: el.dataset.choice,
+        id: null,
+        timestamp: Date.now()
+      })
+    }).catch(() => {});
+  }
+</script>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Mobile Data Display</h1>
+  <p>How should the fleet table (7 columns, hover actions) adapt on mobile? Each mockup below shows the same 3 drones rendered in a phone frame.</p>
+</div>
+
+<div class="options-row">
+
+  <!-- ===== OPTION A: Card List ===== -->
+  <div class="option-col" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-label">
+      <div class="option-letter">A</div>
+      <div>
+        <div class="option-title">Card List</div>
+        <div class="option-desc">Each row becomes a card with visible actions — no hover needed</div>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="phone-topbar">
+        <div class="logo">VECTR <span>/ fleet</span></div>
+        <div class="avatar">DL</div>
+      </div>
+      <div class="phone-page-header">
+        <div>
+          <div class="phone-page-title">Drones</div>
+          <div class="phone-page-subtitle">3 registered</div>
+        </div>
+        <div class="phone-add-btn">+ Enroll</div>
+      </div>
+      <div class="phone-stats">
+        <div class="phone-stat"><div class="phone-stat-label">Total</div><div class="phone-stat-value">3</div></div>
+        <div class="phone-stat"><div class="phone-stat-label">Online</div><div class="phone-stat-value" style="color:#22c55e">2</div></div>
+        <div class="phone-stat"><div class="phone-stat-label">Pending</div><div class="phone-stat-value" style="color:#f59e0b">1</div></div>
+        <div class="phone-stat"><div class="phone-stat-label">Bases</div><div class="phone-stat-value">2</div></div>
+      </div>
+      <div class="phone-content">
+        <div class="card-item">
+          <div class="card-item-header">
+            <span class="dot dot-green"></span>
+            <span class="card-item-name">Scout Alpha-01</span>
+            <span class="card-item-status status-enrolled">enrolled</span>
+          </div>
+          <div class="card-item-meta">
+            <span>SN: VCT-2024-001</span>
+            <span>Base: Rooftop-A</span>
+          </div>
+          <div class="card-item-actions">
+            <span class="card-action">Edit</span>
+            <span class="card-action">Cert ↓</span>
+            <span class="card-action danger">Revoke</span>
+          </div>
+        </div>
+        <div class="card-item">
+          <div class="card-item-header">
+            <span class="dot dot-amber"></span>
+            <span class="card-item-name">Recon Bravo-03</span>
+            <span class="card-item-status status-pending">pending</span>
+          </div>
+          <div class="card-item-meta">
+            <span>SN: VCT-2024-003</span>
+            <span>Base: —</span>
+          </div>
+          <div class="card-item-actions">
+            <span class="card-action">Edit</span>
+            <span class="card-action danger">Revoke</span>
+          </div>
+        </div>
+        <div class="card-item">
+          <div class="card-item-header">
+            <span class="dot dot-grey"></span>
+            <span class="card-item-name">Patrol Charlie-07</span>
+            <span class="card-item-status status-offline">offline</span>
+          </div>
+          <div class="card-item-meta">
+            <span>SN: VCT-2024-007</span>
+            <span>Base: Warehouse-B</span>
+          </div>
+          <div class="card-item-actions">
+            <span class="card-action">Edit</span>
+            <span class="card-action">Cert ↓</span>
+            <span class="card-action danger">Revoke</span>
+          </div>
+        </div>
+      </div>
+      <div class="phone-bottom-nav">
+        <div class="nav-item"><div class="nav-icon"></div>Map</div>
+        <div class="nav-item active"><div class="nav-icon"></div>Fleet</div>
+        <div class="nav-item"><div class="nav-icon"></div>Bases</div>
+        <div class="nav-item"><div class="nav-icon"></div>Alerts</div>
+        <div class="nav-item"><div class="nav-icon"></div>More</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== OPTION B: Condensed Rows ===== -->
+  <div class="option-col" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-label">
+      <div class="option-letter">B</div>
+      <div>
+        <div class="option-title">Condensed Rows + Expand</div>
+        <div class="option-desc">Compact list — tap a row to expand details and actions inline</div>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="phone-topbar">
+        <div class="logo">VECTR <span>/ fleet</span></div>
+        <div class="avatar">DL</div>
+      </div>
+      <div class="phone-page-header">
+        <div>
+          <div class="phone-page-title">Drones</div>
+          <div class="phone-page-subtitle">3 registered</div>
+        </div>
+        <div class="phone-add-btn">+ Enroll</div>
+      </div>
+      <div class="phone-stats">
+        <div class="phone-stat"><div class="phone-stat-label">Total</div><div class="phone-stat-value">3</div></div>
+        <div class="phone-stat"><div class="phone-stat-label">Online</div><div class="phone-stat-value" style="color:#22c55e">2</div></div>
+        <div class="phone-stat"><div class="phone-stat-label">Pending</div><div class="phone-stat-value" style="color:#f59e0b">1</div></div>
+        <div class="phone-stat"><div class="phone-stat-label">Bases</div><div class="phone-stat-value">2</div></div>
+      </div>
+      <div class="phone-content">
+        <div class="row-list">
+          <!-- Expanded row -->
+          <div class="row-item row-expanded">
+            <span class="dot dot-green"></span>
+            <span class="row-name">Scout Alpha-01</span>
+            <span class="card-item-status status-enrolled" style="font-size:9px;">enrolled</span>
+            <span class="row-chevron">▼</span>
+          </div>
+          <div class="row-expand-body">
+            <div class="expand-detail"><span class="expand-label">Serial</span><span class="expand-value">VCT-2024-001</span></div>
+            <div class="expand-detail"><span class="expand-label">Base</span><span class="expand-value">Rooftop-A</span></div>
+            <div class="expand-detail"><span class="expand-label">Firmware</span><span class="expand-value">v1.4.2</span></div>
+            <div class="expand-detail"><span class="expand-label">Cert expires</span><span class="expand-value">2025-06-15</span></div>
+            <div class="expand-actions">
+              <span class="card-action">Edit</span>
+              <span class="card-action">Cert ↓</span>
+              <span class="card-action danger">Revoke</span>
+            </div>
+          </div>
+
+          <!-- Collapsed rows -->
+          <div class="row-item">
+            <span class="dot dot-amber"></span>
+            <span class="row-name">Recon Bravo-03</span>
+            <span class="card-item-status status-pending" style="font-size:9px;">pending</span>
+            <span class="row-chevron">▶</span>
+          </div>
+          <div class="row-item">
+            <span class="dot dot-grey"></span>
+            <span class="row-name">Patrol Charlie-07</span>
+            <span class="card-item-status status-offline" style="font-size:9px;">offline</span>
+            <span class="row-chevron">▶</span>
+          </div>
+        </div>
+      </div>
+      <div class="phone-bottom-nav">
+        <div class="nav-item"><div class="nav-icon"></div>Map</div>
+        <div class="nav-item active"><div class="nav-icon"></div>Fleet</div>
+        <div class="nav-item"><div class="nav-icon"></div>Bases</div>
+        <div class="nav-item"><div class="nav-icon"></div>Alerts</div>
+        <div class="nav-item"><div class="nav-icon"></div>More</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== OPTION C: Horizontal Scroll Table ===== -->
+  <div class="option-col" data-choice="c" onclick="toggleSelect(this)">
+    <div class="option-label">
+      <div class="option-letter">C</div>
+      <div>
+        <div class="option-title">Horizontal Scroll Table</div>
+        <div class="option-desc">Same table, scrollable — sticky first column, swipe for more</div>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="phone-topbar">
+        <div class="logo">VECTR <span>/ fleet</span></div>
+        <div class="avatar">DL</div>
+      </div>
+      <div class="phone-page-header">
+        <div>
+          <div class="phone-page-title">Drones</div>
+          <div class="phone-page-subtitle">3 registered</div>
+        </div>
+        <div class="phone-add-btn">+ Enroll</div>
+      </div>
+      <div class="phone-stats">
+        <div class="phone-stat"><div class="phone-stat-label">Total</div><div class="phone-stat-value">3</div></div>
+        <div class="phone-stat"><div class="phone-stat-label">Online</div><div class="phone-stat-value" style="color:#22c55e">2</div></div>
+        <div class="phone-stat"><div class="phone-stat-label">Pending</div><div class="phone-stat-value" style="color:#f59e0b">1</div></div>
+        <div class="phone-stat"><div class="phone-stat-label">Bases</div><div class="phone-stat-value">2</div></div>
+      </div>
+      <div class="phone-content">
+        <div class="scroll-wrapper">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th style="min-width:110px;">Name</th>
+                <th>Serial</th>
+                <th>Base</th>
+                <th>Status</th>
+                <th>Firmware</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="dot dot-green" style="margin-right:6px;"></span>Scout Alpha-01</td>
+                <td>VCT-2024-001</td>
+                <td>Rooftop-A</td>
+                <td style="color:#22c55e;">enrolled</td>
+                <td>v1.4.2</td>
+                <td><span class="dots-btn">···</span></td>
+              </tr>
+              <tr>
+                <td><span class="dot dot-amber" style="margin-right:6px;"></span>Recon Bravo-03</td>
+                <td>VCT-2024-003</td>
+                <td>—</td>
+                <td style="color:#f59e0b;">pending</td>
+                <td>—</td>
+                <td><span class="dots-btn">···</span></td>
+              </tr>
+              <tr>
+                <td><span class="dot dot-grey" style="margin-right:6px;"></span>Patrol Charlie-07</td>
+                <td>VCT-2024-007</td>
+                <td>Warehouse-B</td>
+                <td style="color:#555;">offline</td>
+                <td>v1.3.8</td>
+                <td><span class="dots-btn">···</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="scroll-hint">← swipe to see more columns →</div>
+      </div>
+      <div class="phone-bottom-nav">
+        <div class="nav-item"><div class="nav-icon"></div>Map</div>
+        <div class="nav-item active"><div class="nav-icon"></div>Fleet</div>
+        <div class="nav-item"><div class="nav-icon"></div>Bases</div>
+        <div class="nav-item"><div class="nav-icon"></div>Alerts</div>
+        <div class="nav-item"><div class="nav-icon"></div>More</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="selection-bar"></div>
+
+</body>
+</html>

@@ -129,6 +129,16 @@
   --sidebar-accent-foreground: #e8e8e8;
   --sidebar-border: #1a1a1a;
   --sidebar-ring: #666666;
+  /* Responsive spacing */
+  --page-padding: 14px;
+  --page-gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .dark {
+    --page-padding: 20px;
+    --page-gap: 20px;
+  }
 }
 
 @layer base {
@@ -197,6 +207,22 @@
 @keyframes shimmer {
   from { left: -100%; }
   to { left: 100%; }
+}
+
+/* Mobile bottom sheet */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-slide-up {
+  animation: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
 }
 
 /* ======================================== */

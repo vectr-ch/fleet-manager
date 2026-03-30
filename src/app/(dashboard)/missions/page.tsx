@@ -6,7 +6,7 @@ export default function MissionsPage() {
   const { data: missions = [], isLoading } = trpc.missions.list.useQuery();
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-auto p-5 gap-5">
+    <div className="flex-1 flex flex-col min-h-0 overflow-auto p-(--page-padding) gap-(--page-gap)">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

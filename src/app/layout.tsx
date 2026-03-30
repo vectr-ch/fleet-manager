@@ -28,6 +28,12 @@ export const metadata: Metadata = {
   description: "Autonomous fleet infrastructure",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default async function RootLayout({
   children,
 }: {

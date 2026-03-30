@@ -29,6 +29,20 @@
     "settings": "Settings",
     "firmware": "Firmware"
   },
+  "mobileNav": {
+    "map": "Map",
+    "fleet": "Fleet",
+    "bases": "Bases",
+    "alerts": "Alerts",
+    "more": "More",
+    "pages": "Pages",
+    "overview": "Overview",
+    "missions": "Missions",
+    "telemetry": "Telemetry",
+    "auditLog": "Audit Log",
+    "settings": "Settings",
+    "firmware": "Firmware"
+  },
   "dashboard": {
     "fleetOverview": "Fleet Overview",
     "newMission": "New Mission",

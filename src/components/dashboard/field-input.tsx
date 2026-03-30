@@ -10,8 +10,8 @@ interface FieldInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "s
 
 export function FieldInput({ label, className, size = "md", ...props }: FieldInputProps) {
   const sizeClasses = size === "sm"
-    ? "px-2 py-1 text-[11px]"
-    : "px-3 py-1.5 text-[12px]";
+    ? "px-2 py-1.5 md:py-1 text-[11px]"
+    : "px-3 py-2.5 md:py-1.5 text-[12px]";
 
   return (
     <div className="flex flex-col gap-1">

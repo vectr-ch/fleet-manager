@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ActionButton } from "./action-button";
+import { BottomSheet } from "./bottom-sheet";
 
 type ConfirmVariant = "default" | "danger" | "green";
 
@@ -45,8 +46,8 @@ export function ConfirmModal({
   isPending = false,
 }: ConfirmModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+    <BottomSheet open onClose={onCancel}>
+      <div className="p-6 md:p-0">
         <div className="flex items-center gap-2 mb-3">
           {icon}
           <span className={`font-mono text-[10px] tracking-[.08em] uppercase font-medium ${titleColor ?? titleColorDefault[confirmVariant]}`}>
@@ -68,6 +69,6 @@ export function ConfirmModal({
           </ActionButton>
         </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 }

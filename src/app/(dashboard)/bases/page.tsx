@@ -24,6 +24,7 @@ import {
   Search,
 } from "lucide-react";
 import { ActionButton, ConfirmModal, FieldInput, LocationPickerModal, Toggle } from "@/components/dashboard";
+import { BottomSheet } from "@/components/dashboard/bottom-sheet";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -127,8 +128,8 @@ function RevokeModal({
   const [reason, setReason] = useState("");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+    <BottomSheet open onClose={onCancel}>
+      <div className="p-6 md:p-0">
         <div className="flex items-center gap-2 mb-1">
           <ShieldAlert className="size-3.5 text-red-400" />
           <span className="font-mono text-[10px] tracking-[.08em] text-red-400 uppercase font-medium">Revoke Certificate</span>
@@ -163,7 +164,7 @@ function RevokeModal({
           </button>
         </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 }
 
@@ -202,8 +203,8 @@ function CreateBaseModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+    <BottomSheet open onClose={onClose}>
+      <form onSubmit={handleSubmit} className="p-6 md:p-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Plus className="size-3.5 text-foreground" />
@@ -281,7 +282,7 @@ function CreateBaseModal({
           onCancel={() => setShowMapPicker(false)}
         />
       )}
-    </div>
+    </BottomSheet>
   );
 }
 
@@ -452,7 +453,7 @@ function BaseCard({ base }: BaseCardProps) {
     <>
       <div className={`bg-[#0f0f0f] border border-[#1a1a1a] rounded-lg overflow-hidden transition-all hover:border-[#252525] ${isDecommissioned ? "opacity-50" : ""}`}>
         {/* Card header */}
-        <div className="px-5 pt-4 pb-3 flex items-start justify-between">
+        <div className="px-(--page-padding) pt-4 pb-3 flex items-start justify-between">
           <div className="min-w-0">
             {editing ? (
               <FieldInput
@@ -514,7 +515,7 @@ function BaseCard({ base }: BaseCardProps) {
         </div>
 
         {/* Header metrics grid — enrollment & maintenance */}
-        <div className="px-5 pb-3">
+        <div className="px-(--page-padding) pb-3">
           <div className="grid grid-cols-3 gap-px border-t border-[#1a1a1a] pt-3">
             {/* Enrolled */}
             <div className="bg-[#080808] border border-[#1a1a1a] rounded p-2">
@@ -551,7 +552,7 @@ function BaseCard({ base }: BaseCardProps) {
         {isEnrolled && (() => {
           const expiry = certExpiryDays(base.cert_expires_at);
           return (
-            <div className="px-5 pb-3">
+            <div className="px-(--page-padding) pb-3">
               <div className="grid grid-cols-3 gap-px">
                 {/* Latency */}
                 <div className="bg-[#080808] border border-[#1a1a1a] rounded p-2">
@@ -581,7 +582,7 @@ function BaseCard({ base }: BaseCardProps) {
 
         {/* Error display */}
         {error && (
-          <div className="px-5 pb-2">
+          <div className="px-(--page-padding) pb-2">
             <div className="flex items-center gap-2 text-[11px] text-red-400">
               <AlertTriangle className="size-3 shrink-0" />
               {error}
@@ -715,7 +716,7 @@ export default function BasesPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Page header */}
-      <div className="px-5 pt-4 pb-0 shrink-0">
+      <div className="px-(--page-padding) pt-4 pb-0 shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-[15px] font-semibold text-foreground tracking-[-0.01em]">Base Stations</h1>
@@ -734,7 +735,7 @@ export default function BasesPage() {
       </div>
 
       {/* Stats row */}
-      <div className="shrink-0 grid grid-cols-4 gap-px bg-[#1a1a1a] border-y border-[#1a1a1a]">
+      <div className="shrink-0 grid grid-cols-2 md:grid-cols-4 gap-px bg-[#1a1a1a] border-y border-[#1a1a1a]">
         <StatCell label="Total" value={stats.total} />
         <StatCell label="Enrolled" value={stats.enrolled} color="text-fleet-green" />
         <StatCell label="Pending" value={stats.pending} color={stats.pending > 0 ? "text-fleet-amber" : "text-foreground"} />
@@ -742,7 +743,7 @@ export default function BasesPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="shrink-0 px-5 py-3 border-b border-[#1a1a1a] flex items-center gap-3">
+      <div className="shrink-0 px-(--page-padding) py-3 border-b border-[#1a1a1a] flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-[#3a3a3a]" />
           <input
@@ -765,7 +766,7 @@ export default function BasesPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 overflow-y-auto p-(--page-padding)">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <div className="size-5 border-2 border-[#252525] border-t-[#666] rounded-full animate-spin" />

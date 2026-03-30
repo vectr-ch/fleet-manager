@@ -45,7 +45,7 @@ export default function AlertsPage() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-800 bg-neutral-950 shrink-0">
+      <div className="flex items-center justify-between px-(--page-padding) py-3 border-b border-neutral-800 bg-neutral-950 shrink-0">
         <div>
           <h1 className="text-[15px] font-semibold text-white tracking-tight">Alerts</h1>
           <div className="font-mono text-[11px] text-neutral-400 mt-0.5">
@@ -55,7 +55,7 @@ export default function AlertsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3 px-5 pt-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 px-(--page-padding) pt-4">
         <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-4">
           <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-1">Critical</div>
           <div className={`font-mono text-2xl font-semibold ${criticalCount > 0 ? "text-red-400" : "text-neutral-300"}`}>{criticalCount}</div>
@@ -71,12 +71,12 @@ export default function AlertsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-1 px-5 pt-4 pb-2 shrink-0">
+      <div className="flex items-center gap-1 px-(--page-padding) pt-4 pb-2 shrink-0 overflow-x-auto">
         {filters.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setFilter(key)}
-            className={`font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded transition-colors ${
+            className={`shrink-0 font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded transition-colors ${
               filter === key
                 ? "bg-neutral-800 text-white border border-neutral-700"
                 : "text-neutral-500 hover:text-neutral-300 border border-transparent"
@@ -91,7 +91,7 @@ export default function AlertsPage() {
       </div>
 
       {/* Alert list */}
-      <div className="flex-1 px-5 pb-5 overflow-auto">
+      <div className="flex-1 px-(--page-padding) pb-5 overflow-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <span className="font-mono text-[11px] text-neutral-500">Loading…</span>

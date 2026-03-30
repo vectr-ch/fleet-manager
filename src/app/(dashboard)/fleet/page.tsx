@@ -20,6 +20,10 @@ import {
 } from "lucide-react";
 import { InlineEditActions } from "@/components/dashboard/inline-edit-actions";
 import { ConfirmModal } from "@/components/dashboard";
+import { BottomSheet } from "@/components/dashboard/bottom-sheet";
+import { useIsMobile } from "@/hooks/use-is-mobile";
+import { ExpandableCard, useExpandedCard } from "@/components/dashboard/expandable-card";
+import { ActionButton } from "@/components/dashboard/action-button";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -73,8 +77,8 @@ function RevokeModal({
   const [reason, setReason] = useState("");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+    <BottomSheet open onClose={onCancel}>
+      <div className="p-6 md:p-0">
         <div className="flex items-center gap-2 mb-1">
           <ShieldAlert className="size-3.5 text-red-400" />
           <span className="font-mono text-[10px] tracking-[.08em] text-red-400 uppercase font-medium">Revoke Certificate</span>
@@ -109,7 +113,7 @@ function RevokeModal({
           </button>
         </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 }
 
@@ -208,8 +212,8 @@ function CreateNodeModal({
   const inputClass = "w-full bg-[#080808] border border-[#252525] rounded-md px-3 py-2 font-mono text-[12px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#3a3a3a] transition-colors";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="bg-[#0f0f0f] border border-[#252525] rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+    <BottomSheet open onClose={onClose}>
+      <form onSubmit={handleSubmit} className="p-6 md:p-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Plus className="size-3.5 text-foreground" />
@@ -266,7 +270,7 @@ function CreateNodeModal({
           </button>
         </div>
       </form>
-    </div>
+    </BottomSheet>
   );
 }
 
@@ -542,6 +546,180 @@ function NodeRow({ node, bases }: NodeRowProps) {
   );
 }
 
+// ── Node Mobile Card ─────────────────────────────────────────────────────────
+
+function NodeCard({
+  node,
+  bases,
+  expanded,
+  onToggle,
+}: {
+  node: NodeRowProps["node"];
+  bases: NodeRowProps["bases"];
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const utils = trpc.useUtils();
+  const [showRevoke, setShowRevoke] = useState(false);
+  const [showDecommission, setShowDecommission] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const status = deviceStatus(node);
+  const isEnrolled = status.label === "Enrolled";
+  const isPending = status.label === "Awaiting Certificate" || status.label === "Awaiting Connection";
+  const isRevoked = status.label === "Revoked";
+  const isDecommissioned = !!node.decommissioned_at;
+
+  const revokeMutation = trpc.nodes.revokeCert.useMutation({
+    onSuccess: () => { utils.nodes.list.invalidate(); setShowRevoke(false); },
+    onError: (e) => setError(friendlyError(e)),
+  });
+
+  const decommissionMutation = trpc.nodes.decommission.useMutation({
+    onSuccess: () => { utils.nodes.list.invalidate(); setShowDecommission(false); },
+    onError: (e) => setError(friendlyError(e)),
+  });
+
+  const recommissionMutation = trpc.nodes.recommission.useMutation({
+    onSuccess: () => utils.nodes.list.invalidate(),
+    onError: (e) => setError(friendlyError(e)),
+  });
+
+  const issueCertMutation = trpc.nodes.issueCert.useMutation({
+    onSuccess: (data) => {
+      utils.nodes.list.invalidate();
+      downloadJsonBundle(data);
+      setTimeout(() => issueCertMutation.reset(), 0);
+    },
+    onError: (e) => setError(friendlyError(e)),
+  });
+
+  const baseName = bases.find((b) => b.id === node.base_id)?.name;
+
+  const statusPillColors: Record<string, string> = {
+    Enrolled: "text-fleet-green bg-fleet-green-dim",
+    "Awaiting Certificate": "text-fleet-amber/60 bg-fleet-amber-dim",
+    "Awaiting Connection": "text-fleet-amber bg-fleet-amber-dim",
+    Revoked: "text-red-400 bg-fleet-red-dim",
+    Decommissioned: "text-[#555] bg-[#55555515]",
+  };
+
+  const details = [
+    { label: "Serial", value: node.serial ?? "—" },
+    { label: "Base", value: baseName ?? "Unassigned" },
+    { label: "Firmware", value: node.firmware_version ?? "—" },
+    ...(isEnrolled && node.cert_expires_at
+      ? [{ label: "Cert expires", value: formatDate(node.cert_expires_at) }]
+      : []),
+    { label: "Created", value: formatDate(node.created_at) },
+  ];
+
+  return (
+    <>
+      <ExpandableCard
+        statusDot={
+          <StatusDot
+            cert_serial={node.cert_serial}
+            enrolled_at={node.enrolled_at}
+            decommissioned_at={node.decommissioned_at}
+            last_seen_at={node.last_seen_at}
+          />
+        }
+        name={node.name}
+        statusPill={
+          <span className={`font-mono text-[9px] tracking-[.04em] uppercase px-1.5 py-0.5 rounded-full ${statusPillColors[status.label] ?? "text-[#555] bg-[#55555515]"}`}>
+            {status.label}
+          </span>
+        }
+        meta={
+          <>
+            <span>SN: {node.serial ?? "—"}</span>
+            <span>Base: {baseName ?? "—"}</span>
+          </>
+        }
+        details={details}
+        expanded={expanded}
+        onToggle={onToggle}
+        className={isDecommissioned ? "opacity-40" : ""}
+        actions={
+          <>
+            {!isDecommissioned && (
+              <>
+                <ActionButton variant="default" iconOnly icon={<Pencil className="size-3" />} />
+                {(isPending || isRevoked) && (
+                  <ActionButton
+                    variant="green"
+                    icon={<Download className="size-3" />}
+                    onClick={() => issueCertMutation.mutate({ id: node.id })}
+                    disabled={issueCertMutation.isPending}
+                  >
+                    Cert
+                  </ActionButton>
+                )}
+                {isEnrolled && (
+                  <ActionButton
+                    variant="danger"
+                    icon={<ShieldAlert className="size-3" />}
+                    onClick={() => setShowRevoke(true)}
+                  >
+                    Revoke
+                  </ActionButton>
+                )}
+                <ActionButton
+                  variant="danger"
+                  icon={<PowerOff className="size-3" />}
+                  onClick={() => setShowDecommission(true)}
+                >
+                  Decom.
+                </ActionButton>
+              </>
+            )}
+            {isDecommissioned && (
+              <ActionButton
+                variant="green"
+                icon={<Power className="size-3" />}
+                onClick={() => recommissionMutation.mutate({ id: node.id })}
+                disabled={recommissionMutation.isPending}
+              >
+                Recommission
+              </ActionButton>
+            )}
+          </>
+        }
+      />
+      {error && <div className="text-[10px] text-red-400 px-1">{error}</div>}
+      {showRevoke && (
+        <RevokeModal
+          nodeName={node.name}
+          onConfirm={(reason) => revokeMutation.mutate({ id: node.id, reason: reason || undefined })}
+          onCancel={() => setShowRevoke(false)}
+          isPending={revokeMutation.isPending}
+        />
+      )}
+      {showDecommission && (
+        <ConfirmModal
+          icon={<PowerOff className="size-3.5 text-red-400" />}
+          title="Decommission Drone"
+          confirmVariant="danger"
+          confirmLabel="Decommission"
+          confirmingLabel="Decommissioning..."
+          confirmIcon={<PowerOff className="size-3" />}
+          onConfirm={() => decommissionMutation.mutate({ id: node.id })}
+          onCancel={() => setShowDecommission(false)}
+          isPending={decommissionMutation.isPending}
+        >
+          <p className="text-[12px] text-[#888] mb-2 leading-relaxed">
+            Decommission <span className="text-foreground font-medium">{node.name}</span>?
+          </p>
+          <p className="text-[11px] text-[#555] leading-relaxed">
+            This will take the drone offline and revoke its certificate.
+          </p>
+        </ConfirmModal>
+      )}
+    </>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function FleetPage() {
@@ -551,6 +729,8 @@ export default function FleetPage() {
   const { data: nodes, isLoading } = trpc.nodes.list.useQuery({ includeDecommissioned: showDecommissioned }, { refetchInterval: 15_000 });
   const { data: bases = [] } = trpc.bases.list.useQuery();
   const [showCreate, setShowCreate] = useState(false);
+  const isMobile = useIsMobile();
+  const [expandedId, toggleExpanded] = useExpandedCard();
 
   const stats = useMemo(() => {
     if (!nodes) return { total: 0, enrolled: 0, pending: 0, withBase: 0 };
@@ -581,7 +761,7 @@ export default function FleetPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Page header */}
-      <div className="px-5 pt-4 pb-0 shrink-0">
+      <div className="px-(--page-padding) pt-4 pb-0 shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-[15px] font-semibold text-foreground tracking-[-0.01em]">Fleet</h1>
@@ -600,7 +780,7 @@ export default function FleetPage() {
       </div>
 
       {/* Stats row */}
-      <div className="shrink-0 grid grid-cols-4 gap-px bg-[#1a1a1a] border-y border-[#1a1a1a]">
+      <div className="shrink-0 grid grid-cols-2 md:grid-cols-4 gap-px bg-[#1a1a1a] border-y border-[#1a1a1a]">
         <StatCell label="Total" value={stats.total} />
         <StatCell label="Enrolled" value={stats.enrolled} color="text-fleet-green" />
         <StatCell label="Pending" value={stats.pending} color={stats.pending > 0 ? "text-fleet-amber" : "text-foreground"} />
@@ -608,8 +788,8 @@ export default function FleetPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="shrink-0 px-5 py-3 border-b border-[#1a1a1a] flex items-center gap-3 bg-[#0f0f0f]">
-        <div className="relative flex-1 max-w-xs">
+      <div className="shrink-0 px-(--page-padding) py-3 border-b border-[#1a1a1a] flex items-center gap-3 bg-[#0f0f0f]">
+        <div className="relative flex-1 md:max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-[#3a3a3a]" />
           <input
             type="text"
@@ -619,7 +799,7 @@ export default function FleetPage() {
             className="w-full bg-[#080808] border border-[#1a1a1a] rounded-md pl-8 pr-3 py-1.5 font-mono text-[11px] text-foreground placeholder:text-[#3a3a3a] focus:outline-none focus:border-[#252525] transition-colors"
           />
         </div>
-        {bases.length > 0 && (
+        {!isMobile && bases.length > 0 && (
           <select
             value={filterBase}
             onChange={(e) => setFilterBase(e.target.value)}
@@ -631,18 +811,20 @@ export default function FleetPage() {
             ))}
           </select>
         )}
-        <label className="flex items-center gap-2 cursor-pointer ml-auto">
-          <input
-            type="checkbox"
-            checked={showDecommissioned}
-            onChange={(e) => setShowDecommissioned(e.target.checked)}
-            className="accent-[#555] size-3"
-          />
-          <span className="font-mono text-[10px] text-[#555]">Show decommissioned</span>
-        </label>
+        {!isMobile && (
+          <label className="flex items-center gap-2 cursor-pointer ml-auto">
+            <input
+              type="checkbox"
+              checked={showDecommissioned}
+              onChange={(e) => setShowDecommissioned(e.target.checked)}
+              className="accent-[#555] size-3"
+            />
+            <span className="font-mono text-[10px] text-[#555]">Show decommissioned</span>
+          </label>
+        )}
       </div>
 
-      {/* Table */}
+      {/* Table / Cards */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -662,6 +844,18 @@ export default function FleetPage() {
                 {searchQuery || filterBase ? "Try different search criteria" : "Register a drone to get started"}
               </div>
             </div>
+          </div>
+        ) : isMobile ? (
+          <div className="flex flex-col gap-2 p-(--page-padding) pb-24">
+            {filteredNodes.map((node) => (
+              <NodeCard
+                key={node.id}
+                node={node}
+                bases={bases}
+                expanded={expandedId === node.id}
+                onToggle={() => toggleExpanded(node.id)}
+              />
+            ))}
           </div>
         ) : (
           <table className="w-full border-collapse">

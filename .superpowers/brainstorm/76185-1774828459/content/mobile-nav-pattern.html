@@ -1,0 +1,40 @@
+<h2>Mobile Navigation Pattern</h2>
+<p class="subtitle">The sidebar is fixed at 200px today — it needs to collapse on mobile. Which pattern fits VECTR best?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Bottom Tab Bar</h3>
+      <p>iOS/Android-style fixed bottom tabs for the 4-5 most important views (Map, Fleet, Bases, Alerts, Overview). Sidebar disappears entirely on mobile. Settings and secondary pages accessible via a "More" tab or the user avatar menu.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Thumb-friendly, one-handed use</li><li>Always visible — no hidden navigation</li><li>Native mobile feel for field operators</li><li>Works great for quick status checks</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Limited to ~5 items before needing overflow</li><li>Takes vertical space from content</li><li>Two different nav paradigms to maintain (sidebar + tabs)</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Hamburger Drawer</h3>
+      <p>The current sidebar slides in as an overlay drawer from the left, triggered by a hamburger icon in the topbar. All nav items stay in the same sidebar component — it just becomes toggleable on mobile.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>One nav component for both breakpoints</li><li>Simpler implementation — same sidebar, different display mode</li><li>Full nav always accessible without item limits</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Navigation is hidden — extra tap to reach anything</li><li>Hamburger menus have poor discoverability</li><li>Feels less native on mobile</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hybrid: Bottom Tabs + Drawer</h3>
+      <p>Bottom tabs for the top 4 field-critical views (Map, Fleet, Bases, Alerts). A compact hamburger or "more" button opens a drawer for everything else (Overview, Missions, Telemetry, Audit, Settings). Best of both worlds.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Fast access to what field ops need most</li><li>Nothing is hidden — secondary items still reachable</li><li>Matches the "status + light ops" priority</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Most complex to implement</li><li>Two mobile nav components to build and maintain</li><li>Needs careful item selection for bottom bar</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

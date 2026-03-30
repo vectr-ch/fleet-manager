@@ -1,0 +1,69 @@
+<h2>Mobile Data Display: Tables → ?</h2>
+<p class="subtitle">The fleet page has a 7-column table with hover-reveal action buttons. How should dense data adapt on small screens?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Card List</h3>
+      <p>Each table row becomes a compact card. Primary info (name, status) is always visible. Secondary info (serial, firmware, base) stacks below. Action buttons are always visible at the card bottom — no hover needed.</p>
+      <div style="background:#0f0f0f;border:1px solid #252525;border-radius:8px;padding:12px;margin:12px 0;font-family:monospace;font-size:11px;color:#888;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:8px;"></span><span style="color:#e8e8e8;font-size:13px;">Scout Alpha-01</span></div>
+          <span style="color:#22c55e;font-size:10px;text-transform:uppercase;">enrolled</span>
+        </div>
+        <div style="display:flex;gap:16px;font-size:10px;color:#555;margin-bottom:10px;">
+          <span>SN: VCT-2024-001</span>
+          <span>Base: Rooftop-A</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <span style="border:1px solid #252525;border-radius:4px;padding:2px 8px;font-size:10px;color:#666;">Edit</span>
+          <span style="border:1px solid #252525;border-radius:4px;padding:2px 8px;font-size:10px;color:#666;">Cert</span>
+          <span style="border:1px solid #ef444433;border-radius:4px;padding:2px 8px;font-size:10px;color:#ef4444;">Revoke</span>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Touch-friendly — no hover needed</li><li>Scannable, natural on mobile</li><li>Easy to tap into detail view</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Takes more vertical space than table rows</li><li>Harder to compare across items (no column alignment)</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Condensed Row List</h3>
+      <p>Minimal rows showing only name + status. Tap a row to expand inline (accordion-style) revealing full details and action buttons. Keeps the list compact while making everything accessible.</p>
+      <div style="background:#0f0f0f;border:1px solid #252525;border-radius:8px;overflow:hidden;margin:12px 0;font-family:monospace;font-size:11px;color:#888;">
+        <div style="padding:10px 12px;border-bottom:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;">
+          <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:8px;"></span><span style="color:#e8e8e8;">Scout Alpha-01</span></div>
+          <span style="color:#555;font-size:10px;">▼</span>
+        </div>
+        <div style="padding:10px 12px;border-bottom:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;">
+          <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:8px;"></span><span style="color:#e8e8e8;">Recon Bravo-03</span></div>
+          <span style="color:#555;font-size:10px;">▶</span>
+        </div>
+        <div style="padding:10px 12px;display:flex;justify-content:space-between;align-items:center;">
+          <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:8px;"></span><span style="color:#e8e8e8;">Patrol Charlie-07</span></div>
+          <span style="color:#555;font-size:10px;">▶</span>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Very compact — see more items at once</li><li>Progressive disclosure — details on demand</li><li>Closest to the table mental model</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Requires tap to see anything beyond name/status</li><li>Accordion interaction can feel clunky</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Horizontal Scroll Table</h3>
+      <p>Keep the table as-is but wrap it in a horizontal scroll container. First column (name) stays sticky. User swipes to see more columns. Actions move to a tap-to-reveal menu (long-press or ··· button).</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Minimal code change — wrap existing table</li><li>Column alignment preserved</li><li>Desktop and mobile use same component</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Poor mobile UX — horizontal scroll is unintuitive</li><li>Hard to discover hidden columns</li><li>Doesn't solve the hover-action problem elegantly</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

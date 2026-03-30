@@ -10,8 +10,8 @@ interface FieldSelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>,
 
 export function FieldSelect({ label, className, size = "md", children, ...props }: FieldSelectProps) {
   const sizeClasses = size === "sm"
-    ? "px-2 py-1 text-[11px]"
-    : "px-3 py-1.5 text-[12px]";
+    ? "px-2 py-1.5 md:py-1 text-[11px]"
+    : "px-3 py-2.5 md:py-1.5 text-[12px]";
 
   return (
     <div className="flex flex-col gap-1">

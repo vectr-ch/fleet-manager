@@ -7,7 +7,7 @@ export default function OverviewPage() {
   const { data: activity, isLoading: activityLoading } = trpc.overview.recentActivity.useQuery();
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-auto p-5 gap-5">
+    <div className="flex-1 flex flex-col min-h-0 overflow-auto p-(--page-padding) gap-(--page-gap)">
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold text-white tracking-tight">Overview</h1>
