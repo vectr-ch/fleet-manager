@@ -40,6 +40,20 @@ function formatDate(iso: string) {
   }
 }
 
+function formatDateTime(iso: string) {
+  try {
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    if (diffMs < 60_000) return "just now";
+    if (diffMs < 3600_000) return `${Math.floor(diffMs / 60_000)}m ago`;
+    if (diffMs < 86400_000) return `${Math.floor(diffMs / 3600_000)}h ago`;
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) +
+      " " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return iso;
+  }
+}
+
 function formatCoords(lat?: number, lng?: number) {
   if (lat == null || lng == null) return null;
   const latDir = lat >= 0 ? "N" : "S";
@@ -290,6 +304,15 @@ function CreateBaseModal({
 
 function StatusChip({ device }: { device: { cert_serial?: string | null; enrolled_at?: string | null; decommissioned_at?: string | null; last_seen_at?: string | null } }) {
   const status = deviceStatus(device);
+  const isEnrolled = status.label === "Enrolled";
+  const conn = connectionStatus(device.last_seen_at);
+
+  const connMap: Record<string, { label: string; color: string; bg: string }> = {
+    active: { label: "Active", color: "text-fleet-green", bg: "bg-fleet-green-dim border border-fleet-green/15" },
+    delayed: { label: "Delayed", color: "text-fleet-amber", bg: "bg-fleet-amber-dim border border-fleet-amber/15" },
+    offline: { label: "Offline", color: "text-[#555]", bg: "bg-[#252525]" },
+    unknown: { label: "Enrolled", color: "text-fleet-green", bg: "bg-fleet-green-dim border border-fleet-green/15" },
+  };
 
   const bgMap: Record<string, string> = {
     "Decommissioned": "bg-[#252525]",
@@ -299,10 +322,14 @@ function StatusChip({ device }: { device: { cert_serial?: string | null; enrolle
     "Awaiting Certificate": "bg-fleet-amber/5 border border-fleet-amber/10",
   };
 
+  const chipLabel = isEnrolled ? (connMap[conn]?.label ?? status.label) : status.label;
+  const chipColor = isEnrolled ? (connMap[conn]?.color ?? status.color) : status.color;
+  const chipBg = isEnrolled ? (connMap[conn]?.bg ?? bgMap[status.label]) : bgMap[status.label];
+
   return (
-    <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full ${bgMap[status.label] ?? ""} ${status.color}`}>
-      <StatusDotElement dot={status.dot} title={status.label} lastSeenAt={device.last_seen_at} />
-      {status.label}
+    <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[.04em] uppercase px-2 py-0.5 rounded-full ${chipBg ?? ""} ${chipColor}`}>
+      <StatusDotElement dot={status.dot} title={chipLabel} lastSeenAt={device.last_seen_at} />
+      {chipLabel}
     </span>
   );
 }
@@ -521,7 +548,7 @@ function BaseCard({ base }: BaseCardProps) {
             <div className="bg-[#080808] border border-[#1a1a1a] rounded p-2">
               <div className="font-mono text-[9px] uppercase tracking-[.08em] text-[#555]">Enrolled</div>
               <div className="font-mono text-[15px] font-semibold mt-0.5 text-foreground">
-                {base.enrolled_at ? formatDate(base.enrolled_at) : <span className="text-[#3a3a3a]">Pending</span>}
+                {base.enrolled_at ? formatDateTime(base.enrolled_at) : <span className="text-[#3a3a3a]">Pending</span>}
               </div>
               {isRevoked && (
                 <div className="font-mono text-[9px] text-red-400/70 mt-0.5">certificate revoked</div>

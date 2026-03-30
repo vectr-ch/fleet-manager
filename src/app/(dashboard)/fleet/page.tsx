@@ -39,6 +39,21 @@ function formatDate(iso: string) {
   }
 }
 
+function formatDateTime(iso: string) {
+  try {
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    // If within the last 24h, show relative time
+    if (diffMs < 60_000) return "just now";
+    if (diffMs < 3600_000) return `${Math.floor(diffMs / 60_000)}m ago`;
+    if (diffMs < 86400_000) return `${Math.floor(diffMs / 3600_000)}h ago`;
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) +
+      " " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return iso;
+  }
+}
+
 function connectionStatus(lastSeenAt?: string | null): "active" | "delayed" | "offline" | "unknown" {
   if (!lastSeenAt) return "unknown";
   const diffMs = Date.now() - new Date(lastSeenAt).getTime();
@@ -619,8 +634,8 @@ function NodeCard({
     { label: "Serial", value: node.serial ?? "—" },
     { label: "Base", value: baseName ?? "Unassigned" },
     { label: "Firmware", value: node.firmware_version ?? "—" },
-    ...(node.enrolled_at ? [{ label: "Enrolled", value: formatDate(node.enrolled_at) }] : []),
-    ...(node.last_seen_at ? [{ label: "Last seen", value: formatDate(node.last_seen_at) }] : []),
+    ...(node.enrolled_at ? [{ label: "Enrolled", value: formatDateTime(node.enrolled_at) }] : []),
+    ...(node.last_seen_at ? [{ label: "Last seen", value: formatDateTime(node.last_seen_at) }] : []),
     ...(isEnrolled && node.cert_expires_at
       ? [{ label: "Cert expires", value: formatDate(node.cert_expires_at) }]
       : []),
