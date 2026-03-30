@@ -7,10 +7,46 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 const drawerItems = [
-  { key: "overview", href: "/overview" },
-  { key: "missions", href: "/missions" },
-  { key: "telemetry", href: "/telemetry" },
-  { key: "auditLog", href: "/audit" },
+  {
+    key: "overview",
+    href: "/overview",
+    icon: (
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+        <rect x="1" y="1" width="12" height="12" rx="1.5" />
+        <path d="M4 7h6M7 4v6" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    key: "missions",
+    href: "/missions",
+    icon: (
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+        <circle cx="7" cy="7" r="5.5" />
+        <circle cx="7" cy="7" r="2.5" />
+        <circle cx="7" cy="7" r="0.5" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
+    key: "telemetry",
+    href: "/telemetry",
+    icon: (
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
+        <path d="M1 10l3-4 2.5 2L9 5l4 5" />
+      </svg>
+    ),
+  },
+  {
+    key: "auditLog",
+    href: "/audit",
+    icon: (
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+        <rect x="2" y="1" width="10" height="12" rx="1.5" />
+        <path d="M5 4.5h4M5 7h4M5 9.5h2.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
 ] as const;
 
 interface MoreDrawerProps {
@@ -54,7 +90,9 @@ export function MoreDrawer({ open, onClose }: MoreDrawerProps) {
                 isActive ? "text-foreground" : "text-[#888]",
               )}
             >
-              <span className={cn("w-4 h-4 rounded bg-[#1a1a1a] shrink-0", isActive && "bg-[#252525]")} />
+              <span className={cn("w-3.5 h-3.5 shrink-0", isActive ? "opacity-100" : "opacity-50")}>
+                {item.icon}
+              </span>
               {t(item.key)}
             </Link>
           );
@@ -68,7 +106,12 @@ export function MoreDrawer({ open, onClose }: MoreDrawerProps) {
             pathname.startsWith("/settings") ? "text-foreground" : "text-[#888]",
           )}
         >
-          <span className={cn("w-4 h-4 rounded bg-[#1a1a1a] shrink-0", pathname.startsWith("/settings") && "bg-[#252525]")} />
+          <span className={cn("w-3.5 h-3.5 shrink-0", pathname.startsWith("/settings") ? "opacity-100" : "opacity-50")}>
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+              <circle cx="7" cy="7" r="2.5" />
+              <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.75 2.75l1.06 1.06M10.19 10.19l1.06 1.06M11.25 2.75l-1.06 1.06M3.81 10.19l-1.06 1.06" strokeLinecap="round" />
+            </svg>
+          </span>
           {t("settings")}
         </Link>
         <div className="h-px bg-[#1a1a1a] mx-5 my-1" />
