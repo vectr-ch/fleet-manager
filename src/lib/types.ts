@@ -185,24 +185,6 @@ export const alertSchema = z.object({
 });
 export type Alert = z.infer<typeof alertSchema>;
 
-export const systemMetricsSchema = z.object({
-  cpu: z.number(),
-  memory: z.number(),
-  bandwidth: z.number(),
-  packets: z.number(),
-  errors: z.number(),
-});
-export type SystemMetrics = z.infer<typeof systemMetricsSchema>;
-
-export const environmentDataSchema = z.object({
-  temp: z.number(),
-  humidity: z.number(),
-  wind: z.number(),
-  visibility: z.number(),
-  pressure: z.number(),
-});
-export type EnvironmentData = z.infer<typeof environmentDataSchema>;
-
 export const auditEntrySchema = z.object({
   id: z.string(),
   action: z.string(),

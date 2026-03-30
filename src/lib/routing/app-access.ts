@@ -1,5 +1,5 @@
 const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password"];
-const ALWAYS_PUBLIC_PATHS = ["/invites/accept"];
+const ALWAYS_PUBLIC_PATHS = ["/invites/accept", "/preview"];
 const ADMIN_PUBLIC_PATHS = ["/admin/login", "/admin/accept-invite", "/admin/reset-password"];
 const SEMI_PUBLIC_PATHS = ["/select-org"];
 

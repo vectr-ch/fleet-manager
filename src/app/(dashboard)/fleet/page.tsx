@@ -24,6 +24,8 @@ import { BottomSheet } from "@/components/dashboard/bottom-sheet";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { ExpandableCard, useExpandedCard } from "@/components/dashboard/expandable-card";
 import { ActionButton } from "@/components/dashboard/action-button";
+import { useTelemetryStream } from "@/hooks/use-telemetry-stream";
+import { DroneDetailPanel } from "@/components/telemetry/drone-detail-panel";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -317,9 +319,11 @@ interface NodeRowProps {
     created_at: string;
   };
   bases: { id: string; name: string }[];
+  selected?: boolean;
+  onSelect?: () => void;
 }
 
-function NodeRow({ node, bases }: NodeRowProps) {
+function NodeRow({ node, bases, selected, onSelect }: NodeRowProps) {
   const utils = trpc.useUtils();
   const initialEditState = getNodeEditDefaults(node);
   const [editing, setEditing] = useState(false);
@@ -469,7 +473,10 @@ function NodeRow({ node, bases }: NodeRowProps) {
 
   return (
     <>
-      <tr className={`border-b border-[#1a1a1a] hover:bg-[#0f0f0f] transition-colors group ${isDecommissioned ? "opacity-40" : ""}`}>
+      <tr
+        className={`border-b border-[#1a1a1a] hover:bg-[#0f0f0f] transition-colors group cursor-pointer ${selected ? "bg-[#0f0f0f]" : ""} ${isDecommissioned ? "opacity-40" : ""}`}
+        onClick={onSelect}
+      >
         <td className="pl-4 pr-2 py-3">
           <StatusDot cert_serial={node.cert_serial} enrolled_at={node.enrolled_at} decommissioned_at={node.decommissioned_at} last_seen_at={node.last_seen_at} />
         </td>
@@ -503,7 +510,7 @@ function NodeRow({ node, bases }: NodeRowProps) {
         <td className="px-3 py-3 font-mono text-[11px] text-[#555]">{node.firmware_version ?? "—"}</td>
         <td className="px-3 py-3 font-mono text-[11px] text-[#555] tabular-nums">{node.rtt_ms != null ? `${node.rtt_ms}ms` : "—"}</td>
         <td className="px-3 py-3 font-mono text-[11px] text-[#555] tabular-nums">{node.last_seen_at ? formatDateTime(node.last_seen_at) : "—"}</td>
-        <td className="px-4 py-3">
+        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             {!isDecommissioned && (
               <>
@@ -789,6 +796,10 @@ export default function FleetPage() {
   const [showCreate, setShowCreate] = useState(false);
   const isMobile = useIsMobile();
   const [expandedId, toggleExpanded] = useExpandedCard();
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const { frames: telemetryFrames } = useTelemetryStream();
+
+  const selectedNode = nodes?.find((n) => n.id === selectedNodeId);
 
   const stats = useMemo(() => {
     if (!nodes) return { total: 0, enrolled: 0, pending: 0, withBase: 0 };
@@ -882,7 +893,8 @@ export default function FleetPage() {
         )}
       </div>
 
-      {/* Table / Cards */}
+      {/* Table / Cards + Detail Panel */}
+      <div className="flex-1 flex overflow-hidden">
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -950,11 +962,24 @@ export default function FleetPage() {
                   key={node.id}
                   node={node}
                   bases={bases}
+                  selected={selectedNodeId === node.id}
+                  onSelect={() => setSelectedNodeId(selectedNodeId === node.id ? null : node.id)}
                 />
               ))}
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Telemetry detail panel */}
+      {!isMobile && selectedNodeId && selectedNode && (
+        <DroneDetailPanel
+          nodeId={selectedNodeId}
+          nodeName={selectedNode.name}
+          frame={telemetryFrames.get(selectedNodeId)}
+          onClose={() => setSelectedNodeId(null)}
+        />
+      )}
       </div>
 
       {/* Modals */}

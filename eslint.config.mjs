@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated protobuf code
+    "src/lib/proto/**",
   ]),
 ]);
 

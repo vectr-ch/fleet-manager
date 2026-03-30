@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import tsx --test test/**/*.test.ts"
+    "test": "node --import tsx --test test/**/*.test.ts",
+    "proto:generate": "pbjs -t static-module -w es6 --es6 -o src/lib/proto/telemetry.js ../proto/protobuf/telemetry.proto && pbts -o src/lib/proto/telemetry.d.ts src/lib/proto/telemetry.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -19,8 +20,10 @@
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.577.0",
+    "nats": "^2.29.3",
     "next": "16.1.6",
     "next-intl": "^4.8.3",
+    "protobufjs": "^7.5.4",
     "qrcode.react": "^4.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -41,6 +44,7 @@
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
+    "protobufjs-cli": "^2.0.0",
     "typescript": "^5"
   }
 }

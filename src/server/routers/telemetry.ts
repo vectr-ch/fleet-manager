@@ -1,11 +1,6 @@
-import { router, protectedProcedure } from "@/server/trpc";
-import type { SystemMetrics, EnvironmentData } from "@/lib/types";
+import { router } from "@/server/trpc";
 
-export const telemetryRouter = router({
-  systemMetrics: protectedProcedure.query(
-    async (): Promise<SystemMetrics | null> => null
-  ),
-  environment: protectedProcedure.query(
-    async (): Promise<EnvironmentData | null> => null
-  ),
-});
+// Telemetry data now flows through SSE (/api/telemetry/stream), not tRPC.
+// This router is kept as a namespace placeholder for future telemetry-related
+// queries (e.g. historical data retrieval from the data warehouse).
+export const telemetryRouter = router({});
