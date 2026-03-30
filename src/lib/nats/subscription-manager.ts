@@ -53,11 +53,17 @@ function decodeFrame(data: Uint8Array): TelemetryFrame {
 
 async function startConsuming(orgId: string, sub: OrgSubscription) {
   sub.running = true;
+  console.log(`[nats] starting consume loop for org ${orgId}`);
+  let frameCount = 0;
   try {
     for await (const msg of sub.messages) {
       if (!sub.running) break;
       try {
         const frame = decodeFrame(msg.data);
+        frameCount++;
+        if (frameCount <= 3 || frameCount % 100 === 0) {
+          console.log(`[nats] frame #${frameCount} from ${frame.nodeId.slice(0, 8)} for org ${orgId.slice(0, 8)}`);
+        }
         for (const listener of sub.listeners) {
           listener(frame);
         }
@@ -65,6 +71,7 @@ async function startConsuming(orgId: string, sub: OrgSubscription) {
         console.error("[nats] failed to decode telemetry frame:", err);
       }
     }
+    console.log(`[nats] consume loop ended for org ${orgId} (${frameCount} frames total)`);
   } catch (err) {
     if (sub.running) {
       console.error(`[nats] consumer for org ${orgId} failed:`, err);
@@ -86,6 +93,7 @@ export async function subscribe(
     }
     sub.listeners.add(listener);
   } else {
+    console.log(`[nats] creating consumer for org ${orgId}`);
     const nc = await getNatsConnection();
     const js = nc.jetstream();
 
@@ -95,6 +103,7 @@ export async function subscribe(
       filterSubjects: [`telemetry.${orgId}.>`],
       deliver_policy: DeliverPolicy.New,
     });
+    console.log(`[nats] consumer created, starting consume()`);
 
     const messages = await consumer.consume();
 
