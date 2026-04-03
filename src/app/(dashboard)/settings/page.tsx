@@ -25,6 +25,14 @@ function formatDate(iso: string) {
   }
 }
 
+/** Turn snake_case role names into title case (e.g. "org_admin" → "Org Admin"). */
+function formatRoleName(name: string) {
+  return name
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 // ── Organisation Tab ──────────────────────────────────────────────────────────
 
 function OrgTab() {
@@ -192,7 +200,7 @@ function MembersTab() {
                 <tr key={member.id} className="border-b border-neutral-800 last:border-0">
                   <td className="px-4 py-3 font-mono text-[12px] text-foreground">{member.email}</td>
                   <td className="px-3 py-3">
-                    <span className="font-mono text-[11px] text-neutral-400">{member.role || "—"}</span>
+                    <span className="font-mono text-[11px] text-neutral-400">{member.role ? formatRoleName(member.role) : "—"}</span>
                   </td>
                   <td className="px-3 py-3">
                     {member.status === "active" ? (
@@ -303,7 +311,7 @@ function InvitesTab() {
                 <option value="">Select a role…</option>
                 {roles?.map((role) => (
                   <option key={role.id} value={role.id}>
-                    {role.name}
+                    {formatRoleName(role.name)}
                   </option>
                 ))}
               </select>
@@ -346,7 +354,7 @@ function InvitesTab() {
                 <tr key={invite.id} className="border-b border-neutral-800 last:border-0 group">
                   <td className="px-4 py-3 font-mono text-[12px] text-foreground">{invite.email}</td>
                   <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">
-                    {roles?.find((r) => r.id === invite.role_id)?.name ?? invite.role_id}
+                    {(() => { const r = roles?.find((r) => r.id === invite.role_id); return r ? formatRoleName(r.name) : invite.role_id; })()}
                   </td>
                   <td className="px-3 py-3 font-mono text-[11px] text-neutral-500">{formatDate(invite.expires_at)}</td>
                   <td className="px-4 py-3">
@@ -391,6 +399,171 @@ function SecurityTab() {
   );
 }
 
+// ── Roles Tab ────────────────────────────────────────────────────────────────
+
+function RolesTab() {
+  const utils = trpc.useUtils();
+  const { data: roles, isLoading } = trpc.roles.list.useQuery();
+  const { data: allPermissions } = trpc.roles.permissions.useQuery();
+  const [showCreate, setShowCreate] = useState(false);
+  const [name, setName] = useState("");
+  const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const createMutation = trpc.roles.create.useMutation({
+    onSuccess: () => {
+      utils.roles.list.invalidate();
+      setShowCreate(false);
+      setName("");
+      setSelectedPerms([]);
+      setCreateError(null);
+    },
+    onError: (e) => setCreateError(friendlyError(e)),
+  });
+
+  const togglePerm = (perm: string) => {
+    setSelectedPerms((prev) =>
+      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
+    );
+  };
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+    createMutation.mutate({ name: name.trim(), permissions: selectedPerms });
+  };
+
+  // Group permissions by resource (e.g., "bases:read" → "bases")
+  const permGroups = (allPermissions ?? []).reduce<Record<string, string[]>>((acc, p) => {
+    const [resource] = p.split(":");
+    if (!acc[resource]) acc[resource] = [];
+    acc[resource].push(p);
+    return acc;
+  }, {});
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">
+          Roles
+        </div>
+        <button
+          onClick={() => setShowCreate((v) => !v)}
+          className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+        >
+          {showCreate ? "Cancel" : "+ Role"}
+        </button>
+      </div>
+
+      {showCreate && (
+        <form onSubmit={handleCreate} className="bg-neutral-800 border border-neutral-700 rounded-[5px] p-4">
+          <div className="font-mono text-[10px] tracking-wider text-neutral-400 uppercase mb-3">Create Role</div>
+          <div className="mb-3">
+            <label className="font-mono text-[10px] text-neutral-500 block mb-1">Name *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. pilot"
+              required
+              className={inputClass + " max-w-xs"}
+            />
+          </div>
+          <div className="mb-3">
+            <label className="font-mono text-[10px] text-neutral-500 block mb-2">Permissions *</label>
+            <div className="space-y-3">
+              {Object.entries(permGroups).map(([resource, perms]) => (
+                <div key={resource}>
+                  <div className="font-mono text-[10px] text-neutral-400 uppercase tracking-wider mb-1">{resource}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {perms.map((perm) => {
+                      const action = perm.split(":")[1];
+                      const active = selectedPerms.includes(perm);
+                      return (
+                        <button
+                          key={perm}
+                          type="button"
+                          onClick={() => togglePerm(perm)}
+                          className={`font-mono text-[10px] px-2.5 py-1 rounded border transition-colors ${
+                            active
+                              ? "bg-emerald-900/40 text-emerald-400 border-emerald-400/30"
+                              : "bg-neutral-900 text-neutral-500 border-neutral-700 hover:text-neutral-300 hover:border-neutral-600"
+                          }`}
+                        >
+                          {action}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {createError && <div className="font-mono text-[10px] text-red-400 mb-3">{createError}</div>}
+          <button
+            type="submit"
+            disabled={createMutation.isPending || selectedPerms.length === 0}
+            className="font-mono text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-[5px] bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+          >
+            {createMutation.isPending ? "Creating…" : "Create Role"}
+          </button>
+        </form>
+      )}
+
+      <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] overflow-hidden">
+        {isLoading ? (
+          <div className="py-12 text-center font-mono text-[11px] text-neutral-500">Loading roles…</div>
+        ) : !roles || roles.length === 0 ? (
+          <div className="py-12 text-center font-mono text-[11px] text-neutral-500">No roles found</div>
+        ) : (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-neutral-800 bg-neutral-950">
+                <th className="px-4 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Name</span>
+                </th>
+                <th className="px-3 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Type</span>
+                </th>
+                <th className="px-3 py-2.5 text-left">
+                  <span className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase">Permissions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {roles.map((role) => (
+                <tr key={role.id} className="border-b border-neutral-800 last:border-0">
+                  <td className="px-4 py-3 font-mono text-[12px] text-foreground">{formatRoleName(role.name)}</td>
+                  <td className="px-3 py-3">
+                    {role.system ? (
+                      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-neutral-800 text-neutral-400 border-neutral-700">
+                        System
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 rounded border bg-emerald-900/30 text-emerald-400 border-emerald-400/20">
+                        Custom
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {role.permissions.map((p) => (
+                        <span key={p} className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -410,6 +583,7 @@ export default function SettingsPage() {
             <TabsTrigger value="org">Organisation</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="invites">Invites</TabsTrigger>
+            <TabsTrigger value="roles">Roles</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -423,6 +597,10 @@ export default function SettingsPage() {
 
           <TabsContent value="invites">
             <InvitesTab />
+          </TabsContent>
+
+          <TabsContent value="roles">
+            <RolesTab />
           </TabsContent>
 
           <TabsContent value="security">
