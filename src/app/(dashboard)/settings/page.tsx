@@ -235,6 +235,7 @@ function MembersTab() {
 function InvitesTab() {
   const utils = trpc.useUtils();
   const { data: invites, isLoading } = trpc.invites.list.useQuery();
+  const { data: roles } = trpc.roles.list.useQuery();
   const [showCreate, setShowCreate] = useState(false);
   const [email, setEmail] = useState("");
   const [roleId, setRoleId] = useState("");
@@ -258,7 +259,7 @@ function InvitesTab() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError(null);
-    createMutation.mutate({ email: email.trim(), role_id: roleId.trim() });
+    createMutation.mutate({ email: email.trim(), role_id: roleId });
   };
 
   return (
@@ -292,15 +293,20 @@ function InvitesTab() {
               />
             </div>
             <div>
-              <label className="font-mono text-[10px] text-neutral-500 block mb-1">Role ID *</label>
-              <input
-                type="text"
+              <label className="font-mono text-[10px] text-neutral-500 block mb-1">Role *</label>
+              <select
                 value={roleId}
                 onChange={(e) => setRoleId(e.target.value)}
-                placeholder="member"
                 required
                 className={inputClass}
-              />
+              >
+                <option value="">Select a role…</option>
+                {roles?.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           {createError && <div className="font-mono text-[10px] text-red-400 mb-3">{createError}</div>}
@@ -339,7 +345,9 @@ function InvitesTab() {
               {invites.map((invite) => (
                 <tr key={invite.id} className="border-b border-neutral-800 last:border-0 group">
                   <td className="px-4 py-3 font-mono text-[12px] text-foreground">{invite.email}</td>
-                  <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">{invite.role_id}</td>
+                  <td className="px-3 py-3 font-mono text-[11px] text-neutral-400">
+                    {roles?.find((r) => r.id === invite.role_id)?.name ?? invite.role_id}
+                  </td>
                   <td className="px-3 py-3 font-mono text-[11px] text-neutral-500">{formatDate(invite.expires_at)}</td>
                   <td className="px-4 py-3">
                     <button

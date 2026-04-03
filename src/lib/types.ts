@@ -138,6 +138,16 @@ export const issueCertResponseSchema = z.object({
 });
 export type IssueCertResponse = z.infer<typeof issueCertResponseSchema>;
 
+// ─── Role ───────────────────────────────────────────────────
+export const roleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  permissions: z.array(z.string()),
+  system: z.boolean(),
+  created_at: z.string(),
+});
+export type Role = z.infer<typeof roleSchema>;
+
 // ─── Invite ──────────────────────────────────────────────────
 export const inviteSchema = z.object({
   id: z.string(),

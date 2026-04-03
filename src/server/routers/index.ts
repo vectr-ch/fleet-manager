@@ -5,6 +5,7 @@ import { membersRouter } from "./members";
 import { basesRouter } from "./bases";
 import { nodesRouter } from "./nodes";
 import { invitesRouter } from "./invites";
+import { rolesRouter } from "./roles";
 import { userAccountRouter } from "./user-account";
 import { missionsRouter } from "./missions";
 import { alertsRouter } from "./alerts";
@@ -25,6 +26,7 @@ export const appRouter = router({
   bases: basesRouter,
   nodes: nodesRouter,
   invites: invitesRouter,
+  roles: rolesRouter,
   userAccount: userAccountRouter,
   missions: missionsRouter,
   alerts: alertsRouter,
