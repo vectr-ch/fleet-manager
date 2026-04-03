@@ -684,6 +684,11 @@ function BaseCard({ base, connectedDrones }: BaseCardProps) {
               )}
             </>
           )}
+          {base.last_seen_at && !editing && (
+            <span className="ml-auto font-mono text-[10px] text-[#3a3a3a]">
+              last seen {formatDateTime(base.last_seen_at)}
+            </span>
+          )}
         </div>
       </div>
 
