@@ -644,15 +644,6 @@ function BaseCard({ base, connectedDrones }: BaseCardProps) {
           </div>
         )}
 
-        {/* Last seen */}
-        {base.last_seen_at && !editing && (
-          <div className="px-(--page-padding) pb-3 text-right">
-            <span className="font-mono text-[10px] text-[#3a3a3a]">
-              last seen {formatDateTime(base.last_seen_at)}
-            </span>
-          </div>
-        )}
-
         {/* Error display */}
         {error && (
           <div className="px-(--page-padding) pb-2">
@@ -660,6 +651,13 @@ function BaseCard({ base, connectedDrones }: BaseCardProps) {
               <AlertTriangle className="size-3 shrink-0" />
               {error}
             </div>
+          </div>
+        )}
+
+        {/* Last seen */}
+        {base.last_seen_at && !editing && (
+          <div className="px-(--page-padding) flex justify-end -mt-1 pb-2">
+            <span className="font-mono text-[10px] text-[#3a3a3a]">last seen {formatDateTime(base.last_seen_at)}</span>
           </div>
         )}
 
