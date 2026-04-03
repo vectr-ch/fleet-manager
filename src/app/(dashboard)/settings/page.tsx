@@ -594,7 +594,7 @@ function ScopeSelector({ value, onChange }: { value: SettingsScope; onChange: (v
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const [scope, setScope] = useState<SettingsScope>("org");
+  const [scope, setScope] = useState<SettingsScope>("account");
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-auto">

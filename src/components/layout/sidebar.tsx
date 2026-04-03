@@ -142,11 +142,11 @@ export function Sidebar() {
           )}
           <span className={cn("w-3.5 h-3.5 shrink-0 [&>svg]:w-full [&>svg]:h-full", pathname.startsWith("/settings") ? "opacity-100" : "opacity-60")}>
             <svg viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M7 4.5v3M7 9.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              <circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M2.5 13a4.5 4.5 0 019 0" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
           </span>
-          {t("settings")}
+          {t("account")}
         </Link>
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-[5px] text-muted-foreground text-[12.5px]">
           <span className="w-3.5 h-3.5 shrink-0 opacity-60 [&>svg]:w-full [&>svg]:h-full">
