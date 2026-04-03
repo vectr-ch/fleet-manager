@@ -564,49 +564,87 @@ function RolesTab() {
   );
 }
 
+// ── Scope Selector ───────────────────────────────────────────────────────────
+
+type SettingsScope = "org" | "account";
+
+function ScopeSelector({ value, onChange }: { value: SettingsScope; onChange: (v: SettingsScope) => void }) {
+  return (
+    <div className="inline-flex items-center bg-neutral-900 border border-neutral-800 rounded-[5px] p-0.5">
+      {([
+        { key: "org", label: "Organisation" },
+        { key: "account", label: "Account" },
+      ] as const).map((item) => (
+        <button
+          key={item.key}
+          onClick={() => onChange(item.key)}
+          className={`font-mono text-[11px] px-3 py-1 rounded-[3px] transition-colors ${
+            value === item.key
+              ? "bg-neutral-800 text-foreground"
+              : "text-neutral-500 hover:text-neutral-300"
+          }`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  const [scope, setScope] = useState<SettingsScope>("org");
+
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-auto">
       {/* Header */}
-      <div className="flex items-center px-(--page-padding) py-3 border-b border-neutral-800 bg-neutral-950 shrink-0">
+      <div className="flex items-center justify-between px-(--page-padding) py-3 border-b border-neutral-800 bg-neutral-950 shrink-0">
         <div>
           <div className="text-[15px] font-semibold text-foreground tracking-tight">Settings</div>
-          <div className="text-[11px] text-neutral-500 font-mono mt-0.5">Manage your organisation and account</div>
+          <div className="text-[11px] text-neutral-500 font-mono mt-0.5">
+            {scope === "org" ? "Manage your organisation" : "Manage your account"}
+          </div>
         </div>
+        <ScopeSelector value={scope} onChange={setScope} />
       </div>
 
       <div className="flex-1 overflow-auto p-(--page-padding)">
-        <Tabs defaultValue="org">
-          <TabsList variant="line" className="mb-6 overflow-x-auto">
-            <TabsTrigger value="org">Organisation</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="invites">Invites</TabsTrigger>
-            <TabsTrigger value="roles">Roles</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
-          </TabsList>
+        {scope === "org" && (
+          <Tabs defaultValue="general">
+            <TabsList variant="line" className="mb-6 overflow-x-auto">
+              <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="members">Members</TabsTrigger>
+              <TabsTrigger value="invites">Invites</TabsTrigger>
+              <TabsTrigger value="roles">Roles</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="org">
-            <OrgTab />
-          </TabsContent>
+            <TabsContent value="general">
+              <OrgTab />
+            </TabsContent>
+            <TabsContent value="members">
+              <MembersTab />
+            </TabsContent>
+            <TabsContent value="invites">
+              <InvitesTab />
+            </TabsContent>
+            <TabsContent value="roles">
+              <RolesTab />
+            </TabsContent>
+          </Tabs>
+        )}
 
-          <TabsContent value="members">
-            <MembersTab />
-          </TabsContent>
+        {scope === "account" && (
+          <Tabs defaultValue="security">
+            <TabsList variant="line" className="mb-6 overflow-x-auto">
+              <TabsTrigger value="security">Security</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="invites">
-            <InvitesTab />
-          </TabsContent>
-
-          <TabsContent value="roles">
-            <RolesTab />
-          </TabsContent>
-
-          <TabsContent value="security">
-            <SecurityTab />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="security">
+              <SecurityTab />
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </div>
   );
