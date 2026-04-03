@@ -47,6 +47,15 @@ export function Sidebar() {
             </svg>
           ),
         },
+        {
+          label: t("telemetry"),
+          href: "/telemetry",
+          icon: (
+            <svg viewBox="0 0 14 14" fill="none">
+              <path d="M1 10l3-4 2.5 2L9 4l3.5 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
       ],
     },
     {

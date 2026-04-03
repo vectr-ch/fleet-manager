@@ -797,7 +797,7 @@ export default function FleetPage() {
   const isMobile = useIsMobile();
   const [expandedId, toggleExpanded] = useExpandedCard();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const { frames: telemetryFrames, status: telemetryStatus } = useTelemetryStream();
+  const { frames: telemetryFrames } = useTelemetryStream();
 
   const selectedNode = nodes?.find((n) => n.id === selectedNodeId);
 
@@ -839,22 +839,6 @@ export default function FleetPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {telemetryStatus === "connected" ? (
-              <div className="flex items-center gap-1.5 font-mono text-[10px] text-fleet-green px-2 py-1 bg-fleet-green-dim border border-fleet-green/15 rounded-full">
-                <div className="size-1.5 rounded-full bg-fleet-green animate-pulse" />
-                Telemetry
-              </div>
-            ) : telemetryStatus === "connecting" ? (
-              <div className="flex items-center gap-1.5 font-mono text-[10px] text-fleet-amber px-2 py-1 bg-fleet-amber-dim border border-fleet-amber/15 rounded-full">
-                <div className="size-1.5 rounded-full bg-fleet-amber animate-pulse" />
-                Connecting
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 font-mono text-[10px] text-fleet-red px-2 py-1 bg-fleet-red-dim border border-fleet-red/15 rounded-full">
-                <div className="size-1.5 rounded-full bg-fleet-red" />
-                Offline
-              </div>
-            )}
             <button
               onClick={() => setShowCreate(true)}
               className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wide px-3.5 py-2 rounded-md bg-foreground text-background font-medium hover:bg-foreground/80 transition-colors"
