@@ -572,8 +572,8 @@ function ScopeSelector({ value, onChange }: { value: SettingsScope; onChange: (v
   return (
     <div className="inline-flex items-center bg-neutral-900 border border-neutral-800 rounded-[5px] p-0.5">
       {([
-        { key: "org", label: "Organisation" },
         { key: "account", label: "Account" },
+        { key: "org", label: "Organisation" },
       ] as const).map((item) => (
         <button
           key={item.key}
