@@ -242,7 +242,7 @@ function BaseOverlay({
   if (bases.length === 0) return null;
 
   return (
-    <div className="absolute top-2.5 left-2.5 z-[1000] min-w-[180px] max-w-[210px] rounded-md border border-[#252525] bg-[#0a0a0a]/80 font-mono backdrop-blur-md">
+    <div className="absolute top-2.5 left-2.5 z-[1000] w-60 rounded-md border border-[#252525] bg-[#0a0a0a]/80 font-mono backdrop-blur-md">
       {/* Header with status badges */}
       <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1">
         <span className="text-[9px] tracking-[.08em] uppercase text-[#555]">Bases</span>

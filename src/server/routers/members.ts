@@ -11,6 +11,12 @@ export const membersRouter = router({
     return res.members;
   }),
 
+  me: protectedProcedure.query(async ({ ctx }) => {
+    return fmsFetch<OrgMember>(`/orgs/${ctx.orgSlug}/members/${ctx.userId}`, {
+      accessToken: ctx.accessToken,
+    });
+  }),
+
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {

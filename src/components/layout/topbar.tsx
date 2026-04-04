@@ -28,6 +28,8 @@ export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
+  const meQuery = trpc.members.me.useQuery(undefined, { retry: false });
+
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       window.location.href = "/login";
@@ -89,6 +91,14 @@ export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps
           </button>
           {userDropdownOpen && (
             <div className="absolute right-0 top-full mt-1 z-1100 w-52 rounded-lg border border-[#252525] bg-[#181818] py-1.5 shadow-2xl" onMouseLeave={() => setUserDropdownOpen(false)}>
+              {/* User info */}
+              {meQuery.data && (
+                <div className="border-b border-[#252525] px-3.5 pt-1 pb-2.5 mb-1.5">
+                  <div className="text-xs text-foreground font-medium truncate">{meQuery.data.email}</div>
+                  <div className="font-mono text-[10px] text-[#555] mt-0.5 capitalize">{meQuery.data.role}</div>
+                </div>
+              )}
+
               {/* Org switcher — mobile only */}
               {currentOrg && (
                 <div className="md:hidden border-b border-[#252525] pb-1.5 mb-1.5">
