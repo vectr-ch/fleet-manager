@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import Link from "next/link";
 import { RadioTower } from "lucide-react";
 import type { Base } from "@/lib/types";
+import type { TelemetryFrame } from "@/lib/nats/types";
 
 const DEFAULT_CENTER: [number, number] = [32.253, -110.911];
 const DEFAULT_ZOOM = 12;
@@ -73,6 +74,25 @@ function createBaseIcon(name: string, conn: "active" | "delayed" | "offline" | "
   });
 }
 
+function createDroneIcon(name: string, batteryPercent: number, armed: boolean) {
+  const color = batteryPercent < 20 ? "#ef4444" : batteryPercent < 40 ? "#f59e0b" : "#22c55e";
+  const glow = batteryPercent < 20 ? "#ef444444" : batteryPercent < 40 ? "#f59e0b44" : "#22c55e44";
+
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">
+        <div style="width:10px;height:10px;border-radius:50%;background:${color};border:1.5px solid ${color};box-shadow:0 0 8px ${glow}"></div>
+        <div style="display:flex;align-items:center;gap:3px;font-family:monospace;font-size:9px;color:#888;background:#080808dd;padding:1px 5px;border-radius:2px;border:1px solid #252525;white-space:nowrap;backdrop-filter:blur(4px)">
+          ${name}${armed ? " ▲" : ""}
+        </div>
+      </div>`,
+    iconSize: [60, 28],
+    iconAnchor: [30, 14],
+    popupAnchor: [0, -12],
+  });
+}
+
 function ZoomControls() {
   const map = useMap();
   return (
@@ -95,11 +115,18 @@ function ZoomControls() {
 
 type BaseWithCoords = Base & { lat: number; lng: number };
 
-interface LeafletMapSimpleProps {
-  bases: BaseWithCoords[];
+export interface DroneOnMap {
+  nodeId: string;
+  name: string;
+  frame: TelemetryFrame;
 }
 
-export default function LeafletMapSimple({ bases }: LeafletMapSimpleProps) {
+interface LeafletMapSimpleProps {
+  bases: BaseWithCoords[];
+  drones?: DroneOnMap[];
+}
+
+export default function LeafletMapSimple({ bases, drones = [] }: LeafletMapSimpleProps) {
   const center: [number, number] =
     bases.length > 0 ? [bases[0].lat, bases[0].lng] : DEFAULT_CENTER;
 
@@ -174,7 +201,72 @@ export default function LeafletMapSimple({ bases }: LeafletMapSimpleProps) {
         );
       })}
 
-      {bases.length === 0 && (
+      {/* Drone markers from live telemetry */}
+      {drones.map((drone) => {
+        const { frame } = drone;
+        if (!frame.position) return null;
+
+        const icon = createDroneIcon(drone.name, frame.batteryPercent, frame.armed);
+        const alt = frame.position.altitudeM;
+        const sats = frame.gps?.satellites;
+
+        return (
+          <Marker
+            key={drone.nodeId}
+            position={[frame.position.latitude, frame.position.longitude]}
+            icon={icon}
+          >
+            <Popup>
+              <div className="font-mono text-[11px] leading-relaxed min-w-35">
+                <div className="font-semibold text-[#e8e8e8] mb-1.5">{drone.name}</div>
+
+                {/* Flight mode + armed */}
+                <div className="text-[10px] text-[#888] mb-1">
+                  {frame.flightMode}{frame.armed ? " · Armed" : ""}
+                </div>
+
+                {/* Battery */}
+                <div className="flex items-center gap-2 text-[10px]">
+                  <span className="text-[#555]">Battery</span>
+                  <span className={frame.batteryPercent < 20 ? "text-fleet-red" : frame.batteryPercent < 40 ? "text-fleet-amber" : "text-fleet-green"}>
+                    {Math.round(frame.batteryPercent)}%
+                  </span>
+                  {frame.batteryVoltage > 0 && (
+                    <span className="text-[#3a3a3a]">{frame.batteryVoltage.toFixed(1)}V</span>
+                  )}
+                </div>
+
+                {/* Altitude + satellites */}
+                <div className="flex items-center gap-2 text-[10px] mt-0.5">
+                  {alt > 0 && (
+                    <>
+                      <span className="text-[#555]">Alt</span>
+                      <span className="text-[#888]">{alt.toFixed(1)}m</span>
+                    </>
+                  )}
+                  {sats != null && (
+                    <>
+                      <span className="text-[#3a3a3a]">·</span>
+                      <span className="text-[#555]">Sats</span>
+                      <span className={sats < 6 ? "text-fleet-amber" : "text-[#888]"}>{sats}</span>
+                    </>
+                  )}
+                </div>
+
+                {/* Link to fleet page */}
+                <Link
+                  href="/fleet"
+                  className="block text-[10px] text-fleet-blue hover:text-[#60a5fa] mt-2 no-underline"
+                >
+                  View details →
+                </Link>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
+
+      {bases.length === 0 && drones.length === 0 && (
         <div
           className="absolute inset-0 flex items-end justify-center pb-6 z-[1000] pointer-events-none"
         >
