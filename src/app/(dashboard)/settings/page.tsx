@@ -5,7 +5,6 @@ import { friendlyError } from "@/lib/error-messages";
 import { trpc } from "@/lib/trpc/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ActionButton } from "@/components/dashboard";
-import { FieldInput } from "@/components/dashboard";
 import { PasswordSection } from "@/components/settings/password-section";
 import { PasskeysSection } from "@/components/settings/passkeys-section";
 import { TOTPSection } from "@/components/settings/totp-section";
@@ -478,19 +477,19 @@ function ProfileSection() {
     : "--";
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="max-w-xl space-y-5">
       {/* Avatar */}
-      <div>
-        <div className="font-mono text-[9px] tracking-[.08em] text-[#555] uppercase mb-3">Avatar</div>
+      <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-5">
+        <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-4">Avatar</div>
         <div className="flex items-center gap-4">
           {profile?.avatar_url ? (
             <img
               src={profile.avatar_url}
               alt="Avatar"
-              className="w-16 h-16 rounded-full object-cover border border-[#252525]"
+              className="w-16 h-16 rounded-full object-cover border border-neutral-800"
             />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-linear-to-br from-[#1e3a5f] to-fleet-blue border border-[#252525] flex items-center justify-center text-lg font-semibold text-white">
+            <div className="w-16 h-16 rounded-full bg-linear-to-br from-[#1e3a5f] to-fleet-blue border border-neutral-800 flex items-center justify-center text-lg font-semibold text-white">
               {initials}
             </div>
           )}
@@ -500,7 +499,7 @@ function ProfileSection() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
               >
-                {uploading ? "Uploading..." : "Upload photo"}
+                {uploading ? "Uploading…" : "Upload photo"}
               </ActionButton>
               {profile?.avatar_url && (
                 <ActionButton
@@ -512,7 +511,7 @@ function ProfileSection() {
                 </ActionButton>
               )}
             </div>
-            <div className="font-mono text-[10px] text-[#3a3a3a]">JPEG or PNG, max 1MB</div>
+            <div className="font-mono text-[10px] text-neutral-500">JPEG or PNG, max 1MB</div>
             {uploadError && <div className="font-mono text-[10px] text-red-400">{uploadError}</div>}
           </div>
           <input
@@ -525,32 +524,39 @@ function ProfileSection() {
         </div>
       </div>
 
-      {/* Display name */}
-      <div>
-        <div className="font-mono text-[9px] tracking-[.08em] text-[#555] uppercase mb-2">Display name</div>
-        <div className="flex gap-2 max-w-sm">
-          <FieldInput
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Enter your name"
-            maxLength={100}
-          />
-          <ActionButton
-            onClick={handleSaveName}
-            disabled={updateMutation.isPending || displayName.trim() === (profile?.display_name ?? "")}
-          >
-            {updateMutation.isPending ? "Saving..." : "Save"}
-          </ActionButton>
-        </div>
-        {updateMutation.isSuccess && (
-          <div className="font-mono text-[10px] text-fleet-green mt-1">Saved</div>
-        )}
-      </div>
+      {/* Profile details */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-[5px] p-5">
+        <div className="font-mono text-[10px] tracking-wider text-neutral-500 uppercase mb-4">Profile Details</div>
 
-      {/* Email (read-only) */}
-      <div>
-        <div className="font-mono text-[9px] tracking-[.08em] text-[#555] uppercase mb-2">Email</div>
-        <div className="font-mono text-[11px] text-[#888]">{profile?.email}</div>
+        <div className="space-y-4">
+          <div>
+            <div className="font-mono text-[10px] text-neutral-500 mb-1">Display Name</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Enter your name"
+                maxLength={100}
+                className={inputClass + " max-w-xs"}
+              />
+              <ActionButton
+                onClick={handleSaveName}
+                disabled={updateMutation.isPending || displayName.trim() === (profile?.display_name ?? "")}
+              >
+                {updateMutation.isPending ? "Saving…" : "Save"}
+              </ActionButton>
+            </div>
+            {updateMutation.isSuccess && (
+              <div className="font-mono text-[10px] text-fleet-green mt-1">Saved</div>
+            )}
+          </div>
+
+          <div>
+            <div className="font-mono text-[10px] text-neutral-500 mb-1">Email</div>
+            <div className="font-mono text-[12px] text-neutral-300">{profile?.email}</div>
+          </div>
+        </div>
       </div>
     </div>
   );
