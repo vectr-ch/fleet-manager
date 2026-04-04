@@ -566,20 +566,9 @@ function ProfileSection() {
 
 function SecurityTab() {
   return (
-    <div className="max-w-md space-y-5">
-      {/* Sign-in */}
-      <div className="font-mono text-[9px] text-neutral-500 uppercase tracking-widest mb-2">
-        Sign-in
-      </div>
+    <div className="max-w-xl space-y-5">
       <PasswordSection />
-      <div className="mt-4">
-        <PasskeysSection />
-      </div>
-
-      {/* Two-Factor Authentication */}
-      <div className="font-mono text-[9px] text-neutral-500 uppercase tracking-widest mb-2 mt-6">
-        Two-Factor Authentication
-      </div>
+      <PasskeysSection />
       <TOTPSection />
     </div>
   );
