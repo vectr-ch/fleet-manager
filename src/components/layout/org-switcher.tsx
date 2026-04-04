@@ -35,25 +35,32 @@ export function OrgSwitcher({ currentOrg, currentOrgName }: OrgSwitcherProps) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-700"
+        className="flex items-center gap-2 rounded-[5px] border border-[#252525] bg-transparent px-2.5 py-1 font-mono text-xs text-[#888] transition-all hover:border-[#3a3a3a] hover:text-[#e8e8e8]"
       >
+        <span className="size-1.5 rounded-full bg-fleet-blue" />
         {displayName}
-        <span className="text-neutral-500">&#x25BE;</span>
+        <span className="text-[#555] text-[10px]">▾</span>
       </button>
-      {isOpen && orgsQuery.data && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-md border border-neutral-700 bg-neutral-800 py-1 shadow-lg">
-          {orgsQuery.data.map((org) => (
-            <button
-              key={org.id}
-              onClick={() => handleSwitch(org)}
-              className={`block w-full px-3 py-2 text-left text-sm hover:bg-neutral-700 ${
-                org.slug === currentOrg ? "text-emerald-400" : "text-neutral-200"
-              }`}
-            >
-              {org.name}
-            </button>
-          ))}
-        </div>
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          {orgsQuery.data && (
+            <div className="absolute right-0 top-full z-50 mt-1.5 min-w-45 rounded-md border border-[#252525] bg-[#0f0f0f] py-1 shadow-[0_8px_24px_#000a]">
+              {orgsQuery.data.map((org) => (
+                <button
+                  key={org.id}
+                  onClick={() => handleSwitch(org)}
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left font-mono text-[11px] transition-colors hover:bg-[#1a1a1a] ${
+                    org.slug === currentOrg ? "text-fleet-green" : "text-[#888] hover:text-[#e8e8e8]"
+                  }`}
+                >
+                  {org.slug === currentOrg && <span className="size-1 rounded-full bg-fleet-green" />}
+                  {org.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
