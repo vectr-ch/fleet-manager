@@ -770,6 +770,8 @@ function ScopeSelector({ value, onChange }: { value: SettingsScope; onChange: (v
 
 export default function SettingsPage() {
   const [scope, setScope] = useState<SettingsScope>("account");
+  const meQuery = trpc.members.me.useQuery(undefined, { retry: false });
+  const isOrgAdmin = meQuery.data?.role === "org_admin";
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-auto">
@@ -781,11 +783,11 @@ export default function SettingsPage() {
             {scope === "org" ? "Manage your organisation" : "Manage your account"}
           </div>
         </div>
-        <ScopeSelector value={scope} onChange={setScope} />
+        {isOrgAdmin && <ScopeSelector value={scope} onChange={setScope} />}
       </div>
 
       <div className="flex-1 overflow-auto p-(--page-padding)">
-        {scope === "org" && (
+        {scope === "org" && isOrgAdmin && (
           <Tabs defaultValue="general">
             <TabsList variant="line" className="mb-6 overflow-x-auto">
               <TabsTrigger value="general">General</TabsTrigger>
