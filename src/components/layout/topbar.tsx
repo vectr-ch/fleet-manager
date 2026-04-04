@@ -18,9 +18,11 @@ interface TopbarProps {
   currentOrg: string | null;
   currentOrgName: string | null;
   userInitials: string;
+  userDisplayName?: string | null;
+  userAvatarUrl?: string | null;
 }
 
-export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps) {
+export function Topbar({ currentOrg, currentOrgName, userInitials, userDisplayName, userAvatarUrl }: TopbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations("topbar");
@@ -85,16 +87,31 @@ export function Topbar({ currentOrg, currentOrgName, userInitials }: TopbarProps
         <div className="relative">
           <button
             onClick={() => setUserDropdownOpen(v => !v)}
-            className="w-6.5 h-6.5 rounded-full bg-linear-to-br from-[#1e3a5f] to-fleet-blue border border-input flex items-center justify-center text-[10px] font-semibold text-white cursor-pointer"
+            className="w-6.5 h-6.5 rounded-full border border-input flex items-center justify-center text-[10px] font-semibold text-white cursor-pointer overflow-hidden"
           >
-            {userInitials}
+            {(meQuery.data?.avatar_url ?? userAvatarUrl) ? (
+              <img
+                src={(meQuery.data?.avatar_url ?? userAvatarUrl)!}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="w-full h-full bg-linear-to-br from-[#1e3a5f] to-fleet-blue flex items-center justify-center">
+                {userInitials}
+              </span>
+            )}
           </button>
           {userDropdownOpen && (
             <div className="absolute right-0 top-full mt-1 z-1100 w-52 rounded-lg border border-[#252525] bg-[#181818] py-1.5 shadow-2xl" onMouseLeave={() => setUserDropdownOpen(false)}>
               {/* User info */}
               {meQuery.data && (
                 <div className="border-b border-[#252525] px-3.5 pt-1 pb-2.5 mb-1.5">
-                  <div className="text-xs text-foreground font-medium truncate">{meQuery.data.email}</div>
+                  {meQuery.data.display_name && (
+                    <div className="text-xs text-foreground font-medium truncate">{meQuery.data.display_name}</div>
+                  )}
+                  <div className={`font-mono text-[11px] truncate ${meQuery.data.display_name ? "text-[#555]" : "text-foreground font-medium"}`}>
+                    {meQuery.data.email}
+                  </div>
                   <div className="font-mono text-[10px] text-[#555] mt-0.5 capitalize">{meQuery.data.role}</div>
                 </div>
               )}

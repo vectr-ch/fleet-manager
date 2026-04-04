@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { friendlyError } from "@/lib/error-messages";
 import { trpc } from "@/lib/trpc/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ActionButton } from "@/components/dashboard";
+import { FieldInput } from "@/components/dashboard";
 import { PasswordSection } from "@/components/settings/password-section";
 import { PasskeysSection } from "@/components/settings/passkeys-section";
 import { TOTPSection } from "@/components/settings/totp-section";
@@ -198,7 +200,21 @@ function MembersTab() {
             <tbody>
               {members.map((member) => (
                 <tr key={member.id} className="border-b border-neutral-800 last:border-0">
-                  <td className="px-4 py-3 font-mono text-[12px] text-foreground">{member.email}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {member.avatar_url ? (
+                        <img src={member.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover border border-[#252525]" />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-linear-to-br from-[#1e3a5f] to-fleet-blue flex items-center justify-center text-[8px] font-semibold text-white shrink-0">
+                          {member.email.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        {member.display_name && <div className="text-xs text-foreground">{member.display_name}</div>}
+                        <div className={`font-mono text-[11px] ${member.display_name ? "text-[#555]" : "text-foreground"}`}>{member.email}</div>
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-3 py-3">
                     <span className="font-mono text-[11px] text-neutral-400">{member.role ? formatRoleName(member.role) : "—"}</span>
                   </td>
@@ -371,6 +387,170 @@ function InvitesTab() {
             </tbody>
           </table>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Profile Section ──────────────────────────────────────────────────────────
+
+function ProfileSection() {
+  const utils = trpc.useUtils();
+  const { data: profile, isLoading } = trpc.userAccount.getProfile.useQuery();
+  const [displayName, setDisplayName] = useState("");
+  const [nameInitialized, setNameInitialized] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (profile && !nameInitialized) {
+      setDisplayName(profile.display_name ?? "");
+      setNameInitialized(true);
+    }
+  }, [profile, nameInitialized]);
+
+  const updateMutation = trpc.userAccount.updateProfile.useMutation({
+    onSuccess: () => {
+      utils.userAccount.getProfile.invalidate();
+      utils.members.me.invalidate();
+    },
+  });
+
+  const deleteMutation = trpc.userAccount.deleteAvatar.useMutation({
+    onSuccess: () => {
+      utils.userAccount.getProfile.invalidate();
+      utils.members.me.invalidate();
+    },
+  });
+
+  const handleSaveName = () => {
+    updateMutation.mutate({ display_name: displayName.trim() });
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) {
+      setUploadError("File too large (max 1MB)");
+      return;
+    }
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setUploadError("Only JPEG and PNG are supported");
+      return;
+    }
+
+    setUploadError(null);
+    setUploading(true);
+
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    try {
+      const res = await fetch("/api/avatar/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setUploadError(body.error ?? "Upload failed");
+        return;
+      }
+      utils.userAccount.getProfile.invalidate();
+      utils.members.me.invalidate();
+    } catch {
+      setUploadError("Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  if (isLoading) {
+    return <div className="p-6 font-mono text-[11px] text-neutral-500">Loading...</div>;
+  }
+
+  const initials = profile?.email
+    ? (() => {
+        const local = profile.email.split("@")[0];
+        const dot = local.lastIndexOf(".");
+        if (dot > 0 && dot < local.length - 1) return (local[0] + local[dot + 1]).toUpperCase();
+        return local.slice(0, 2).toUpperCase();
+      })()
+    : "--";
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Avatar */}
+      <div>
+        <div className="font-mono text-[9px] tracking-[.08em] text-[#555] uppercase mb-3">Avatar</div>
+        <div className="flex items-center gap-4">
+          {profile?.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt="Avatar"
+              className="w-16 h-16 rounded-full object-cover border border-[#252525]"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-linear-to-br from-[#1e3a5f] to-fleet-blue border border-[#252525] flex items-center justify-center text-lg font-semibold text-white">
+              {initials}
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <ActionButton
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? "Uploading..." : "Upload photo"}
+              </ActionButton>
+              {profile?.avatar_url && (
+                <ActionButton
+                  variant="danger"
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                >
+                  Remove
+                </ActionButton>
+              )}
+            </div>
+            <div className="font-mono text-[10px] text-[#3a3a3a]">JPEG or PNG, max 1MB</div>
+            {uploadError && <div className="font-mono text-[10px] text-red-400">{uploadError}</div>}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            className="hidden"
+            onChange={handleUpload}
+          />
+        </div>
+      </div>
+
+      {/* Display name */}
+      <div>
+        <div className="font-mono text-[9px] tracking-[.08em] text-[#555] uppercase mb-2">Display name</div>
+        <div className="flex gap-2 max-w-sm">
+          <FieldInput
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Enter your name"
+            maxLength={100}
+          />
+          <ActionButton
+            onClick={handleSaveName}
+            disabled={updateMutation.isPending || displayName.trim() === (profile?.display_name ?? "")}
+          >
+            {updateMutation.isPending ? "Saving..." : "Save"}
+          </ActionButton>
+        </div>
+        {updateMutation.isSuccess && (
+          <div className="font-mono text-[10px] text-fleet-green mt-1">Saved</div>
+        )}
+      </div>
+
+      {/* Email (read-only) */}
+      <div>
+        <div className="font-mono text-[9px] tracking-[.08em] text-[#555] uppercase mb-2">Email</div>
+        <div className="font-mono text-[11px] text-[#888]">{profile?.email}</div>
       </div>
     </div>
   );
@@ -635,11 +815,15 @@ export default function SettingsPage() {
         )}
 
         {scope === "account" && (
-          <Tabs defaultValue="security">
+          <Tabs defaultValue="profile">
             <TabsList variant="line" className="mb-6 overflow-x-auto">
+              <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
 
+            <TabsContent value="profile">
+              <ProfileSection />
+            </TabsContent>
             <TabsContent value="security">
               <SecurityTab />
             </TabsContent>

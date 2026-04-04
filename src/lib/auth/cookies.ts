@@ -84,10 +84,14 @@ function deriveInitials(email: string): string {
 // user_info is DISPLAY-ONLY — stores pre-computed initials for the avatar.
 // Stores initials rather than the full email to minimise PII in a client-readable cookie.
 // Never passed as identity to backend calls. TTL matches refresh_token (7 days).
-export async function setUserInfo(email: string) {
+export async function setUserInfo(email: string, displayName?: string | null, avatarUrl?: string | null) {
   const initials = deriveInitials(email);
   const cookieStore = await cookies();
-  cookieStore.set("user_info", JSON.stringify({ initials }), {
+  cookieStore.set("user_info", JSON.stringify({
+    initials,
+    ...(displayName ? { displayName } : {}),
+    ...(avatarUrl ? { avatarUrl } : {}),
+  }), {
     httpOnly: false, // intentionally client-readable for avatar display
     secure: SECURE,
     sameSite: "lax",

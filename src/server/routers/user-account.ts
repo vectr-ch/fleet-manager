@@ -4,7 +4,7 @@ import { router, protectedProcedure, authOnlyProcedure } from "@/server/trpc";
 import { fmsFetch } from "@/lib/fms";
 import { setCurrentOrg } from "@/lib/auth/cookies";
 import { validatePassword } from "@/lib/password";
-import type { Org, MFAStatus, MFASetupResponse, MFAConfirmResponse, PasskeyInfo } from "@/lib/types";
+import type { Org, MFAStatus, MFASetupResponse, MFAConfirmResponse, PasskeyInfo, UserProfile } from "@/lib/types";
 
 const userPasswordSchema = z.string().superRefine((password, ctx) => {
   const error = validatePassword(password);
@@ -158,6 +158,29 @@ export const userAccountRouter = router({
         { method: "DELETE", accessToken: ctx.accessToken },
       );
     }),
+
+  getProfile: protectedProcedure.query(async ({ ctx }) => {
+    return fmsFetch<UserProfile>(`/users/${ctx.userId}`, {
+      accessToken: ctx.accessToken,
+    });
+  }),
+
+  updateProfile: protectedProcedure
+    .input(z.object({ display_name: z.string().max(100) }))
+    .mutation(async ({ ctx, input }) => {
+      return fmsFetch<UserProfile>(`/users/${ctx.userId}`, {
+        method: "PATCH",
+        body: { display_name: input.display_name },
+        accessToken: ctx.accessToken,
+      });
+    }),
+
+  deleteAvatar: protectedProcedure.mutation(async ({ ctx }) => {
+    return fmsFetch<UserProfile>(`/users/${ctx.userId}/avatar`, {
+      method: "DELETE",
+      accessToken: ctx.accessToken,
+    });
+  }),
 
   // Fallback for /select-org when sessionStorage is absent (new tab, browser restore).
   listMyOrgs: authOnlyProcedure

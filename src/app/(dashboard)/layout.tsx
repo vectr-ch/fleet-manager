@@ -13,18 +13,28 @@ export default async function DashboardLayout({
   const currentOrgName = cookieStore.get("current_org_name")?.value ?? null;
   const userInfoRaw = cookieStore.get("user_info")?.value;
   let userInitials = "--";
+  let userDisplayName: string | null = null;
+  let userAvatarUrl: string | null = null;
   if (userInfoRaw) {
     try {
-      const { initials } = JSON.parse(userInfoRaw) as { initials?: string };
-      if (initials) userInitials = initials;
+      const info = JSON.parse(userInfoRaw) as { initials?: string; displayName?: string; avatarUrl?: string };
+      if (info.initials) userInitials = info.initials;
+      if (info.displayName) userDisplayName = info.displayName;
+      if (info.avatarUrl) userAvatarUrl = info.avatarUrl;
     } catch {
-      // leave default
+      // leave defaults
     }
   }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Topbar currentOrg={currentOrg} currentOrgName={currentOrgName} userInitials={userInitials} />
+      <Topbar
+        currentOrg={currentOrg}
+        currentOrgName={currentOrgName}
+        userInitials={userInitials}
+        userDisplayName={userDisplayName}
+        userAvatarUrl={userAvatarUrl}
+      />
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar — hidden on mobile */}
         <div className="hidden md:flex shrink-0">

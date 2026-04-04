@@ -266,9 +266,23 @@ export type SysadminResetVerifyResponse = z.infer<typeof sysadminResetVerifyResp
 export const orgMemberSchema = z.object({
   id: z.string(),
   email: z.string(),
+  display_name: z.string().nullable().optional(),
+  avatar_url: z.string().nullable().optional(),
   role: z.string(),
   status: z.enum(["active", "pending"]),
   mfa_enabled: z.boolean(),
   created_at: z.string(),
 });
 export type OrgMember = z.infer<typeof orgMemberSchema>;
+
+// ─── User Profile (self) ────────────────────────────────────
+export const userProfileSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  display_name: z.string().nullable().optional(),
+  avatar_url: z.string().nullable().optional(),
+  default_org_id: z.string(),
+  mfa_enabled: z.boolean(),
+  created_at: z.string(),
+});
+export type UserProfile = z.infer<typeof userProfileSchema>;
