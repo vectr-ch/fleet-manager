@@ -1,16 +1,18 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { renderToStaticMarkup } from "react-dom/server";
 import Link from "next/link";
-import { RadioTower } from "lucide-react";
+import { RadioTower, Search } from "lucide-react";
 import type { Base } from "@/lib/types";
 import type { TelemetryFrame } from "@/lib/nats/types";
 
 const DEFAULT_CENTER: [number, number] = [32.253, -110.911];
 const DEFAULT_ZOOM = 12;
+const FIT_PADDING: [number, number] = [50, 50];
 
 // ── Status helpers (mirrored from bases page) ────────────────────────────────
 
@@ -30,6 +32,11 @@ function deviceStatusLabel(device: { cert_serial?: string | null; enrolled_at?: 
   return "Awaiting Certificate";
 }
 
+function baseConnectionStatus(base: BaseWithCoords): "active" | "delayed" | "offline" | "unknown" {
+  const status = deviceStatusLabel(base);
+  return status === "Enrolled" ? connectionStatus(base.last_seen_at) : "unknown";
+}
+
 function formatRelativeTime(iso: string): string {
   try {
     const diffMs = Date.now() - new Date(iso).getTime();
@@ -40,6 +47,15 @@ function formatRelativeTime(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+function connMeta(base: BaseWithCoords): string {
+  const conn = baseConnectionStatus(base);
+  if (conn === "active" && base.rtt_ms != null) return `${base.rtt_ms}ms`;
+  if (conn === "active") return "active";
+  if (conn === "delayed") return "delayed";
+  if (conn === "offline") return "offline";
+  return "";
 }
 
 // ── Custom base marker icon ──────────────────────────────────────────────────
@@ -93,6 +109,192 @@ function createDroneIcon(name: string, batteryPercent: number, armed: boolean) {
   });
 }
 
+// ── Auto-fit controller ─────────────────────────────────────────────────────
+
+function AutoFit({ bases, drones }: { bases: BaseWithCoords[]; drones: DroneOnMap[] }) {
+  const map = useMap();
+  const fitted = useRef(false);
+
+  useEffect(() => {
+    if (fitted.current) return;
+
+    const points: L.LatLngExpression[] = bases.map((b) => [b.lat, b.lng]);
+    for (const d of drones) {
+      if (d.frame.position) {
+        points.push([d.frame.position.latitude, d.frame.position.longitude]);
+      }
+    }
+
+    if (points.length === 0) return;
+
+    fitted.current = true;
+
+    if (points.length === 1) {
+      map.setView(points[0], DEFAULT_ZOOM);
+    } else {
+      map.fitBounds(L.latLngBounds(points), { padding: FIT_PADDING });
+    }
+  }, [map, bases, drones]);
+
+  return null;
+}
+
+// ── Base overlay panel ──────────────────────────────────────────────────────
+
+function BaseOverlay({ bases, markerRefs }: { bases: BaseWithCoords[]; markerRefs: React.RefObject<Map<string, L.Marker>> }) {
+  const map = useMap();
+  const [search, setSearch] = useState("");
+  const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
+
+  const updateVisibleBases = useCallback(() => {
+    const bounds = map.getBounds();
+    const ids = new Set<string>();
+    for (const base of bases) {
+      if (bounds.contains([base.lat, base.lng])) {
+        ids.add(base.id);
+      }
+    }
+    setVisibleIds(ids);
+  }, [map, bases]);
+
+  useMapEvents({
+    moveend: updateVisibleBases,
+    zoomend: updateVisibleBases,
+  });
+
+  useEffect(() => {
+    updateVisibleBases();
+  }, [updateVisibleBases]);
+
+  // Status counts across all bases
+  const counts = { active: 0, delayed: 0, offline: 0, other: 0 };
+  for (const base of bases) {
+    const conn = baseConnectionStatus(base);
+    if (conn === "active") counts.active++;
+    else if (conn === "delayed") counts.delayed++;
+    else if (conn === "offline") counts.offline++;
+    else counts.other++;
+  }
+
+  const isSearching = search.trim().length > 0;
+  const searchLower = search.trim().toLowerCase();
+
+  // When searching: filter all bases by name. Otherwise: show only in-view bases.
+  const displayBases = isSearching
+    ? bases.filter((b) => b.name.toLowerCase().includes(searchLower))
+    : bases.filter((b) => visibleIds.has(b.id));
+
+  function flyToBase(base: BaseWithCoords) {
+    map.flyTo([base.lat, base.lng], Math.max(map.getZoom(), 14), { duration: 0.8 });
+    setSearch("");
+
+    // Open the marker's popup after the fly animation
+    setTimeout(() => {
+      const marker = markerRefs.current?.get(base.id);
+      if (marker) marker.openPopup();
+    }, 900);
+  }
+
+  if (bases.length === 0) return null;
+
+  return (
+    <div
+      className="absolute top-2.5 left-2.5 z-1000 min-w-45 max-w-52.5 rounded-md border border-[#252525] bg-[#0a0a0a]/80 font-mono backdrop-blur-md"
+      onMouseDown={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+    >
+      {/* Header with status badges */}
+      <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1">
+        <span className="text-[9px] tracking-[.08em] uppercase text-[#555]">Bases</span>
+        <div className="ml-auto flex items-center gap-1.5 text-[9px] text-[#555]">
+          {counts.active > 0 && (
+            <span className="flex items-center gap-1">
+              <span className="inline-block size-1 rounded-full bg-fleet-green" />{counts.active}
+            </span>
+          )}
+          {counts.delayed > 0 && (
+            <span className="flex items-center gap-1">
+              <span className="inline-block size-1 rounded-full bg-fleet-amber" />{counts.delayed}
+            </span>
+          )}
+          {counts.offline > 0 && (
+            <span className="flex items-center gap-1">
+              <span className="inline-block size-1 rounded-full bg-[#555]" />{counts.offline}
+            </span>
+          )}
+          {counts.other > 0 && (
+            <span className="flex items-center gap-1">
+              <span className="inline-block size-1 rounded-full bg-[#3a3a3a]" />{counts.other}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Search input */}
+      <div className="relative px-2 pb-1">
+        <Search size={10} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#3a3a3a]" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search or jump to base..."
+          className="w-full rounded border border-[#252525] bg-[#0f0f0f] py-1 pl-6 pr-2 text-[10px] text-[#888] placeholder-[#3a3a3a] outline-none focus:border-[#333]"
+        />
+      </div>
+
+      {/* Section label */}
+      {!isSearching && displayBases.length > 0 && (
+        <div className="px-2.5 pt-1 pb-0.5 text-[8px] tracking-[.06em] uppercase text-[#3a3a3a]">
+          In view · {displayBases.length}
+        </div>
+      )}
+      {isSearching && (
+        <div className="px-2.5 pt-1 pb-0.5 text-[8px] tracking-[.06em] uppercase text-[#3a3a3a]">
+          {displayBases.length} match{displayBases.length !== 1 ? "es" : ""}
+        </div>
+      )}
+
+      {/* Base list */}
+      <div className="max-h-50 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-[#252525] scrollbar-track-transparent">
+        {displayBases.map((base) => {
+          const conn = baseConnectionStatus(base);
+          const dotClass =
+            conn === "active" ? "bg-fleet-green shadow-[0_0_4px_#22c55e88]" :
+            conn === "delayed" ? "bg-fleet-amber" :
+            conn === "offline" ? "bg-[#555]" : "bg-[#3a3a3a]";
+
+          return (
+            <button
+              key={base.id}
+              onClick={() => flyToBase(base)}
+              className="flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left text-[10px] text-[#888] transition-colors hover:bg-[#1a1a1a] hover:text-[#e8e8e8]"
+            >
+              <span className={`inline-block size-1.25 shrink-0 rounded-full ${dotClass}`} />
+              <span className="truncate">{base.name}</span>
+              <span className="ml-auto shrink-0 text-[9px] text-[#3a3a3a]">{connMeta(base)}</span>
+            </button>
+          );
+        })}
+        {displayBases.length === 0 && (
+          <div className="px-1.5 py-2 text-center text-[10px] text-[#3a3a3a]">
+            {isSearching ? "No bases found" : "No bases in view"}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-[#1a1a1a] px-2.5 py-1 text-[9px] text-[#3a3a3a]">
+        {isSearching
+          ? `${displayBases.length} of ${bases.length} bases`
+          : `${visibleIds.size} in view · ${bases.length} total`
+        }
+      </div>
+    </div>
+  );
+}
+
+// ── Zoom controls ───────────────────────────────────────────────────────────
+
 function ZoomControls() {
   const map = useMap();
   return (
@@ -113,6 +315,8 @@ function ZoomControls() {
   );
 }
 
+// ── Main component ──────────────────────────────────────────────────────────
+
 type BaseWithCoords = Base & { lat: number; lng: number };
 
 export interface DroneOnMap {
@@ -127,12 +331,11 @@ interface LeafletMapSimpleProps {
 }
 
 export default function LeafletMapSimple({ bases, drones = [] }: LeafletMapSimpleProps) {
-  const center: [number, number] =
-    bases.length > 0 ? [bases[0].lat, bases[0].lng] : DEFAULT_CENTER;
+  const markerRefs = useRef<Map<string, L.Marker>>(new Map());
 
   return (
     <MapContainer
-      center={center}
+      center={DEFAULT_CENTER}
       zoom={DEFAULT_ZOOM}
       zoomControl={false}
       attributionControl={false}
@@ -143,6 +346,9 @@ export default function LeafletMapSimple({ bases, drones = [] }: LeafletMapSimpl
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         maxZoom={19}
       />
+
+      <AutoFit bases={bases} drones={drones} />
+      <BaseOverlay bases={bases} markerRefs={markerRefs} />
 
       {bases.map((base) => {
         const status = deviceStatusLabel(base);
@@ -157,7 +363,15 @@ export default function LeafletMapSimple({ bases, drones = [] }: LeafletMapSimpl
         const connInfo = conn && conn !== "unknown" ? connColors[conn] : null;
 
         return (
-          <Marker key={base.id} position={[base.lat, base.lng]} icon={icon}>
+          <Marker
+            key={base.id}
+            position={[base.lat, base.lng]}
+            icon={icon}
+            ref={(el) => {
+              if (el) markerRefs.current.set(base.id, el);
+              else markerRefs.current.delete(base.id);
+            }}
+          >
             <Popup>
               <div className="font-mono text-[11px] leading-relaxed min-w-35">
                 {/* Name */}
