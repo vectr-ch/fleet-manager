@@ -14,7 +14,7 @@ const DEFAULT_CENTER: [number, number] = [32.253, -110.911];
 const DEFAULT_ZOOM = 12;
 const FIT_PADDING: [number, number] = [50, 50];
 
-// ── Status helpers (mirrored from bases page) ────────────────────────────────
+// ── Status helpers ──────────────────────────────────────────────────────────
 
 function connectionStatus(lastSeenAt?: string | null): "active" | "delayed" | "offline" | "unknown" {
   if (!lastSeenAt) return "unknown";
@@ -58,7 +58,7 @@ function connMeta(base: BaseWithCoords): string {
   return "";
 }
 
-// ── Custom base marker icon ──────────────────────────────────────────────────
+// ── Custom marker icons ─────────────────────────────────────────────────────
 
 const radioTowerSvg = renderToStaticMarkup(
   <RadioTower size={14} strokeWidth={1.5} color="#888" />
@@ -109,8 +109,16 @@ function createDroneIcon(name: string, batteryPercent: number, armed: boolean) {
   });
 }
 
-// ── Auto-fit controller ─────────────────────────────────────────────────────
+// ── Map internals (rendered inside MapContainer) ────────────────────────────
 
+/** Exposes the Leaflet map instance to the parent via ref */
+function MapRef({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const map = useMap();
+  useEffect(() => { mapRef.current = map; }, [map, mapRef]);
+  return null;
+}
+
+/** Auto-fits the map to show all bases + drones on first data load */
 function AutoFit({ bases, drones }: { bases: BaseWithCoords[]; drones: DroneOnMap[] }) {
   const map = useMap();
   const fitted = useRef(false);
@@ -126,45 +134,80 @@ function AutoFit({ bases, drones }: { bases: BaseWithCoords[]; drones: DroneOnMa
     }
 
     if (points.length === 0) return;
-
     fitted.current = true;
 
-    if (points.length === 1) {
-      map.setView(points[0], DEFAULT_ZOOM);
-    } else {
-      map.fitBounds(L.latLngBounds(points), { padding: FIT_PADDING });
-    }
+    // Delay slightly to ensure the container has its final size
+    requestAnimationFrame(() => {
+      map.invalidateSize();
+      if (points.length === 1) {
+        map.setView(points[0], DEFAULT_ZOOM);
+      } else {
+        map.fitBounds(L.latLngBounds(points), { padding: FIT_PADDING });
+      }
+    });
   }, [map, bases, drones]);
 
   return null;
 }
 
-// ── Base overlay panel ──────────────────────────────────────────────────────
-
-function BaseOverlay({ bases, markerRefs }: { bases: BaseWithCoords[]; markerRefs: React.RefObject<Map<string, L.Marker>> }) {
+/** Tracks viewport bounds and calls back on change */
+function ViewportTracker({ onBoundsChange }: { onBoundsChange: (bounds: L.LatLngBounds) => void }) {
   const map = useMap();
-  const [search, setSearch] = useState("");
-  const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
 
-  const updateVisibleBases = useCallback(() => {
-    const bounds = map.getBounds();
-    const ids = new Set<string>();
+  const notify = useCallback(() => {
+    onBoundsChange(map.getBounds());
+  }, [map, onBoundsChange]);
+
+  useMapEvents({ moveend: notify, zoomend: notify });
+  useEffect(() => { notify(); }, [notify]);
+
+  return null;
+}
+
+function ZoomControls() {
+  const map = useMap();
+  return (
+    <div className="absolute bottom-3 right-3 flex gap-1 z-[1000]">
+      <button
+        onClick={() => map.zoomIn()}
+        className="w-7 h-7 bg-neutral-950/80 border border-neutral-700 rounded flex items-center justify-center text-neutral-400 text-xs backdrop-blur-sm hover:text-white"
+      >
+        +
+      </button>
+      <button
+        onClick={() => map.zoomOut()}
+        className="w-7 h-7 bg-neutral-950/80 border border-neutral-700 rounded flex items-center justify-center text-neutral-400 text-xs backdrop-blur-sm hover:text-white"
+      >
+        −
+      </button>
+    </div>
+  );
+}
+
+// ── Base overlay panel (rendered OUTSIDE MapContainer) ───────────────────────
+
+function BaseOverlay({
+  bases,
+  mapRef,
+  markerRefs,
+  bounds,
+}: {
+  bases: BaseWithCoords[];
+  mapRef: React.RefObject<L.Map | null>;
+  markerRefs: React.RefObject<Map<string, L.Marker>>;
+  bounds: L.LatLngBounds | null;
+}) {
+  const [search, setSearch] = useState("");
+
+  // Bases visible in current viewport
+  const visibleIds = new Set<string>();
+  if (bounds) {
     for (const base of bases) {
       if (bounds.contains([base.lat, base.lng])) {
-        ids.add(base.id);
+        visibleIds.add(base.id);
       }
     }
-    setVisibleIds(ids);
-  }, [map, bases]);
-
-  useMapEvents({
-    moveend: updateVisibleBases,
-    zoomend: updateVisibleBases,
-  });
-
-  useEffect(() => {
-    updateVisibleBases();
-  }, [updateVisibleBases]);
+  }
 
   // Status counts across all bases
   const counts = { active: 0, delayed: 0, offline: 0, other: 0 };
@@ -179,16 +222,17 @@ function BaseOverlay({ bases, markerRefs }: { bases: BaseWithCoords[]; markerRef
   const isSearching = search.trim().length > 0;
   const searchLower = search.trim().toLowerCase();
 
-  // When searching: filter all bases by name. Otherwise: show only in-view bases.
   const displayBases = isSearching
     ? bases.filter((b) => b.name.toLowerCase().includes(searchLower))
     : bases.filter((b) => visibleIds.has(b.id));
 
   function flyToBase(base: BaseWithCoords) {
+    const map = mapRef.current;
+    if (!map) return;
+
     map.flyTo([base.lat, base.lng], Math.max(map.getZoom(), 14), { duration: 0.8 });
     setSearch("");
 
-    // Open the marker's popup after the fly animation
     setTimeout(() => {
       const marker = markerRefs.current?.get(base.id);
       if (marker) marker.openPopup();
@@ -198,11 +242,7 @@ function BaseOverlay({ bases, markerRefs }: { bases: BaseWithCoords[]; markerRef
   if (bases.length === 0) return null;
 
   return (
-    <div
-      className="absolute top-2.5 left-2.5 z-1000 min-w-45 max-w-52.5 rounded-md border border-[#252525] bg-[#0a0a0a]/80 font-mono backdrop-blur-md"
-      onMouseDown={(e) => e.stopPropagation()}
-      onDoubleClick={(e) => e.stopPropagation()}
-    >
+    <div className="absolute top-2.5 left-2.5 z-[1000] min-w-[180px] max-w-[210px] rounded-md border border-[#252525] bg-[#0a0a0a]/80 font-mono backdrop-blur-md">
       {/* Header with status badges */}
       <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1">
         <span className="text-[9px] tracking-[.08em] uppercase text-[#555]">Bases</span>
@@ -255,7 +295,7 @@ function BaseOverlay({ bases, markerRefs }: { bases: BaseWithCoords[]; markerRef
       )}
 
       {/* Base list */}
-      <div className="max-h-50 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-[#252525] scrollbar-track-transparent">
+      <div className="max-h-[200px] overflow-y-auto px-1 pb-1">
         {displayBases.map((base) => {
           const conn = baseConnectionStatus(base);
           const dotClass =
@@ -269,7 +309,7 @@ function BaseOverlay({ bases, markerRefs }: { bases: BaseWithCoords[]; markerRef
               onClick={() => flyToBase(base)}
               className="flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left text-[10px] text-[#888] transition-colors hover:bg-[#1a1a1a] hover:text-[#e8e8e8]"
             >
-              <span className={`inline-block size-1.25 shrink-0 rounded-full ${dotClass}`} />
+              <span className={`inline-block size-[5px] shrink-0 rounded-full ${dotClass}`} />
               <span className="truncate">{base.name}</span>
               <span className="ml-auto shrink-0 text-[9px] text-[#3a3a3a]">{connMeta(base)}</span>
             </button>
@@ -293,29 +333,7 @@ function BaseOverlay({ bases, markerRefs }: { bases: BaseWithCoords[]; markerRef
   );
 }
 
-// ── Zoom controls ───────────────────────────────────────────────────────────
-
-function ZoomControls() {
-  const map = useMap();
-  return (
-    <div className="absolute bottom-3 right-3 flex gap-1 z-[1000]">
-      <button
-        onClick={() => map.zoomIn()}
-        className="w-7 h-7 bg-neutral-950/80 border border-neutral-700 rounded flex items-center justify-center text-neutral-400 text-xs backdrop-blur-sm hover:text-white"
-      >
-        +
-      </button>
-      <button
-        onClick={() => map.zoomOut()}
-        className="w-7 h-7 bg-neutral-950/80 border border-neutral-700 rounded flex items-center justify-center text-neutral-400 text-xs backdrop-blur-sm hover:text-white"
-      >
-        −
-      </button>
-    </div>
-  );
-}
-
-// ── Main component ──────────────────────────────────────────────────────────
+// ── Types & main component ──────────────────────────────────────────────────
 
 type BaseWithCoords = Base & { lat: number; lng: number };
 
@@ -331,166 +349,149 @@ interface LeafletMapSimpleProps {
 }
 
 export default function LeafletMapSimple({ bases, drones = [] }: LeafletMapSimpleProps) {
+  const mapRef = useRef<L.Map | null>(null);
   const markerRefs = useRef<Map<string, L.Marker>>(new Map());
+  const [bounds, setBounds] = useState<L.LatLngBounds | null>(null);
 
   return (
-    <MapContainer
-      center={DEFAULT_CENTER}
-      zoom={DEFAULT_ZOOM}
-      zoomControl={false}
-      attributionControl={false}
-      className="w-full h-full"
-      style={{ background: "#0a0a0a" }}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        maxZoom={19}
-      />
+    <div className="relative w-full h-full">
+      {/* Overlay panel — rendered outside MapContainer so it's above Leaflet panes */}
+      <BaseOverlay bases={bases} mapRef={mapRef} markerRefs={markerRefs} bounds={bounds} />
 
-      <AutoFit bases={bases} drones={drones} />
-      <BaseOverlay bases={bases} markerRefs={markerRefs} />
+      <MapContainer
+        center={DEFAULT_CENTER}
+        zoom={DEFAULT_ZOOM}
+        zoomControl={false}
+        attributionControl={false}
+        className="w-full h-full"
+        style={{ background: "#0a0a0a" }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={19}
+        />
 
-      {bases.map((base) => {
-        const status = deviceStatusLabel(base);
-        const conn = status === "Enrolled" ? connectionStatus(base.last_seen_at) : null;
-        const icon = createBaseIcon(base.name, conn);
+        <MapRef mapRef={mapRef} />
+        <AutoFit bases={bases} drones={drones} />
+        <ViewportTracker onBoundsChange={setBounds} />
 
-        const connColors: Record<string, { text: string; label: string }> = {
-          active: { text: "text-[#22c55e]", label: "Active" },
-          delayed: { text: "text-[#f59e0b]", label: "Delayed" },
-          offline: { text: "text-[#555]", label: "Offline" },
-        };
-        const connInfo = conn && conn !== "unknown" ? connColors[conn] : null;
+        {bases.map((base) => {
+          const status = deviceStatusLabel(base);
+          const conn = status === "Enrolled" ? connectionStatus(base.last_seen_at) : null;
+          const icon = createBaseIcon(base.name, conn);
 
-        return (
-          <Marker
-            key={base.id}
-            position={[base.lat, base.lng]}
-            icon={icon}
-            ref={(el) => {
-              if (el) markerRefs.current.set(base.id, el);
-              else markerRefs.current.delete(base.id);
-            }}
-          >
-            <Popup>
-              <div className="font-mono text-[11px] leading-relaxed min-w-35">
-                {/* Name */}
-                <div className="font-semibold text-[#e8e8e8] mb-1.5">{base.name}</div>
+          const connColors: Record<string, { text: string; label: string }> = {
+            active: { text: "text-[#22c55e]", label: "Active" },
+            delayed: { text: "text-[#f59e0b]", label: "Delayed" },
+            offline: { text: "text-[#555]", label: "Offline" },
+          };
+          const connInfo = conn && conn !== "unknown" ? connColors[conn] : null;
 
-                {/* Status label */}
-                <div className="text-[#888] text-[10px] mb-1">{status}</div>
+          return (
+            <Marker
+              key={base.id}
+              position={[base.lat, base.lng]}
+              icon={icon}
+              ref={(el) => {
+                if (el) markerRefs.current.set(base.id, el);
+                else markerRefs.current.delete(base.id);
+              }}
+            >
+              <Popup>
+                <div className="font-mono text-[11px] leading-relaxed min-w-35">
+                  <div className="font-semibold text-[#e8e8e8] mb-1.5">{base.name}</div>
+                  <div className="text-[#888] text-[10px] mb-1">{status}</div>
+                  {connInfo && (
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className={connInfo.text}>{connInfo.label}</span>
+                      {base.rtt_ms != null && (
+                        <>
+                          <span className="text-[#3a3a3a]">·</span>
+                          <span className={base.rtt_ms > 200 ? "text-fleet-red" : base.rtt_ms >= 50 ? "text-fleet-amber" : "text-fleet-green"}>
+                            {base.rtt_ms}ms
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {base.last_seen_at && (
+                    <div className="text-[10px] text-[#3a3a3a] mt-0.5">
+                      seen {formatRelativeTime(base.last_seen_at)}
+                    </div>
+                  )}
+                  <Link href="/bases" className="block text-[10px] text-fleet-blue hover:text-[#60a5fa] mt-2 no-underline">
+                    View details →
+                  </Link>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
 
-                {/* Connection + latency row */}
-                {connInfo && (
+        {/* Drone markers from live telemetry */}
+        {drones.map((drone) => {
+          const { frame } = drone;
+          if (!frame.position) return null;
+
+          const icon = createDroneIcon(drone.name, frame.batteryPercent, frame.armed);
+          const alt = frame.position.altitudeM;
+          const sats = frame.gps?.satellites;
+
+          return (
+            <Marker
+              key={drone.nodeId}
+              position={[frame.position.latitude, frame.position.longitude]}
+              icon={icon}
+            >
+              <Popup>
+                <div className="font-mono text-[11px] leading-relaxed min-w-35">
+                  <div className="font-semibold text-[#e8e8e8] mb-1.5">{drone.name}</div>
+                  <div className="text-[10px] text-[#888] mb-1">
+                    {frame.flightMode}{frame.armed ? " · Armed" : ""}
+                  </div>
                   <div className="flex items-center gap-2 text-[10px]">
-                    <span className={connInfo.text}>{connInfo.label}</span>
-                    {base.rtt_ms != null && (
+                    <span className="text-[#555]">Battery</span>
+                    <span className={frame.batteryPercent < 20 ? "text-fleet-red" : frame.batteryPercent < 40 ? "text-fleet-amber" : "text-fleet-green"}>
+                      {Math.round(frame.batteryPercent)}%
+                    </span>
+                    {frame.batteryVoltage > 0 && (
+                      <span className="text-[#3a3a3a]">{frame.batteryVoltage.toFixed(1)}V</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] mt-0.5">
+                    {alt > 0 && (
+                      <>
+                        <span className="text-[#555]">Alt</span>
+                        <span className="text-[#888]">{alt.toFixed(1)}m</span>
+                      </>
+                    )}
+                    {sats != null && (
                       <>
                         <span className="text-[#3a3a3a]">·</span>
-                        <span className={base.rtt_ms > 200 ? "text-fleet-red" : base.rtt_ms >= 50 ? "text-fleet-amber" : "text-fleet-green"}>
-                          {base.rtt_ms}ms
-                        </span>
+                        <span className="text-[#555]">Sats</span>
+                        <span className={sats < 6 ? "text-fleet-amber" : "text-[#888]"}>{sats}</span>
                       </>
                     )}
                   </div>
-                )}
-
-                {/* Last seen */}
-                {base.last_seen_at && (
-                  <div className="text-[10px] text-[#3a3a3a] mt-0.5">
-                    seen {formatRelativeTime(base.last_seen_at)}
-                  </div>
-                )}
-
-                {/* View details link */}
-                <Link
-                  href="/bases"
-                  className="block text-[10px] text-fleet-blue hover:text-[#60a5fa] mt-2 no-underline"
-                >
-                  View details →
-                </Link>
-              </div>
-            </Popup>
-          </Marker>
-        );
-      })}
-
-      {/* Drone markers from live telemetry */}
-      {drones.map((drone) => {
-        const { frame } = drone;
-        if (!frame.position) return null;
-
-        const icon = createDroneIcon(drone.name, frame.batteryPercent, frame.armed);
-        const alt = frame.position.altitudeM;
-        const sats = frame.gps?.satellites;
-
-        return (
-          <Marker
-            key={drone.nodeId}
-            position={[frame.position.latitude, frame.position.longitude]}
-            icon={icon}
-          >
-            <Popup>
-              <div className="font-mono text-[11px] leading-relaxed min-w-35">
-                <div className="font-semibold text-[#e8e8e8] mb-1.5">{drone.name}</div>
-
-                {/* Flight mode + armed */}
-                <div className="text-[10px] text-[#888] mb-1">
-                  {frame.flightMode}{frame.armed ? " · Armed" : ""}
+                  <Link href="/fleet" className="block text-[10px] text-fleet-blue hover:text-[#60a5fa] mt-2 no-underline">
+                    View details →
+                  </Link>
                 </div>
+              </Popup>
+            </Marker>
+          );
+        })}
 
-                {/* Battery */}
-                <div className="flex items-center gap-2 text-[10px]">
-                  <span className="text-[#555]">Battery</span>
-                  <span className={frame.batteryPercent < 20 ? "text-fleet-red" : frame.batteryPercent < 40 ? "text-fleet-amber" : "text-fleet-green"}>
-                    {Math.round(frame.batteryPercent)}%
-                  </span>
-                  {frame.batteryVoltage > 0 && (
-                    <span className="text-[#3a3a3a]">{frame.batteryVoltage.toFixed(1)}V</span>
-                  )}
-                </div>
-
-                {/* Altitude + satellites */}
-                <div className="flex items-center gap-2 text-[10px] mt-0.5">
-                  {alt > 0 && (
-                    <>
-                      <span className="text-[#555]">Alt</span>
-                      <span className="text-[#888]">{alt.toFixed(1)}m</span>
-                    </>
-                  )}
-                  {sats != null && (
-                    <>
-                      <span className="text-[#3a3a3a]">·</span>
-                      <span className="text-[#555]">Sats</span>
-                      <span className={sats < 6 ? "text-fleet-amber" : "text-[#888]"}>{sats}</span>
-                    </>
-                  )}
-                </div>
-
-                {/* Link to fleet page */}
-                <Link
-                  href="/fleet"
-                  className="block text-[10px] text-fleet-blue hover:text-[#60a5fa] mt-2 no-underline"
-                >
-                  View details →
-                </Link>
-              </div>
-            </Popup>
-          </Marker>
-        );
-      })}
-
-      {bases.length === 0 && drones.length === 0 && (
-        <div
-          className="absolute inset-0 flex items-end justify-center pb-6 z-[1000] pointer-events-none"
-        >
-          <div className="bg-neutral-950/80 border border-neutral-800 rounded px-3 py-1.5 font-mono text-[11px] text-neutral-400">
-            No bases with coordinates configured
+        {bases.length === 0 && drones.length === 0 && (
+          <div className="absolute inset-0 flex items-end justify-center pb-6 z-[1000] pointer-events-none">
+            <div className="bg-neutral-950/80 border border-neutral-800 rounded px-3 py-1.5 font-mono text-[11px] text-neutral-400">
+              No bases with coordinates configured
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <ZoomControls />
-    </MapContainer>
+        <ZoomControls />
+      </MapContainer>
+    </div>
   );
 }
