@@ -25,7 +25,8 @@ Fleet Manager is the web frontend for VECTR Fleet Intelligence. It's a Next.js 1
 ### Tech stack
 
 - **Framework**: Next.js 16 with App Router, `output: "standalone"`
-- **UI**: Tailwind CSS 4, shadcn/ui (base-nova style), Lucide icons
+- **UI**: Tailwind CSS 4, shadcn/ui (base-nova style)
+- **Icons**: Always use `lucide-react` — never create inline/custom SVG icons. Import from `lucide-react` and use as components (e.g., `<Settings />`, `<Map />`)
 - **State**: TanStack React Query via tRPC
 - **Maps**: Leaflet + react-leaflet with OpenStreetMap tiles
 - **i18n**: next-intl (messages in `messages/en.json`)

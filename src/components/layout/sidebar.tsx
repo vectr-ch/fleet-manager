@@ -4,6 +4,15 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import {
+  LayoutDashboard,
+  Map,
+  Activity,
+  Plane,
+  Radio,
+  Settings,
+  Cpu,
+} from "lucide-react";
 
 interface SidebarItem {
   label: string;
@@ -30,31 +39,17 @@ export function Sidebar() {
         {
           label: t("overview"),
           href: "/overview",
-          icon: (
-            <svg viewBox="0 0 14 14" fill="none">
-              <rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
-          ),
+          icon: <LayoutDashboard />,
         },
         {
           label: t("map"),
           href: "/map",
-          icon: (
-            <svg viewBox="0 0 14 14" fill="none">
-              <path d="M2 11L5 6l2.5 3L9 7l3 4H2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-              <circle cx="10" cy="3.5" r="1.5" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
-          ),
+          icon: <Map />,
         },
         {
           label: t("telemetry"),
           href: "/telemetry",
-          icon: (
-            <svg viewBox="0 0 14 14" fill="none">
-              <path d="M1 10l3-4 2.5 2L9 4l3.5 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
+          icon: <Activity />,
         },
       ],
     },
@@ -64,21 +59,12 @@ export function Sidebar() {
         {
           label: t("drones"),
           href: "/fleet",
-          icon: (
-            <svg viewBox="0 0 14 14" fill="none">
-              <path d="M7 1L9 5h4L10 8l1 4-4-2.5L3 12l1-4L1 5h4z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-            </svg>
-          ),
+          icon: <Plane />,
         },
         {
           label: t("baseStations"),
           href: "/bases",
-          icon: (
-            <svg viewBox="0 0 14 14" fill="none">
-              <rect x="2" y="4" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M5 4V3a2 2 0 014 0v1" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
-          ),
+          icon: <Radio />,
         },
       ],
     },
@@ -141,18 +127,13 @@ export function Sidebar() {
             <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-foreground rounded-r" />
           )}
           <span className={cn("w-3.5 h-3.5 shrink-0 [&>svg]:w-full [&>svg]:h-full", pathname.startsWith("/settings") ? "opacity-100" : "opacity-60")}>
-            <svg viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.76 2.76l1.06 1.06M10.18 10.18l1.06 1.06M11.24 2.76l-1.06 1.06M3.82 10.18l-1.06 1.06" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
+            <Settings />
           </span>
           {t("settings")}
         </Link>
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-[5px] text-muted-foreground text-[12.5px]">
           <span className="w-3.5 h-3.5 shrink-0 opacity-60 [&>svg]:w-full [&>svg]:h-full">
-            <svg viewBox="0 0 14 14" fill="none">
-              <path d="M7 1a6 6 0 100 12A6 6 0 007 1zm0 0v6m0 0l3-3M7 7l-3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <Cpu />
           </span>
           {t("firmware")}
           <span className="ml-auto font-mono text-[10px] px-1.5 py-px rounded-sm bg-fleet-green-dim text-fleet-green border border-fleet-green/15">
