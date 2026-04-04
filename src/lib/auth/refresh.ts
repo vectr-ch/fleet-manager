@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { fmsFetch } from "@/lib/fms";
 import { setAuthCookies, clearAuthCookies, type AuthTokens } from "./cookies";
 
@@ -50,8 +51,10 @@ export async function ensureValidToken(
 
     await setAuthCookies(result);
     return result.access_token;
-  } catch {
-    await clearAuthCookies();
+  } catch (err) {
+    if (err instanceof TRPCError && err.code === "UNAUTHORIZED") {
+      await clearAuthCookies();
+    }
     return null;
   }
 }

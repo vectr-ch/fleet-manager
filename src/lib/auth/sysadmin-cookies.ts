@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { TRPCError } from "@trpc/server";
 import { fmsFetch } from "@/lib/fms";
 import { decodeJwtPayload } from "@/lib/auth/refresh";
 
@@ -24,7 +25,7 @@ export async function setSysadminAuthCookies(loginResult: {
       secure: SECURE,
       sameSite: "lax",
       path: "/",
-      maxAge: loginResult.expires_in ?? 900,
+      maxAge: loginResult.refresh_token_ttl ?? 604800,
     });
   }
 
@@ -112,8 +113,10 @@ export async function ensureSysadminValidToken(
 
     await setSysadminAuthCookies(result);
     return result.access_token;
-  } catch {
-    await clearSysadminAuthCookies();
+  } catch (err) {
+    if (err instanceof TRPCError && err.code === "UNAUTHORIZED") {
+      await clearSysadminAuthCookies();
+    }
     return null;
   }
 }

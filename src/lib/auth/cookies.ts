@@ -21,7 +21,7 @@ export async function setAuthCookies(loginResult: {
       secure: SECURE,
       sameSite: "lax",
       path: "/",
-      maxAge: loginResult.expires_in ?? 900,
+      maxAge: loginResult.refresh_token_ttl ?? 604800,
     });
   }
 

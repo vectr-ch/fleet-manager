@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import type { OrgFromLogin } from "@/lib/types";
 
@@ -12,7 +11,6 @@ function getInitials(name: string): string {
 }
 
 export default function SelectOrgPage() {
-  const router = useRouter();
   const [orgs, setOrgs] = useState<OrgFromLogin[] | null>(null);
   const [initialized, setInitialized] = useState(false);
 
@@ -47,7 +45,7 @@ export default function SelectOrgPage() {
   const selectOrgMutation = trpc.userAccount.selectOrg.useMutation({
     onSuccess: () => {
       sessionStorage.removeItem("pending_orgs");
-      router.push("/overview");
+      window.location.href = "/overview";
     },
   });
 
