@@ -3,7 +3,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { getTokens } from "@/lib/auth/cookies";
-import { ensureValidToken, decodeJwtPayload } from "@/lib/auth/refresh";
+import { decodeJwtPayload } from "@/lib/auth/refresh";
 import { fmsFetch } from "@/lib/fms";
 import type { UserProfile } from "@/lib/types";
 
@@ -29,8 +29,13 @@ export default async function DashboardLayout({
   let userAvatarUrl: string | null = null;
 
   try {
-    const tokens = await getTokens();
-    const accessToken = await ensureValidToken(tokens);
+    // Read the access token directly — do NOT call ensureValidToken() here.
+    // Server Components cannot write cookies (cookies().set() silently fails),
+    // so triggering a refresh would consume the single-use refresh token in
+    // Valkey without persisting the new tokens, destroying the session.
+    // Token refresh is handled by tRPC procedure middleware (API route handlers)
+    // where cookies().set() works correctly.
+    const { accessToken } = await getTokens();
     if (accessToken) {
       const { sub } = decodeJwtPayload(accessToken);
       if (sub) {
