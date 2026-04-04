@@ -92,6 +92,31 @@ function isTokenExpiringSoon(accessToken: string): boolean {
   return exp * 1000 - Date.now() < REFRESH_THRESHOLD_MS;
 }
 
+async function clearSysadminTokenCookies() {
+  const cookieStore = await cookies();
+  cookieStore.delete("sysadmin_access_token");
+  cookieStore.delete("sysadmin_refresh_token");
+}
+
+const pendingSysadminRefreshes = new Map<string, Promise<string | null>>();
+
+async function performSysadminRefresh(refreshToken: string): Promise<string | null> {
+  try {
+    const result = await fmsFetch<RefreshResponse>("/sysadmin/refresh", {
+      method: "POST",
+      body: { refresh_token: refreshToken },
+    });
+
+    await setSysadminAuthCookies(result);
+    return result.access_token;
+  } catch (err) {
+    if (err instanceof TRPCError && err.code === "UNAUTHORIZED") {
+      await clearSysadminTokenCookies();
+    }
+    return null;
+  }
+}
+
 export async function ensureSysadminValidToken(
   tokens: SysadminAuthTokens
 ): Promise<string | null> {
@@ -105,18 +130,17 @@ export async function ensureSysadminValidToken(
     return null;
   }
 
-  try {
-    const result = await fmsFetch<RefreshResponse>("/sysadmin/refresh", {
-      method: "POST",
-      body: { refresh_token: refreshToken },
-    });
+  const inflight = pendingSysadminRefreshes.get(refreshToken);
+  if (inflight) {
+    return inflight;
+  }
 
-    await setSysadminAuthCookies(result);
-    return result.access_token;
-  } catch (err) {
-    if (err instanceof TRPCError && err.code === "UNAUTHORIZED") {
-      await clearSysadminAuthCookies();
-    }
-    return null;
+  const promise = performSysadminRefresh(refreshToken);
+  pendingSysadminRefreshes.set(refreshToken, promise);
+
+  try {
+    return await promise;
+  } finally {
+    pendingSysadminRefreshes.delete(refreshToken);
   }
 }

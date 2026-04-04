@@ -105,6 +105,15 @@ export async function clearUserInfo() {
   cookieStore.delete("user_info");
 }
 
+// Clears only auth tokens — used during token refresh failures so that
+// org selection and user display state survive for re-authentication.
+export async function clearTokenCookies() {
+  const cookieStore = await cookies();
+  cookieStore.delete("access_token");
+  cookieStore.delete("refresh_token");
+}
+
+// Clears everything — used only for explicit logout.
 export async function clearAuthCookies() {
   const cookieStore = await cookies();
   cookieStore.delete("access_token");
