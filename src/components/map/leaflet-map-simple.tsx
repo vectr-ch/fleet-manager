@@ -3,16 +3,10 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { renderToStaticMarkup } from "react-dom/server";
 import Link from "next/link";
+import { RadioTower } from "lucide-react";
 import type { Base } from "@/lib/types";
-
-// Fix Leaflet default icon paths broken by webpack
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
 
 const DEFAULT_CENTER: [number, number] = [32.253, -110.911];
 const DEFAULT_ZOOM = 12;
@@ -45,6 +39,38 @@ function formatRelativeTime(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+// ── Custom base marker icon ──────────────────────────────────────────────────
+
+const radioTowerSvg = renderToStaticMarkup(
+  <RadioTower size={14} strokeWidth={1.5} color="#888" />
+);
+
+function createBaseIcon(name: string, conn: "active" | "delayed" | "offline" | "unknown" | null) {
+  const dotColor =
+    conn === "active" ? "#22c55e" :
+    conn === "delayed" ? "#f59e0b" :
+    conn === "offline" ? "#555" : "#3a3a3a";
+
+  const dotShadow = conn === "active" ? "box-shadow:0 0 4px #22c55e88;" : "";
+
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <div style="width:28px;height:28px;background:#0f0f0f;border:1.5px solid #252525;border-radius:5px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px #000a">
+          ${radioTowerSvg}
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-family:monospace;font-size:9px;color:#888;background:#080808dd;padding:1px 6px;border-radius:2px;border:1px solid #252525;white-space:nowrap;backdrop-filter:blur(4px)">
+          <span style="width:5px;height:5px;border-radius:50%;background:${dotColor};display:inline-block;flex-shrink:0;${dotShadow}"></span>
+          ${name}
+        </div>
+      </div>`,
+    iconSize: [80, 46],
+    iconAnchor: [40, 23],
+    popupAnchor: [0, -20],
+  });
 }
 
 function ZoomControls() {
@@ -94,23 +120,21 @@ export default function LeafletMapSimple({ bases }: LeafletMapSimpleProps) {
       {bases.map((base) => {
         const status = deviceStatusLabel(base);
         const conn = status === "Enrolled" ? connectionStatus(base.last_seen_at) : null;
+        const icon = createBaseIcon(base.name, conn);
 
-        const connColors: Record<string, { dot: string; text: string; label: string }> = {
-          active: { dot: "bg-[#22c55e] shadow-[0_0_4px_#22c55e88]", text: "text-[#22c55e]", label: "Active" },
-          delayed: { dot: "bg-[#f59e0b] shadow-[0_0_4px_#f59e0b88]", text: "text-[#f59e0b]", label: "Delayed" },
-          offline: { dot: "bg-[#555]", text: "text-[#555]", label: "Offline" },
+        const connColors: Record<string, { text: string; label: string }> = {
+          active: { text: "text-[#22c55e]", label: "Active" },
+          delayed: { text: "text-[#f59e0b]", label: "Delayed" },
+          offline: { text: "text-[#555]", label: "Offline" },
         };
         const connInfo = conn && conn !== "unknown" ? connColors[conn] : null;
 
         return (
-          <Marker key={base.id} position={[base.lat, base.lng]}>
+          <Marker key={base.id} position={[base.lat, base.lng]} icon={icon}>
             <Popup>
               <div className="font-mono text-[11px] leading-relaxed min-w-35">
-                {/* Name + status */}
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  {connInfo && <span className={`inline-block size-1.5 rounded-full shrink-0 ${connInfo.dot}`} />}
-                  <span className="font-semibold text-[#e8e8e8]">{base.name}</span>
-                </div>
+                {/* Name */}
+                <div className="font-semibold text-[#e8e8e8] mb-1.5">{base.name}</div>
 
                 {/* Status label */}
                 <div className="text-[#888] text-[10px] mb-1">{status}</div>
