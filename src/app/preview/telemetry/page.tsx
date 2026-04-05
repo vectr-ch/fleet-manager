@@ -62,7 +62,7 @@ function generateFrame(drone: typeof MOCK_DRONES[0], prev?: TelemetryFrame): Tel
 }
 
 function emptyHistory(): TelemetryHistory {
-  return { altitude: [], battery: [], yaw: [], satellites: [] };
+  return { altitude: [], battery: [], voltage: [], satellites: [] };
 }
 
 function pushHistory(h: TelemetryHistory, f: TelemetryFrame) {
@@ -72,7 +72,7 @@ function pushHistory(h: TelemetryHistory, f: TelemetryFrame) {
   };
   push(h.altitude, f.position?.altitudeM ?? 0);
   push(h.battery, f.batteryPercent);
-  push(h.yaw, f.attitude?.yawDeg ?? 0);
+  push(h.voltage, f.batteryVoltage);
   push(h.satellites, f.gps?.satellites ?? 0);
 }
 
@@ -91,7 +91,7 @@ function averageHistory(histories: TelemetryHistory[]): TelemetryHistory {
     }
     return result;
   };
-  return { altitude: avg("altitude"), battery: avg("battery"), yaw: avg("yaw"), satellites: avg("satellites") };
+  return { altitude: avg("altitude"), battery: avg("battery"), voltage: avg("voltage"), satellites: avg("satellites") };
 }
 
 // ── Preview page (overview + detail) ────────────────────────────
@@ -232,7 +232,7 @@ export default function TelemetryPreview() {
           <div className="flex-1 grid grid-cols-2 gap-px bg-[#1a1a1a] overflow-hidden">
             <SparklineChart data={history.altitude} label="Altitude" unit="m" color="#3b82f6" />
             <SparklineChart data={history.battery} label="Battery" unit="%" color="#22c55e" decimals={0} />
-            <SparklineChart data={history.yaw} label="Heading" unit="°" color="#f59e0b" decimals={0} />
+            <SparklineChart data={history.voltage} label="Voltage" unit="V" color="#f59e0b" decimals={1} />
             <SparklineChart data={history.satellites} label="GPS Satellites" unit="" color="#a78bfa" decimals={0} />
           </div>
         </div>

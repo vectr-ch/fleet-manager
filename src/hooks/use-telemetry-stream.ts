@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { TelemetryFrame } from "@/lib/nats/types";
 
-const HISTORY_SIZE = 60;
+const HISTORY_SIZE = 900; // ~15 minutes at 1Hz
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
 export interface TelemetryHistory {
   altitude: number[];
   battery: number[];
-  yaw: number[];
+  voltage: number[];
   satellites: number[];
 }
 
@@ -18,7 +18,7 @@ function emptyHistory(): TelemetryHistory {
   return {
     altitude: [],
     battery: [],
-    yaw: [],
+    voltage: [],
     satellites: [],
   };
 }
@@ -30,7 +30,7 @@ function pushHistory(history: TelemetryHistory, frame: TelemetryFrame) {
   };
   push(history.altitude, frame.position?.altitudeM ?? 0);
   push(history.battery, frame.batteryPercent);
-  push(history.yaw, frame.attitude?.yawDeg ?? 0);
+  push(history.voltage, frame.batteryVoltage);
   push(history.satellites, frame.gps?.satellites ?? 0);
 }
 

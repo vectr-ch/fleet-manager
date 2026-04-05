@@ -11,7 +11,7 @@ function averageHistory(
   histories: TelemetryHistory[]
 ): TelemetryHistory {
   if (histories.length === 0)
-    return { altitude: [], battery: [], yaw: [], satellites: [] };
+    return { altitude: [], battery: [], voltage: [], satellites: [] };
   const len = Math.max(...histories.map((h) => h.altitude.length));
   const avg = (key: keyof TelemetryHistory) => {
     const result: number[] = [];
@@ -31,7 +31,7 @@ function averageHistory(
   return {
     altitude: avg("altitude"),
     battery: avg("battery"),
-    yaw: avg("yaw"),
+    voltage: avg("voltage"),
     satellites: avg("satellites"),
   };
 }
@@ -120,11 +120,11 @@ export default function TelemetryPage() {
               decimals={0}
             />
             <SparklineChart
-              data={history.yaw}
-              label="Heading"
-              unit="°"
+              data={history.voltage}
+              label="Voltage"
+              unit="V"
               color="#f59e0b"
-              decimals={0}
+              decimals={1}
             />
             <SparklineChart
               data={history.satellites}
