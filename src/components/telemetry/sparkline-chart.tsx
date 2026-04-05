@@ -10,6 +10,29 @@ interface SparklineChartProps {
   decimals?: number;
 }
 
+function formatDuration(s: number): string {
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return rem === 0 ? `${m}m` : `${m}m${rem}s`;
+}
+
+function TimeLabels({ seconds }: { seconds: number }) {
+  const total = Math.max(seconds, 1);
+  const labels = [0, 0.25, 0.5, 0.75, 1].map((f) => {
+    const ago = Math.round(total * (1 - f));
+    return ago === 0 ? "now" : `${formatDuration(ago)} ago`;
+  });
+
+  return (
+    <div className="absolute bottom-2.5 left-4 right-4 flex justify-between font-mono text-[9px] text-neutral-600">
+      {labels.map((l, i) => (
+        <span key={i}>{l}</span>
+      ))}
+    </div>
+  );
+}
+
 export function SparklineChart({
   data,
   label,
@@ -115,13 +138,7 @@ export function SparklineChart({
       </div>
       <div className="flex-1 px-4 py-2.5 relative min-h-[120px]">
         <canvas ref={canvasRef} className="w-full h-full" />
-        <div className="absolute bottom-2.5 left-4 right-4 flex justify-between font-mono text-[9px] text-neutral-600">
-          <span>60s ago</span>
-          <span>45s</span>
-          <span>30s</span>
-          <span>15s</span>
-          <span>now</span>
-        </div>
+        <TimeLabels seconds={data.length} />
       </div>
     </div>
   );
