@@ -1,4 +1,4 @@
-import { type ConsumerMessages, DeliverPolicy } from "nats";
+import { jetstream, type ConsumerMessages, DeliverPolicy } from "@nats-io/jetstream";
 import { getNatsConnection } from "./client";
 import { vectr } from "@/lib/proto/telemetry";
 import type { TelemetryFrame } from "./types";
@@ -95,12 +95,12 @@ export async function subscribe(
   } else {
     console.log(`[nats] creating consumer for org ${orgId}`);
     const nc = await getNatsConnection();
-    const js = nc.jetstream();
+    const js = jetstream(nc);
 
     // Ordered consumer: ephemeral, auto-managed by NATS client.
     // DeliverNew skips the 175k+ historical messages — only live data.
     const consumer = await js.consumers.get("TELEMETRY", {
-      filterSubjects: [`telemetry.${orgId}.>`],
+      filter_subjects: [`telemetry.${orgId}.>`],
       deliver_policy: DeliverPolicy.New,
     });
     console.log(`[nats] consumer created, starting consume()`);

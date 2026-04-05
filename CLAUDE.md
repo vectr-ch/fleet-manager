@@ -31,6 +31,7 @@ Fleet Manager is the web frontend for VECTR Fleet Intelligence. It's a Next.js 1
 - **Maps**: Leaflet + react-leaflet with OpenStreetMap tiles
 - **i18n**: next-intl (messages in `messages/en.json`)
 - **Validation**: Zod schemas in `src/lib/types.ts`
+- **Real-time telemetry**: NATS via `@nats-io/nats-core` (wsconnect) + `@nats-io/jetstream` — connects to Synadia Cloud over WebSocket (`wss://connect.ngs.global`)
 
 ### Package layout
 

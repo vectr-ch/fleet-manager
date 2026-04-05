@@ -23,7 +23,6 @@
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.577.0",
-    "nats": "^2.29.3",
     "next": "16.1.6",
     "next-intl": "^4.8.3",
     "protobufjs": "^7.5.4",

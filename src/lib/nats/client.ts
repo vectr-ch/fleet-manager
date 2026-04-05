@@ -1,4 +1,4 @@
-import { connect, credsAuthenticator, type NatsConnection } from "nats";
+import { wsconnect, credsAuthenticator, type NatsConnection } from "@nats-io/nats-core";
 
 let connection: NatsConnection | null = null;
 let connecting: Promise<NatsConnection> | null = null;
@@ -33,7 +33,7 @@ export async function getNatsConnection(): Promise<NatsConnection> {
 
       console.log("[nats] connecting to", url);
 
-      const nc = await connect({
+      const nc = await wsconnect({
         servers: url,
         authenticator: credsAuthenticator(credsBytes),
         name: "vectr-fleet-manager",
