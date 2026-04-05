@@ -22,9 +22,18 @@ export async function getNatsConnection(): Promise<NatsConnection> {
       const { url, creds } = getConfig();
 
       // Railway stores multiline env vars with literal \n — normalize to real newlines
-      const normalizedCreds = creds.includes("\\n")
+      let normalizedCreds = creds.includes("\\n")
         ? creds.replace(/\\n/g, "\n")
         : creds;
+
+      // Trim whitespace from each line — Railway can add trailing spaces.
+      // Ensure trailing newline — the NATS creds parser regex requires it.
+      normalizedCreds =
+        normalizedCreds
+          .split("\n")
+          .map((l) => l.trim())
+          .join("\n")
+          .trim() + "\n";
 
       const encoder = new TextEncoder();
       const credsBytes = normalizedCreds.startsWith("-----BEGIN")
