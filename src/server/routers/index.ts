@@ -7,6 +7,7 @@ import { nodesRouter } from "./nodes";
 import { invitesRouter } from "./invites";
 import { userAccountRouter } from "./user-account";
 import { missionsRouter } from "./missions";
+import { missionTypesRouter } from "./mission-types";
 import { alertsRouter } from "./alerts";
 import { telemetryRouter } from "./telemetry";
 import { auditRouter } from "./audit";
@@ -26,6 +27,7 @@ export const appRouter = router({
   invites: invitesRouter,
   userAccount: userAccountRouter,
   missions: missionsRouter,
+  missionTypes: missionTypesRouter,
   alerts: alertsRouter,
   telemetry: telemetryRouter,
   audit: auditRouter,
