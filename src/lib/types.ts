@@ -164,24 +164,90 @@ export const createInviteResponseSchema = z.object({
 });
 export type CreateInviteResponse = z.infer<typeof createInviteResponseSchema>;
 
-// ─── Stubbed types (M3 — define contracts now) ──────────────
+// ─── Missions ───────────────────────────────────────────────
 
 export const missionStatusSchema = z.enum([
-  "planned",
-  "active",
-  "paused",
-  "aborted",
-  "complete",
+  "draft", "planned", "approved", "activating", "active",
+  "completing", "completed", "aborting", "aborted", "canceled",
 ]);
+export type MissionStatus = z.infer<typeof missionStatusSchema>;
 
 export const missionSchema = z.object({
   id: z.string(),
-  name: z.string(),
+  type: z.string(),
+  mode: z.string(),
   status: missionStatusSchema,
+  base_id: z.string().nullable().optional(),
+  drone_count: z.number().nullable().optional(),
+  min_drone_count: z.number().nullable().optional(),
+  params: z.any().optional(),
+  waypoints: z.any().optional(),
+  abort_action: z.any().optional(),
+  created_by: z.string(),
+  approved_by: z.string().nullable().optional(),
+  activated_at: z.string().nullable().optional(),
+  completed_at: z.string().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });
 export type Mission = z.infer<typeof missionSchema>;
+
+export const missionNodeSchema = z.object({
+  mission_id: z.string(),
+  node_id: z.string(),
+  role: z.string().nullable().optional(),
+  assigned_at: z.string(),
+});
+export type MissionNode = z.infer<typeof missionNodeSchema>;
+
+export const missionEventSchema = z.object({
+  id: z.string(),
+  mission_id: z.string(),
+  from_status: z.string().nullable().optional(),
+  to_status: z.string(),
+  actor_id: z.string().nullable().optional(),
+  note: z.string().nullable().optional(),
+  created_at: z.string(),
+});
+export type MissionEvent = z.infer<typeof missionEventSchema>;
+
+export const missionDetailSchema = z.object({
+  mission: missionSchema,
+  nodes: z.array(missionNodeSchema),
+  events: z.array(missionEventSchema),
+});
+export type MissionDetail = z.infer<typeof missionDetailSchema>;
+
+export const missionTypeSchema = z.object({
+  name: z.string(),
+  display_name: z.string(),
+  description: z.string(),
+  params_schema: z.any(),
+  default_abort_action: z.any(),
+  icon: z.string().nullable().optional(),
+  enabled: z.boolean(),
+  sort_order: z.number(),
+});
+export type MissionType = z.infer<typeof missionTypeSchema>;
+
+export const preFlightCheckSchema = z.object({
+  name: z.string(),
+  passed: z.boolean(),
+  detail: z.string(),
+});
+
+export const preFlightReportSchema = z.object({
+  passed: z.boolean(),
+  checks: z.array(preFlightCheckSchema),
+});
+export type PreFlightReport = z.infer<typeof preFlightReportSchema>;
+
+export const fleetAssignmentResultSchema = z.object({
+  assigned_nodes: z.array(missionNodeSchema),
+  total_pool: z.number(),
+  healthy_pool: z.number(),
+});
+export type FleetAssignmentResult = z.infer<typeof fleetAssignmentResultSchema>;
 
 export const alertSeveritySchema = z.enum(["info", "warning", "critical"]);
 

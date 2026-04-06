@@ -8,6 +8,7 @@ import { invitesRouter } from "./invites";
 import { rolesRouter } from "./roles";
 import { userAccountRouter } from "./user-account";
 import { missionsRouter } from "./missions";
+import { missionTypesRouter } from "./mission-types";
 import { alertsRouter } from "./alerts";
 import { telemetryRouter } from "./telemetry";
 import { auditRouter } from "./audit";
@@ -29,6 +30,7 @@ export const appRouter = router({
   roles: rolesRouter,
   userAccount: userAccountRouter,
   missions: missionsRouter,
+  missionTypes: missionTypesRouter,
   alerts: alertsRouter,
   telemetry: telemetryRouter,
   audit: auditRouter,
